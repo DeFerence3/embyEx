@@ -47,12 +47,12 @@ import androidx.compose.ui.unit.dp
 import app.deference.embcl.domain.model.EmbyServerDiscovery
 import app.deference.embcl.domain.model.EmbyUser
 import app.deference.embcl.domain.repository.EmbyRepository
-import app.deference.embcl.ui.core.LocalBackStack
-import app.deference.embcl.ui.core.MainScreen
 import app.deference.embcl.ui.components.PasswordField
 import app.deference.embcl.ui.components.PublicUserCard
 import app.deference.embcl.ui.components.SignInButton
 import app.deference.embcl.ui.components.SignInError
+import app.deference.embcl.ui.core.LocalBackStack
+import app.deference.embcl.ui.core.MainScreen
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 

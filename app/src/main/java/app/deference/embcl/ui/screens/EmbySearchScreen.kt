@@ -28,12 +28,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import app.deference.embcl.ui.components.EmptyState
-import app.deference.embcl.ui.components.ErrorState
-import app.deference.embcl.ui.components.MediaCard
 import app.deference.embcl.domain.model.EmbyItem
 import app.deference.embcl.domain.model.EmbySession
 import app.deference.embcl.domain.repository.EmbyRepository
+import app.deference.embcl.ui.components.EmptyState
+import app.deference.embcl.ui.components.ErrorState
+import app.deference.embcl.ui.components.MediaCard
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch

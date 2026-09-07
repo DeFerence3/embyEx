@@ -2,7 +2,6 @@ package app.deference.embcl.core.di
 
 import app.deference.embcl.core.networking.AuthInterceptor
 import app.deference.embcl.core.networking.HostSelectionInterceptor
-import app.deference.embcl.core.session.EmbySessionStore
 import app.deference.embcl.data.remote.EmbyApiService
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType

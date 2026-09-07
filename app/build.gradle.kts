@@ -24,8 +24,10 @@ android {
 	buildTypes {
 		release {
 			optimization {
-				enable = false
+				enable = true
 			}
+			isShrinkResources = true
+			isMinifyEnabled = true
 		}
 	}
 	compileOptions {
@@ -36,6 +38,10 @@ android {
 		compose = true
 		buildConfig = true
 	}
+}
+
+base {
+	archivesName = "${rootProject.name}-${android.defaultConfig.versionName}"
 }
 
 dependencies {

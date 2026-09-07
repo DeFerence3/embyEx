@@ -5,6 +5,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import app.deference.embcl.ui.Screen
+import app.deference.embcl.ui.core.nav.Navigator
 import kotlinx.serialization.Serializable
 
 val LocalBackStack = staticCompositionLocalOf<NavBackStack<NavKey>> {

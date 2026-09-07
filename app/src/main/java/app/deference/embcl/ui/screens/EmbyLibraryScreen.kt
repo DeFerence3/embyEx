@@ -22,12 +22,12 @@ import app.deference.embcl.core.session.EmbySessionStore
 import app.deference.embcl.domain.model.EmbyItem
 import app.deference.embcl.domain.model.EmbyItemsResult
 import app.deference.embcl.domain.repository.EmbyRepository
-import app.deference.embcl.ui.core.LocalBackStack
 import app.deference.embcl.ui.Screen
 import app.deference.embcl.ui.components.DetailTopBar
 import app.deference.embcl.ui.components.EmptyState
 import app.deference.embcl.ui.components.LoadState
 import app.deference.embcl.ui.components.MediaCard
+import app.deference.embcl.ui.core.LocalBackStack
 import kotlinx.serialization.Serializable
 import org.koin.compose.koinInject
 

@@ -34,7 +34,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.deference.embcl.domain.model.EmbyItem
 import app.deference.embcl.domain.model.EmbySession
-import app.deference.embcl.domain.model.subtitle
 import app.deference.embcl.domain.repository.EmbyRepository
 import coil3.compose.AsyncImage
 

@@ -1,10 +1,7 @@
 package app.deference.embcl.ui.screens
 
 import android.content.ActivityNotFoundException
-import android.content.ComponentName
 import android.content.Intent
-import android.net.Uri
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -40,19 +37,16 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat.startActivity
 import androidx.core.net.toUri
-import app.deference.embcl.PlayerActivity
-import app.deference.embcl.ui.Screen
-import app.deference.embcl.ui.components.DetailTopBar
-import app.deference.embcl.ui.components.EmptyState
-import app.deference.embcl.ui.components.LoadState
 import app.deference.embcl.core.session.EmbySessionStore
 import app.deference.embcl.domain.model.EmbyItem
 import app.deference.embcl.domain.model.EmbySession
 import app.deference.embcl.domain.model.asRuntime
-import app.deference.embcl.domain.model.subtitle
 import app.deference.embcl.domain.repository.EmbyRepository
+import app.deference.embcl.ui.Screen
+import app.deference.embcl.ui.components.DetailTopBar
+import app.deference.embcl.ui.components.EmptyState
+import app.deference.embcl.ui.components.LoadState
 import app.deference.embcl.ui.core.LocalBackStack
 import coil3.compose.AsyncImage
 import kotlinx.serialization.Serializable

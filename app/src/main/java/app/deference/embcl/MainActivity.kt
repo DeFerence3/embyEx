@@ -7,16 +7,14 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.navigation3.runtime.NavEntry
-import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
 import app.deference.embcl.ui.EmbyScreen
-import app.deference.embcl.ui.core.LocalBackStack
 import app.deference.embcl.ui.Screen
+import app.deference.embcl.ui.core.LocalBackStack
 import app.deference.embcl.ui.theme.EmbympvTheme
 
 class MainActivity : ComponentActivity() {
-
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
 		enableEdgeToEdge()
@@ -27,7 +25,6 @@ class MainActivity : ComponentActivity() {
 		}
 	}
 }
-
 @Composable
 fun EmbympvApp() {
 	val backStack = rememberNavBackStack(EmbyScreen)
@@ -41,9 +38,7 @@ fun EmbympvApp() {
 			},
 			entryProvider = { key ->
 				NavEntry(key) {
-					CompositionLocalProvider(LocalBackStack provides backStack) {
-						(key as? Screen)?.Content()
-					}
+					(key as? Screen)?.Content()
 				}
 			}
 		)
