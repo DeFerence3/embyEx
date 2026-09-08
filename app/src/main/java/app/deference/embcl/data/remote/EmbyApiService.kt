@@ -10,6 +10,7 @@ import app.deference.embcl.domain.model.EmbyUser
 import app.deference.embcl.domain.model.PublicSystemInfo
 import retrofit2.Call
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
@@ -65,6 +66,30 @@ interface EmbyApiService {
 		@Path("userId") userId: String,
 		@Path("itemId") itemId: String
 	): EmbyItem
+
+	@POST("/Users/{userId}/FavoriteItems/{itemId}")
+	suspend fun markFavorite(
+		@Path("userId") userId: String,
+		@Path("itemId") itemId: String,
+	): Void?
+
+	@DELETE("/Users/{userId}/FavoriteItems/{itemId}")
+	suspend fun unmarkFavorite(
+		@Path("userId") userId: String,
+		@Path("itemId") itemId: String,
+	): Void?
+
+	@POST("/Users/{userId}/PlayedItems/{itemId}")
+	suspend fun markPlayed(
+		@Path("userId") userId: String,
+		@Path("itemId") itemId: String,
+	): Void?
+
+	@DELETE("/Users/{userId}/PlayedItems/{itemId}")
+	suspend fun unmarkPlayed(
+		@Path("userId") userId: String,
+		@Path("itemId") itemId: String,
+	): Void?
 	
 	@POST("/Sessions/Playing")
 	fun reportPlayback(

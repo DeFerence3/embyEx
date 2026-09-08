@@ -9,6 +9,8 @@ data class EmbyPlaybackReport(
 	val itemId: String,
 	@SerialName("PositionTicks")
 	val positionTicks: Long,
+	@SerialName("PlaySessionId")
+	val playSessionId: String? = null,
 	@SerialName("IsPaused")
 	val isPaused: Boolean = false,
 	@SerialName("CanSeek")

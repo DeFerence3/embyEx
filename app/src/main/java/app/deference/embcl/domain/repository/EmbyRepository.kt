@@ -16,14 +16,16 @@ interface EmbyRepository {
 	suspend fun authenticate(discovery: EmbyServerDiscovery, username: String, password: String): EmbySession
 	suspend fun authenticate(discovery: EmbyServerDiscovery, user: EmbyUser, password: String): EmbySession
 	fun publicUserImageUrl(discovery: EmbyServerDiscovery, user: EmbyUser): String?
-	suspend fun home(session: EmbySession): EmbyHome
-	suspend fun libraries(session: EmbySession): List<EmbyItem>
-	suspend fun items(session: EmbySession, parentId: String, startIndex: Int = 0): EmbyItemsResult
-	suspend fun search(session: EmbySession, term: String): List<EmbyItem>
-	suspend fun item(session: EmbySession, id: String): EmbyItem
-	fun imageUrl(session: EmbySession, item: EmbyItem, type: String = "Primary", maxWidth: Int = 600): String?
-	fun userImageUrl(session: EmbySession): String
-	fun streamUrl(session: EmbySession, item: EmbyItem): String
+	suspend fun home(): EmbyHome
+	suspend fun libraries(): List<EmbyItem>
+	suspend fun items(parentId: String, startIndex: Int = 0): EmbyItemsResult
+	suspend fun search(term: String): List<EmbyItem>
+	suspend fun item(id: String): EmbyItem
+	fun imageUrl(item: EmbyItem, type: String = "Primary", maxWidth: Int = 600): String?
+	fun userImageUrl(): String
+	fun streamUrl(item: EmbyItem): String
 	fun logout()
+	suspend fun toggleFavorite(itemId: String, isFavorite: Boolean)
+	suspend fun togglePlayed(itemId: String, isPlayed: Boolean)
 	fun reportPlayback(itemId: String, positionTicks: Long, event: EmbyPlaybackEvent, isPaused: Boolean = false)
 }

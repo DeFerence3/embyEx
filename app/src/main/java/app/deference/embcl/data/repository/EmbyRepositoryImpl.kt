@@ -34,6 +34,11 @@ class EmbyRepositoryImpl(
 	private val udpDiscovery: EmbyUdpDiscovery,
 	private val mdnsDiscovery: EmbyMdnsDiscovery,
 ) : EmbyRepository {
+	
+	val session by lazy {
+		sessionStore.session.value ?: throw IllegalStateException("No session found")
+	}
+	
 	override suspend fun authenticate(server: String, username: String, password: String): EmbySession =
 		authenticate(discoverServer(server), username, password)
 	
@@ -102,9 +107,9 @@ class EmbyRepositoryImpl(
 		).toString()
 	}
 	
-	override suspend fun home(session: EmbySession): EmbyHome = coroutineScope {
+	override suspend fun home(): EmbyHome = coroutineScope {
 		hostSelectionInterceptor.hostUrl = session.serverUrl
-		val views = async { libraries(session) }
+		val views = async { libraries() }
 		val resume = async {
 			safeApiCall {
 				api.resumeItems(
@@ -138,7 +143,7 @@ class EmbyRepositoryImpl(
 		EmbyHome(views.await(), resume.await(), latest.await())
 	}
 	
-	override suspend fun libraries(session: EmbySession): List<EmbyItem> {
+	override suspend fun libraries(): List<EmbyItem> {
 		hostSelectionInterceptor.hostUrl = session.serverUrl
 		return safeApiCall {
 			api.userViews(
@@ -149,7 +154,6 @@ class EmbyRepositoryImpl(
 	}
 	
 	override suspend fun items(
-		session: EmbySession,
 		parentId: String,
 		startIndex: Int,
 	): EmbyItemsResult {
@@ -163,7 +167,7 @@ class EmbyRepositoryImpl(
 					"Limit" to "100",
 					"SortBy" to "SortName",
 					"SortOrder" to "Ascending",
-					"Fields" to ITEM_FIELDS,
+					//"Fields" to ITEM_FIELDS,
 					"EnableImages" to "true",
 					"EnableUserData" to "true",
 					"ImageTypeLimit" to "1",
@@ -172,7 +176,7 @@ class EmbyRepositoryImpl(
 		}
 	}
 	
-	override suspend fun search(session: EmbySession, term: String): List<EmbyItem> {
+	override suspend fun search(term: String): List<EmbyItem> {
 		if (term.isBlank()) return emptyList()
 		hostSelectionInterceptor.hostUrl = session.serverUrl
 		return safeApiCall {
@@ -192,7 +196,7 @@ class EmbyRepositoryImpl(
 		}.items
 	}
 	
-	override suspend fun item(session: EmbySession, id: String): EmbyItem {
+	override suspend fun item(id: String): EmbyItem {
 		hostSelectionInterceptor.hostUrl = session.serverUrl
 		return safeApiCall {
 			api.item(
@@ -203,7 +207,6 @@ class EmbyRepositoryImpl(
 	}
 	
 	override fun imageUrl(
-		session: EmbySession,
 		item: EmbyItem,
 		type: String,
 		maxWidth: Int,
@@ -211,11 +214,14 @@ class EmbyRepositoryImpl(
 		val imageItemId = when (type) {
 			"Backdrop" if item.backdropImageTags.isNotEmpty() -> item.id
 			"Backdrop" if item.parentBackdropImageTags.isNotEmpty() -> item.parentBackdropItemId
+			"Logo" if item.imageTags.containsKey("Logo") -> item.id
+			"Logo" if !item.parentLogoItemId.isNullOrBlank() -> item.parentLogoItemId
 			"Primary" if item.imageTags.containsKey("Primary") -> item.id
 			else -> null
 		} ?: return null
 		val tag = when (type) {
 			"Backdrop" -> item.backdropImageTags.firstOrNull() ?: item.parentBackdropImageTags.firstOrNull()
+			"Logo" -> item.imageTags["Logo"] ?: item.parentLogoImageTag
 			else -> item.imageTags[type]
 		}
 		return buildUrl(
@@ -230,24 +236,50 @@ class EmbyRepositoryImpl(
 		).toString()
 	}
 	
-	override fun userImageUrl(session: EmbySession): String = buildUrl(
+	override fun userImageUrl(): String = buildUrl(
 		session.serverUrl,
 		"/Users/${session.userId}/Images/Primary",
 		mapOf("MaxWidth" to "160", "api_key" to session.accessToken),
 	).toString()
 	
-	override fun streamUrl(session: EmbySession, item: EmbyItem): String {
+	override fun streamUrl(item: EmbyItem): String {
 		val extension = item.container?.substringBefore(',')?.ifBlank { null } ?: "mkv"
 		return buildUrl(
 			session.serverUrl,
 			"/Videos/${item.id}/stream.$extension",
-			mapOf("Static" to "true", "DeviceId" to session.deviceId),
+			mapOf(
+				"Static" to "true",
+				"DeviceId" to session.deviceId,
+				"api_key" to session.accessToken,
+			),
 		).toString()
 	}
 	
 	override fun logout() {
 		sessionStore.clear()
 		hostSelectionInterceptor.hostUrl = null
+	}
+
+	override suspend fun toggleFavorite(itemId: String, isFavorite: Boolean) {
+		hostSelectionInterceptor.hostUrl = session.serverUrl
+		safeApiCall {
+			if (isFavorite) {
+				api.markFavorite(session.userId, itemId)
+			} else {
+				api.unmarkFavorite(session.userId, itemId)
+			}
+		}
+	}
+
+	override suspend fun togglePlayed(itemId: String, isPlayed: Boolean) {
+		hostSelectionInterceptor.hostUrl = session.serverUrl
+		safeApiCall {
+			if (isPlayed) {
+				api.markPlayed(session.userId, itemId)
+			} else {
+				api.unmarkPlayed(session.userId, itemId)
+			}
+		}
 	}
 	
 	override fun reportPlayback(
@@ -258,7 +290,13 @@ class EmbyRepositoryImpl(
 	) {
 		val session = sessionStore.session.value ?: return
 		hostSelectionInterceptor.hostUrl = session.serverUrl
-		val report = EmbyPlaybackReport(itemId, positionTicks.coerceAtLeast(0), isPaused)
+		val playSessionId = "${session.deviceId}_$itemId"
+		val report = EmbyPlaybackReport(
+			itemId = itemId,
+			positionTicks = positionTicks.coerceAtLeast(0),
+			playSessionId = playSessionId,
+			isPaused = isPaused,
+		)
 		val call = when (event) {
 			EmbyPlaybackEvent.Started -> api.reportPlayback(report)
 			EmbyPlaybackEvent.Progress -> api.reportPlaybackProgress(report)
@@ -302,6 +340,7 @@ class EmbyRepositoryImpl(
 	}
 	
 	private companion object {
+		
 		const val ITEM_FIELDS = "Overview,ProductionYear,CommunityRating,OfficialRating,RunTimeTicks,Genres,MediaSources,MediaStreams,ParentId,PrimaryImageAspectRatio"
 	}
 }

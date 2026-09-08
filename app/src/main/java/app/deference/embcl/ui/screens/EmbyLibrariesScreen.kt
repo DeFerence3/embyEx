@@ -29,7 +29,7 @@ fun LibrariesContent(
 ) {
 	var reload by remember { mutableIntStateOf(0) }
 	val state by produceState<Result<List<EmbyItem>>?>(null, session, reload) {
-		value = runCatching { repository.libraries(session) }
+		value = runCatching { repository.libraries() }
 	}
 	LoadState(state, modifier, onRetry = { reload ++ }) { libraries ->
 		LazyVerticalGrid(

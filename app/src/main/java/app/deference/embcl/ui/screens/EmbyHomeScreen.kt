@@ -31,7 +31,7 @@ fun HomeContent(
 ) {
 	var reload by remember { mutableIntStateOf(0) }
 	val state by produceState<Result<EmbyHome>?>(null, session, reload) {
-		value = runCatching { repository.home(session) }
+		value = runCatching { repository.home() }
 	}
 	LoadState(state, modifier, onRetry = { reload ++ }) { home ->
 		LazyColumn(

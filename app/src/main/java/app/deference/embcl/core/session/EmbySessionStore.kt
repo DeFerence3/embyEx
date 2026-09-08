@@ -34,7 +34,7 @@ class EmbySessionStore(context: Context) {
   fun getLastServerUrl(): String? = preferences.getString(KEY_LAST_SERVER_URL, null)
 
   fun clear() {
-    preferences.edit().remove(KEY_SESSION).apply()
+    preferences.edit { remove(KEY_SESSION) }
     _session.value = null
   }
 

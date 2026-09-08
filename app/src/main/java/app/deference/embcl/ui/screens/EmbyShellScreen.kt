@@ -77,7 +77,7 @@ fun EmbyShell(session: EmbySession) {
 					Box {
 						IconButton(onClick = { menuExpanded = true }) {
 							AsyncImage(
-								model = repository.userImageUrl(session),
+								model = repository.userImageUrl(),
 								contentDescription = "Account",
 								modifier = Modifier
 									.size(36.dp)

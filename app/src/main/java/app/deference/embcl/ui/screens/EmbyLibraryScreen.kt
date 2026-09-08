@@ -4,9 +4,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -64,7 +66,7 @@ fun LibraryContent(
 	}
 	var reload by remember { mutableIntStateOf(0) }
 	val state by produceState<Result<EmbyItemsResult>?>(null, current, id, reload) {
-		value = runCatching { repository.items(current, id) }
+		value = runCatching { repository.items(id) }
 	}
 	Scaffold(
 		topBar = {
@@ -77,15 +79,27 @@ fun LibraryContent(
 			if (result.items.isEmpty()) {
 				EmptyState("Nothing here", "This library does not contain any visible media.")
 			} else {
-				LazyVerticalGrid(
-					columns = GridCells.Adaptive(132.dp),
-					modifier = Modifier.fillMaxSize(),
-					contentPadding = PaddingValues(16.dp),
-					horizontalArrangement = Arrangement.spacedBy(12.dp),
-					verticalArrangement = Arrangement.spacedBy(18.dp),
-				) {
-					items(result.items, key = { it.id }) { item ->
-						MediaCard(item, current, repository) { onItemClick(item) }
+				if (result.items.any { it.type == "Episode" }) {
+					LazyColumn(
+						modifier = Modifier.fillMaxSize(),
+						contentPadding = PaddingValues(16.dp),
+						verticalArrangement = Arrangement.spacedBy(18.dp),
+					) {
+						items(result.items.sortedBy { it.indexNumber }, key = { it.id }) { item ->
+							MediaCard(item, current, repository) { onItemClick(item) }
+						}
+					}
+				}else{
+					LazyVerticalGrid(
+						columns = GridCells.Adaptive(132.dp),
+						modifier = Modifier.fillMaxSize(),
+						contentPadding = PaddingValues(16.dp),
+						horizontalArrangement = Arrangement.spacedBy(12.dp),
+						verticalArrangement = Arrangement.spacedBy(18.dp),
+					) {
+						items(result.items.sortedBy { it.indexNumber }, key = { it.id }) { item ->
+							MediaCard(item, current, repository) { onItemClick(item) }
+						}
 					}
 				}
 			}

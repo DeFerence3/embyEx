@@ -1,7 +1,9 @@
 package app.deference.embcl.domain.model
 
+import app.deference.embcl.core.utils.or
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlin.time.Instant
 
 @Serializable
 data class EmbyItem(
@@ -31,8 +33,14 @@ data class EmbyItem(
 	val runTimeTicks: Long? = null,
 	@SerialName("SeriesName")
 	val seriesName: String? = null,
+	@SerialName("SeriesId")
+	val seriesId: String? = null,
 	@SerialName("SeasonName")
 	val seasonName: String? = null,
+	@SerialName("SeasonId")
+	val seasonId: String? = null,
+	@SerialName("ParentId")
+	val parentId: String? = null,
 	@SerialName("IndexNumber")
 	val indexNumber: Int? = null,
 	@SerialName("ParentIndexNumber")
@@ -45,17 +53,26 @@ data class EmbyItem(
 	val parentBackdropItemId: String? = null,
 	@SerialName("ParentBackdropImageTags")
 	val parentBackdropImageTags: List<String> = emptyList(),
+	@SerialName("ParentLogoItemId")
+	val parentLogoItemId: String? = null,
+	@SerialName("ParentLogoImageTag")
+	val parentLogoImageTag: String? = null,
+	@SerialName("SeriesPrimaryImageTag")
+	val seriesPrimaryImageTag: String? = null,
+	@SerialName("PremiereDate")
+	val premiereDate: Instant? = null,
+	@SerialName("MediaStreams")
+	val mediaStreams: List<EmbyMediaStream> = emptyList(),
+	@SerialName("People")
+	val people: List<EmbyPerson> = emptyList(),
 	@SerialName("UserData")
 	val userData: EmbyUserData? = null,
 ) {
+	fun isEpisode() = type == "Episode"
+	
 	fun subtitle(): String? = when {
-		type == "Episode" -> listOfNotNull(
-			seriesName,
-			parentIndexNumber?.let { season ->
-				indexNumber?.let { episode -> "SE" }
-			},
-		).joinToString(" · ").ifBlank { null }
-		
+		isEpisode() -> "S${parentIndexNumber.or{ "Unknown" }} Ep $indexNumber"
+		type == "Season" -> "Season $indexNumber"
 		productionYear != null -> productionYear.toString()
 		collectionType != null -> collectionType.replaceFirstChar { it.uppercase() }
 		else -> type.takeIf { it.isNotBlank() }

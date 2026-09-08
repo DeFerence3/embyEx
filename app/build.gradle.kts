@@ -76,4 +76,8 @@ dependencies {
 	implementation(libs.lifecycle.viewmodel.navigation3)
 	
 	implementation(libs.androidx.material3.icons.extended)
+	
+	implementation(libs.koasty)
+	
+	implementation(libs.kotlinx.datetime)
 }

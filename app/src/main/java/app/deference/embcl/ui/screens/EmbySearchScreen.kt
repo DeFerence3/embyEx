@@ -65,7 +65,7 @@ fun SearchContent(
 			delay(350.milliseconds)
 			loading = true
 			error = null
-			runCatching { repository.search(session, query) }
+			runCatching { repository.search(query) }
 				.onSuccess { results = it }
 				.onFailure { error = it.message }
 			loading = false
