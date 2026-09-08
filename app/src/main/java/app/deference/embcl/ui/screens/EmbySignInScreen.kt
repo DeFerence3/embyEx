@@ -1,6 +1,7 @@
 package app.deference.embcl.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,9 +20,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.LiveTv
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -74,15 +79,18 @@ fun EmbySignIn(
 	var manualSignIn by rememberSaveable { mutableStateOf(false) }
 	var busy by remember { mutableStateOf(false) }
 	var error by remember { mutableStateOf<String?>(null) }
-	
-	fun discoverUsers() {
+	var isSearchingLocal by remember { mutableStateOf(false) }
+	var discoveredServers by remember { mutableStateOf<List<app.deference.embcl.domain.model.EmbyUdpServer>>(emptyList()) }
+
+	fun discoverUsers(targetServer: String = server) {
 		if (busy) return
 		error = null
 		busy = true
 		scope.launch {
-			runCatching { repository.discoverServer(server) }
+			runCatching { repository.discoverServer(targetServer) }
 				.onSuccess {
 					discovery = it
+					server = targetServer
 					selectedUser = null
 					manualSignIn = false
 					password = ""
@@ -90,6 +98,32 @@ fun EmbySignIn(
 				.onFailure { error = it.message ?: "Could not connect to the Emby server." }
 			busy = false
 		}
+	}
+
+	fun searchLocalServers() {
+		if (isSearchingLocal) return
+		scope.launch {
+			isSearchingLocal = true
+			val local = runCatching { repository.discoverLocalServers() }.getOrDefault(emptyList())
+			discoveredServers = local
+			isSearchingLocal = false
+			val saved = repository.getSavedServerUrl()
+			if (discovery == null) {
+				if (local.isNotEmpty()) {
+					val matched = saved?.let { s -> local.find { it.address.trimEnd('/') == s.trimEnd('/') } }
+					val target = matched ?: local.first()
+					server = target.address
+					discoverUsers(target.address)
+				} else if (!saved.isNullOrBlank()) {
+					server = saved
+					discoverUsers(saved)
+				}
+			}
+		}
+	}
+
+	androidx.compose.runtime.LaunchedEffect(Unit) {
+		searchLocalServers()
 	}
 	
 	fun signInManually() {
@@ -157,6 +191,48 @@ fun EmbySignIn(
 						"Connect to your Emby server to choose an account.",
 						color = MaterialTheme.colorScheme.onSurfaceVariant,
 					)
+					if (isSearchingLocal) {
+						Row(
+							modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+							verticalAlignment = Alignment.CenterVertically,
+							horizontalArrangement = Arrangement.spacedBy(8.dp),
+						) {
+							CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+							Text("Searching for local Emby servers...", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+						}
+					} else if (discoveredServers.isNotEmpty()) {
+						Column(
+							modifier = Modifier.fillMaxWidth(),
+							verticalArrangement = Arrangement.spacedBy(8.dp),
+						) {
+							Text("Discovered Servers", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+							discoveredServers.forEach { srv ->
+								ElevatedCard(
+									onClick = {
+										server = srv.address
+										discoverUsers(srv.address)
+									},
+									modifier = Modifier.fillMaxWidth(),
+									colors = CardDefaults.elevatedCardColors(
+										containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+									),
+								) {
+									Row(
+										modifier = Modifier.fillMaxWidth().padding(12.dp),
+										verticalAlignment = Alignment.CenterVertically,
+										horizontalArrangement = Arrangement.spacedBy(12.dp),
+									) {
+										Icon(Icons.Filled.Dns, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+										Column(modifier = Modifier.weight(1f)) {
+											Text(srv.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+											Text(srv.address, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+										}
+									}
+								}
+							}
+						}
+					}
+
 					OutlinedTextField(
 						value = server,
 						onValueChange = { server = it },
@@ -164,6 +240,11 @@ fun EmbySignIn(
 						label = { Text("Server address") },
 						placeholder = { Text("http://192.168.1.10:8096") },
 						leadingIcon = { Icon(Icons.Filled.Storage, null) },
+						trailingIcon = {
+							IconButton(onClick = ::searchLocalServers, enabled = !isSearchingLocal) {
+								Icon(Icons.Filled.Refresh, contentDescription = "Scan network")
+							}
+						},
 						singleLine = true,
 						keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
 						keyboardActions = KeyboardActions(onDone = { discoverUsers() }),
@@ -173,7 +254,7 @@ fun EmbySignIn(
 						text = "Continue",
 						busy = busy,
 						enabled = server.isNotBlank(),
-						onClick = ::discoverUsers,
+						onClick = { discoverUsers() },
 					)
 				} else {
 					Row(verticalAlignment = Alignment.CenterVertically) {

@@ -1,6 +1,8 @@
 package app.deference.embcl.data.repository
 
 import app.deference.embcl.core.networking.ApiResponseHandler.safeApiCall
+import app.deference.embcl.core.networking.EmbyMdnsDiscovery
+import app.deference.embcl.core.networking.EmbyUdpDiscovery
 import app.deference.embcl.core.networking.HostSelectionInterceptor
 import app.deference.embcl.core.session.EmbySessionStore
 import app.deference.embcl.data.remote.EmbyApiService
@@ -14,6 +16,7 @@ import app.deference.embcl.domain.model.EmbyPlaybackEvent
 import app.deference.embcl.domain.model.EmbyPlaybackReport
 import app.deference.embcl.domain.model.EmbyServerDiscovery
 import app.deference.embcl.domain.model.EmbySession
+import app.deference.embcl.domain.model.EmbyUdpServer
 import app.deference.embcl.domain.model.EmbyUser
 import app.deference.embcl.domain.repository.EmbyRepository
 import kotlinx.coroutines.async
@@ -28,9 +31,21 @@ class EmbyRepositoryImpl(
 	private val api: EmbyApiService,
 	private val sessionStore: EmbySessionStore,
 	private val hostSelectionInterceptor: HostSelectionInterceptor,
+	private val udpDiscovery: EmbyUdpDiscovery,
+	private val mdnsDiscovery: EmbyMdnsDiscovery,
 ) : EmbyRepository {
 	override suspend fun authenticate(server: String, username: String, password: String): EmbySession =
 		authenticate(discoverServer(server), username, password)
+	
+	override suspend fun discoverLocalServers(): List<EmbyUdpServer> {
+		val udpServers = udpDiscovery.discover()
+		if (udpServers.isNotEmpty()) {
+			return udpServers
+		}
+		return mdnsDiscovery.discover()
+	}
+	
+	override fun getSavedServerUrl(): String? = sessionStore.getLastServerUrl()
 	
 	override suspend fun discoverServer(server: String): EmbyServerDiscovery {
 		val serverUrl = normalizeServer(server)
@@ -41,6 +56,7 @@ class EmbyRepositoryImpl(
 		return try {
 			val publicInfo = safeApiCall { api.publicSystemInfo() }
 			val users = safeApiCall { api.publicUsers() }
+			sessionStore.saveLastServerUrl(serverUrl)
 			EmbyServerDiscovery(serverUrl, publicInfo, users, deviceId)
 		} catch (e: Exception) {
 			hostSelectionInterceptor.hostUrl = serverUrl

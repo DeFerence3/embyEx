@@ -20,9 +20,18 @@ class EmbySessionStore(context: Context) {
   }
 
   fun save(session: EmbySession) {
-    preferences.edit { putString(KEY_SESSION, json.encodeToString(EmbySession.serializer(), session)) }
+    preferences.edit {
+      putString(KEY_SESSION, json.encodeToString(EmbySession.serializer(), session))
+      putString(KEY_LAST_SERVER_URL, session.serverUrl)
+    }
     _session.value = session
   }
+
+  fun saveLastServerUrl(url: String) {
+    preferences.edit { putString(KEY_LAST_SERVER_URL, url) }
+  }
+
+  fun getLastServerUrl(): String? = preferences.getString(KEY_LAST_SERVER_URL, null)
 
   fun clear() {
     preferences.edit().remove(KEY_SESSION).apply()
@@ -36,5 +45,6 @@ class EmbySessionStore(context: Context) {
   private companion object {
     const val KEY_SESSION = "session"
     const val KEY_DEVICE_ID = "device_id"
+    const val KEY_LAST_SERVER_URL = "last_server_url"
   }
 }
