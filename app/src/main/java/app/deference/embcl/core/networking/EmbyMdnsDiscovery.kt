@@ -11,11 +11,13 @@ import app.deference.embcl.domain.model.EmbyUdpServer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import org.koin.core.annotation.Single
 import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import kotlin.time.Duration.Companion.milliseconds
 
+@Single
 class EmbyMdnsDiscovery(
 	private val context: Context,
 ) {

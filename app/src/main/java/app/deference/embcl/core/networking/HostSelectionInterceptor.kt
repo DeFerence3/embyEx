@@ -20,7 +20,7 @@ class HostSelectionInterceptor(
       if (newUrl != null) {
         val updatedUrl = request.url.newBuilder()
           .scheme(newUrl.scheme)
-          .host(newUrl.host)
+          .host(newUrl.host) 
           .port(newUrl.port)
           .build()
         request = request.newBuilder().url(updatedUrl).build()

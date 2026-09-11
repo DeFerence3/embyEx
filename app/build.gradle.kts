@@ -1,8 +1,12 @@
+import java.util.Properties
+
 plugins {
+	alias(libs.plugins.kotzilla)
 	alias(libs.plugins.android.application)
 	alias(libs.plugins.kotlin.compose)
 	alias(libs.plugins.kotlinx.serialization)
 	alias(libs.plugins.ksp)
+	alias(libs.plugins.koin.compiler)
 }
 
 android {
@@ -18,6 +22,22 @@ android {
 		versionCode = 1
 		versionName = "1.0"
 		
+		
+		val properties = Properties().apply {
+			val localPropertiesFile = rootProject.file("local.properties")
+			if (localPropertiesFile.exists()) {
+				localPropertiesFile.inputStream().use { load(it) }
+			}
+		}
+		
+		signingConfigs {
+			all{
+				storePassword = properties.getProperty("storePassword")
+				keyAlias = properties.getProperty("storeKeyAlias")
+				keyPassword = properties.getProperty("storeKeyPassword")
+				storeFile = file(properties.getProperty("storeFile"))
+			}
+		}
 		testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 	}
 	
@@ -28,6 +48,10 @@ android {
 			}
 			isShrinkResources = true
 			isMinifyEnabled = true
+			proguardFiles(
+				getDefaultProguardFile("proguard-android-optimize.txt"),
+				"proguard-rules.pro",
+			)
 		}
 	}
 	compileOptions {
@@ -77,7 +101,8 @@ dependencies {
 	
 	implementation(libs.androidx.material3.icons.extended)
 	
-	implementation(libs.koasty)
+	implementation(libs.androidx.datastore)
+	implementation(libs.androidx.datastore.preferences)
 	
 	implementation(libs.kotlinx.datetime)
 }

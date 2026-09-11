@@ -1,13 +1,14 @@
 package app.deference.embcl.ui.screens
 
-import androidx.navigation3.runtime.NavBackStack
-import androidx.navigation3.runtime.NavKey
 import app.deference.embcl.domain.model.EmbyItem
+import app.deference.embcl.ui.core.nav.Navigator
+import app.deference.embcl.ui.screens.details.EmbyDetailsScreen
+import app.deference.embcl.ui.screens.library.EmbyLibraryScreen
 
-fun openItem(item: EmbyItem, backStack: NavBackStack<NavKey>) {
+fun openItem(item: EmbyItem, backStack: Navigator) {
 	if (item.isFolder || item.type in setOf("Series", "Season", "Folder", "CollectionFolder", "BoxSet")) {
-		backStack.add(EmbyLibraryScreen(item.id, item.name))
+		backStack.goTo(EmbyLibraryScreen(item.id, item.name))
 	} else {
-		backStack.add(EmbyDetailsScreen(item.id))
+		backStack.goTo(EmbyDetailsScreen(item.id))
 	}
 }

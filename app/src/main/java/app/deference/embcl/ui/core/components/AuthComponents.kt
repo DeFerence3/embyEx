@@ -1,4 +1,4 @@
-package app.deference.embcl.ui.components
+package app.deference.embcl.ui.core.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable

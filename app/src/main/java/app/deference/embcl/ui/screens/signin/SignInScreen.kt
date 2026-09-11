@@ -1,7 +1,6 @@
-package app.deference.embcl.ui.screens
+package app.deference.embcl.ui.screens.signin
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -37,120 +36,32 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import app.deference.embcl.domain.model.EmbyServerDiscovery
-import app.deference.embcl.domain.model.EmbyUser
 import app.deference.embcl.domain.repository.EmbyRepository
-import app.deference.embcl.ui.components.PasswordField
-import app.deference.embcl.ui.components.PublicUserCard
-import app.deference.embcl.ui.components.SignInButton
-import app.deference.embcl.ui.components.SignInError
-import app.deference.embcl.ui.core.LocalBackStack
-import app.deference.embcl.ui.core.MainScreen
-import kotlinx.coroutines.launch
+import app.deference.embcl.ui.Screen
+import app.deference.embcl.ui.core.LocalNavigator
+import app.deference.embcl.ui.core.components.ObserveEvent
+import app.deference.embcl.ui.core.components.PasswordField
+import app.deference.embcl.ui.core.components.PublicUserCard
+import app.deference.embcl.ui.core.components.SignInButton
+import app.deference.embcl.ui.core.components.SignInError
+import kotlinx.serialization.Serializable
 import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
-fun EmbySignIn(
+fun SignInContent(
+	state: SignInState,
+	onAction: (SignInAction) -> Unit,
 	repository: EmbyRepository = koinInject(),
-	onLocalFilesClick: () -> Unit = {
-		// Navigate to local files if backStack is provided
-	},
 ) {
-	val backStack = LocalBackStack.current
-	val scope = rememberCoroutineScope()
-	var server by rememberSaveable { mutableStateOf("") }
-	var username by rememberSaveable { mutableStateOf("") }
-	var password by rememberSaveable { mutableStateOf("") }
-	var isPasswordVisible by rememberSaveable { mutableStateOf(false) }
-	var discovery by remember { mutableStateOf<EmbyServerDiscovery?>(null) }
-	var selectedUser by remember { mutableStateOf<EmbyUser?>(null) }
-	var manualSignIn by rememberSaveable { mutableStateOf(false) }
-	var busy by remember { mutableStateOf(false) }
-	var error by remember { mutableStateOf<String?>(null) }
-	var isSearchingLocal by remember { mutableStateOf(false) }
-	var discoveredServers by remember { mutableStateOf<List<app.deference.embcl.domain.model.EmbyUdpServer>>(emptyList()) }
-
-	fun discoverUsers(targetServer: String = server) {
-		if (busy) return
-		error = null
-		busy = true
-		scope.launch {
-			runCatching { repository.discoverServer(targetServer) }
-				.onSuccess {
-					discovery = it
-					server = targetServer
-					selectedUser = null
-					manualSignIn = false
-					password = ""
-				}
-				.onFailure { error = it.message ?: "Could not connect to the Emby server." }
-			busy = false
-		}
-	}
-
-	fun searchLocalServers() {
-		if (isSearchingLocal) return
-		scope.launch {
-			isSearchingLocal = true
-			val local = runCatching { repository.discoverLocalServers() }.getOrDefault(emptyList())
-			discoveredServers = local
-			isSearchingLocal = false
-			val saved = repository.getSavedServerUrl()
-			if (discovery == null) {
-				if (local.isNotEmpty()) {
-					val matched = saved?.let { s -> local.find { it.address.trimEnd('/') == s.trimEnd('/') } }
-					val target = matched ?: local.first()
-					server = target.address
-					discoverUsers(target.address)
-				} else if (!saved.isNullOrBlank()) {
-					server = saved
-					discoverUsers(saved)
-				}
-			}
-		}
-	}
-
-	androidx.compose.runtime.LaunchedEffect(Unit) {
-		searchLocalServers()
-	}
-	
-	fun signInManually() {
-		val current = discovery ?: return
-		if (busy) return
-		error = null
-		busy = true
-		scope.launch {
-			runCatching { repository.authenticate(current, username, password) }
-				.onFailure { error = it.message ?: "Could not sign in to Emby." }
-			busy = false
-		}
-	}
-	
-	fun signInAs(user: EmbyUser, selectedPassword: String = password) {
-		val current = discovery ?: return
-		if (busy) return
-		selectedUser = user
-		error = null
-		busy = true
-		scope.launch {
-			runCatching { repository.authenticate(current, user, selectedPassword) }
-				.onFailure { error = it.message ?: "Could not sign in as ${user.name}." }
-			busy = false
-		}
-	}
-	
 	Column(
 		modifier = Modifier
 			.fillMaxSize()
@@ -184,14 +95,14 @@ fun EmbySignIn(
 						modifier = Modifier.padding(16.dp),
 					)
 				}
-				val currentDiscovery = discovery
+				val currentDiscovery = state.discovery
 				if (currentDiscovery == null) {
 					Text("Welcome to mpvEx", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
 					Text(
 						"Connect to your Emby server to choose an account.",
 						color = MaterialTheme.colorScheme.onSurfaceVariant,
 					)
-					if (isSearchingLocal) {
+					if (state.isSearchingLocal) {
 						Row(
 							modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
 							verticalAlignment = Alignment.CenterVertically,
@@ -200,18 +111,15 @@ fun EmbySignIn(
 							CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
 							Text("Searching for local Emby servers...", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 						}
-					} else if (discoveredServers.isNotEmpty()) {
+					} else if (state.discoveredServers.isNotEmpty()) {
 						Column(
 							modifier = Modifier.fillMaxWidth(),
 							verticalArrangement = Arrangement.spacedBy(8.dp),
 						) {
 							Text("Discovered Servers", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-							discoveredServers.forEach { srv ->
+							state.discoveredServers.forEach { srv ->
 								ElevatedCard(
-									onClick = {
-										server = srv.address
-										discoverUsers(srv.address)
-									},
+									onClick = { onAction(SignInAction.SelectServer(srv.address)) },
 									modifier = Modifier.fillMaxWidth(),
 									colors = CardDefaults.elevatedCardColors(
 										containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
@@ -234,37 +142,33 @@ fun EmbySignIn(
 					}
 
 					OutlinedTextField(
-						value = server,
-						onValueChange = { server = it },
+						value = state.server,
+						onValueChange = { onAction(SignInAction.ServerChanged(it)) },
 						modifier = Modifier.fillMaxWidth(),
 						label = { Text("Server address") },
 						placeholder = { Text("http://192.168.1.10:8096") },
 						leadingIcon = { Icon(Icons.Filled.Storage, null) },
 						trailingIcon = {
-							IconButton(onClick = ::searchLocalServers, enabled = !isSearchingLocal) {
+							IconButton(onClick = { onAction(SignInAction.ScanLocalServers) }, enabled = !state.isSearchingLocal) {
 								Icon(Icons.Filled.Refresh, contentDescription = "Scan network")
 							}
 						},
 						singleLine = true,
 						keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-						keyboardActions = KeyboardActions(onDone = { discoverUsers() }),
+						keyboardActions = KeyboardActions(onDone = { onAction(SignInAction.DiscoverServer) }),
 					)
-					error?.let { SignInError(it) }
+					state.error?.let { SignInError(it) }
 					SignInButton(
 						text = "Continue",
-						busy = busy,
-						enabled = server.isNotBlank(),
-						onClick = { discoverUsers() },
+						busy = state.isBusy,
+						enabled = state.server.isNotBlank(),
+						onClick = { onAction(SignInAction.DiscoverServer) },
 					)
 				} else {
 					Row(verticalAlignment = Alignment.CenterVertically) {
 						IconButton(
 							onClick = {
-								discovery = null
-								selectedUser = null
-								manualSignIn = false
-								error = null
-								password = ""
+								onAction(SignInAction.ChangeServer)
 							},
 						) {
 							Icon(Icons.AutoMirrored.Filled.ArrowBack, "Change server")
@@ -276,29 +180,29 @@ fun EmbySignIn(
 					}
 					
 					when {
-						selectedUser != null -> {
-							val user = selectedUser !!
+						state.selectedUser != null -> {
+							val user = state.selectedUser
 							PublicUserCard(user, currentDiscovery, repository, enabled = false) {}
 							PasswordField(
-								password = password,
-								onPasswordChange = { password = it },
-								visible = isPasswordVisible,
-								onVisibilityChange = { isPasswordVisible = ! isPasswordVisible },
-								onDone = { signInAs(user) },
+								password = state.password,
+								onPasswordChange = { onAction(SignInAction.PasswordChanged(it)) },
+								visible = state.isPasswordVisible,
+								onVisibilityChange = { onAction(SignInAction.TogglePasswordVisibility) },
+								onDone = { onAction(SignInAction.SignInSelectedUser) },
 							)
-							error?.let { SignInError(it) }
-							SignInButton("Sign in", busy, enabled = true) { signInAs(user) }
+							state.error?.let { SignInError(it) }
+							SignInButton("Sign in", state.isBusy, enabled = true) { onAction(SignInAction.SignInSelectedUser) }
 							TextButton(
-								onClick = { selectedUser = null; password = ""; error = null },
+								onClick = { onAction(SignInAction.ChooseAnotherUser) },
 								modifier = Modifier.align(Alignment.CenterHorizontally),
 							) { Text("Choose another user") }
 						}
 						
-						manualSignIn -> {
+						state.isManualSignIn -> {
 							Text("Manual sign in", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
 							OutlinedTextField(
-								value = username,
-								onValueChange = { username = it },
+								value = state.username,
+								onValueChange = { onAction(SignInAction.UsernameChanged(it)) },
 								modifier = Modifier.fillMaxWidth(),
 								label = { Text("Username") },
 								leadingIcon = { Icon(Icons.Filled.AccountCircle, null) },
@@ -306,16 +210,16 @@ fun EmbySignIn(
 								keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
 							)
 							PasswordField(
-								password = password,
-								onPasswordChange = { password = it },
-								visible = isPasswordVisible,
-								onVisibilityChange = { isPasswordVisible = ! isPasswordVisible },
-								onDone = ::signInManually,
+								password = state.password,
+								onPasswordChange = { onAction(SignInAction.PasswordChanged(it)) },
+								visible = state.isPasswordVisible,
+								onVisibilityChange = { onAction(SignInAction.TogglePasswordVisibility) },
+								onDone = { onAction(SignInAction.SignInManually) },
 							)
-							error?.let { SignInError(it) }
-							SignInButton("Sign in", busy, enabled = username.isNotBlank(), onClick = ::signInManually)
+							state.error?.let { SignInError(it) }
+							SignInButton("Sign in", state.isBusy, enabled = state.username.isNotBlank(), onClick = { onAction(SignInAction.SignInManually) })
 							TextButton(
-								onClick = { manualSignIn = false; password = ""; error = null },
+								onClick = { onAction(SignInAction.ShowPublicUsers) },
 								modifier = Modifier.align(Alignment.CenterHorizontally),
 							) { Text("Choose a listed user") }
 						}
@@ -328,24 +232,18 @@ fun EmbySignIn(
 								)
 							} else {
 								currentDiscovery.users.forEach { user ->
-									PublicUserCard(user, currentDiscovery, repository, enabled = ! busy) {
-										password = ""
-										error = null
-										if (user.hasPassword || user.hasConfiguredPassword) {
-											selectedUser = user
-										} else {
-											signInAs(user, "")
-										}
+									PublicUserCard(user, currentDiscovery, repository, enabled = !state.isBusy) {
+										onAction(SignInAction.SelectUser(user))
 									}
 								}
 							}
-							error?.let { SignInError(it) }
+							state.error?.let { SignInError(it) }
 							FilledTonalButton(
-								onClick = { manualSignIn = true; error = null; password = "" },
+								onClick = { onAction(SignInAction.ShowManualSignIn) },
 								modifier = Modifier
 									.fillMaxWidth()
 									.height(52.dp),
-								enabled = ! busy,
+								enabled = !state.isBusy,
 							) {
 								Icon(Icons.Filled.AccountCircle, null)
 								Spacer(Modifier.width(8.dp))
@@ -355,10 +253,7 @@ fun EmbySignIn(
 					}
 				}
 				TextButton(
-					onClick = {
-						onLocalFilesClick()
-						backStack.add(MainScreen)
-					},
+					onClick = { onAction(SignInAction.UseLocalFiles) },
 					modifier = Modifier.align(Alignment.CenterHorizontally),
 				) {
 					Icon(Icons.Filled.Folder, null)
@@ -367,5 +262,25 @@ fun EmbySignIn(
 				}
 			}
 		}
+	}
+}
+
+@Serializable
+data object EmbySignInScreen : Screen {
+	
+	@Composable
+	override fun Content() {
+		val backStack = LocalNavigator.current
+		val viewModel = koinViewModel<SignInViewModel>()
+		val state by viewModel.state.collectAsState()
+		viewModel.events.ObserveEvent { event ->
+			when (event) {
+/*				SignInEvent.OpenLocalFiles -> {
+					backStack.goTo(MainScreen)
+				}*/
+				is SignInEvent.Error -> Unit
+			}
+		}
+		SignInContent(state, viewModel::onAction)
 	}
 }

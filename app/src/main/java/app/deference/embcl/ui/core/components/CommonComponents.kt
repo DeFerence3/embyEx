@@ -1,4 +1,4 @@
-package app.deference.embcl.ui.components
+package app.deference.embcl.ui.core.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,10 +22,17 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -89,5 +96,18 @@ fun EmptyState(title: String, message: String) {
 		Text(title, style = MaterialTheme.typography.titleLarge)
 		Spacer(Modifier.height(6.dp))
 		Text(message, color = MaterialTheme.colorScheme.onSurfaceVariant)
+	}
+}
+
+@Composable
+fun <T> Flow<T>.ObserveEvent(onEvent: suspend (T) -> Unit) {
+	val flow = this
+	val lifecycleOwner = LocalLifecycleOwner.current
+	LaunchedEffect(flow, lifecycleOwner.lifecycle) {
+		lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+			withContext(Dispatchers.Main.immediate) {
+				flow.collect(onEvent)
+			}
+		}
 	}
 }

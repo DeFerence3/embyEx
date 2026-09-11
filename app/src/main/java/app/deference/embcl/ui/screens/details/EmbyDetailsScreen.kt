@@ -1,4 +1,4 @@
-package app.deference.embcl.ui.screens
+package app.deference.embcl.ui.screens.details
 
 import android.content.ActivityNotFoundException
 import android.content.Intent
@@ -32,16 +32,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.produceState
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -52,31 +46,34 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
-import app.deference.embcl.core.session.EmbySessionStore
+import app.deference.embcl.core.utils.asRuntime
 import app.deference.embcl.core.utils.formatToString
 import app.deference.embcl.domain.model.EmbyItem
-import app.deference.embcl.domain.model.EmbyPlaybackEvent
-import app.deference.embcl.domain.model.EmbySession
-import app.deference.embcl.core.utils.asRuntime
 import app.deference.embcl.domain.repository.EmbyRepository
 import app.deference.embcl.ui.Screen
-import app.deference.embcl.ui.components.EmptyState
-import app.deference.embcl.ui.components.LoadState
-import app.deference.embcl.ui.core.LocalBackStack
+import app.deference.embcl.ui.core.LocalNavigator
+import app.deference.embcl.ui.core.components.EmptyState
+import app.deference.embcl.ui.core.components.LoadingScaffold
+import app.deference.embcl.ui.core.components.ObserveEvent
 import coil3.compose.AsyncImage
-import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.parameter.parametersOf
 
 @Serializable
 data class EmbyDetailsScreen(val id: String) : Screen {
 	
 	@Composable
 	override fun Content() {
-		val backStack = LocalBackStack.current
+		val backStack = LocalNavigator.current
+		val viewModel = koinViewModel<EmbyDetailsVM>(parameters = { parametersOf(id) })
+		val state by viewModel.state.collectAsState()
 		DetailsContent(
-			id = id,
-			onBack = { if (backStack.size > 1) backStack.removeAt(backStack.lastIndex) },
+			state = state,
+			events = viewModel.events,
+			onAction = viewModel::onAction,
+			onBack = { backStack.goBack() },
 		)
 	}
 }
@@ -84,58 +81,71 @@ data class EmbyDetailsScreen(val id: String) : Screen {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetailsContent(
-	id: String,
+	state: EmbyDetailsState,
+	events: kotlinx.coroutines.flow.Flow<EmbyDetailsEvent>,
+	onAction: (EmbyDetailsAction) -> Unit,
 	onBack: () -> Unit = {},
+	repository: EmbyRepository = koinInject(),
 ) {
-	val repository = koinInject<EmbyRepository>()
-	val sessionStore = koinInject<EmbySessionStore>()
-	val session by sessionStore.session.collectAsState()
-	val current = session
+	val current = state.session
 	if (current == null) {
 		EmptyState("Signed out", "Return to the Emby home screen to sign in.")
 		return
 	}
-	var reload by remember { mutableIntStateOf(0) }
-	val state by produceState<Result<EmbyItem>?>(null, current, id, reload) {
-		value = runCatching { repository.item(id) }
+	val mpvLauncher = rememberLauncherForActivityResult(
+		contract = ActivityResultContracts.StartActivityForResult(),
+	) { result ->
+		val data = result.data
+		val positionMs = data?.getIntExtra("position", -1)?.takeIf { it >= 0 }?.toLong()
+			?: data?.getLongExtra("position", -1L)?.takeIf { it >= 0L }
+		onAction(EmbyDetailsAction.PlaybackFinished(positionMs))
 	}
-	Scaffold { padding ->
-		LoadState(state, Modifier.padding(padding), onRetry = { reload++ }) { item ->
+	events.ObserveEvent{ event ->
+		when (event) {
+			is EmbyDetailsEvent.Error -> Unit
+			is EmbyDetailsEvent.LaunchPlayback -> {
+				val request = event.request
+				val uris = ArrayList(request.urls.map { it.toUri() })
+				val intent = Intent(Intent.ACTION_VIEW).apply {
+					setDataAndType(uris.getOrNull(request.selectedIndex), "video/*")
+					setClassName("app.marlboroadvance.mpvex", "app.marlboroadvance.mpvex.ui.player.PlayerActivity")
+					putExtra("launch_source", "emby")
+					putExtra("title", request.title)
+					putExtra("emby_item_id", request.itemId)
+					putExtra("position", request.positionMs)
+					putParcelableArrayListExtra("playlist", uris)
+					putExtra("playlist_index", request.selectedIndex)
+					putExtra("headers", arrayOf("User-Agent", "mpvEx", "X-Emby-Token", request.accessToken))
+				}
+				try { mpvLauncher.launch(intent) } catch (_: ActivityNotFoundException) { }
+			}
+		}
+  	}
+
+	LoadingScaffold(
+		state = state.content,
+		onRetry = { onAction(EmbyDetailsAction.Retry) },
+		modifier = Modifier.fillMaxSize(),
+		content = { item ->
 			ItemDetails(
 				item = item,
-				session = current,
 				repository = repository,
 				onBack = onBack,
-				onPlaybackFinished = { reload++ },
+				onPlay = { onAction(EmbyDetailsAction.Play) },
 			)
 		}
-	}
+	)
 }
 
 @Composable
 fun ItemDetails(
 	item: EmbyItem,
-	session: EmbySession,
 	repository: EmbyRepository,
 	onBack: () -> Unit,
-	onPlaybackFinished: () -> Unit,
+	onPlay: () -> Unit,
 ) {
-	val scope = rememberCoroutineScope()
 	val backdrop = repository.imageUrl(item, type = "Primary", maxWidth = 1280)
 	val logoUrl = repository.imageUrl(item, type = "Logo", maxWidth = 600)
-
-	val mpvLauncher = rememberLauncherForActivityResult(
-		contract = ActivityResultContracts.StartActivityForResult(),
-	) { result ->
-		val resultData = result.data
-		val positionMs = resultData?.getIntExtra("position", -1)?.takeIf { it >= 0 }
-			?: resultData?.getLongExtra("position", -1L)?.takeIf { it >= 0L }?.toInt()
-		if (positionMs != null) {
-			val positionTicks = positionMs.toLong() * 10_000L
-			repository.reportPlayback(item.id, positionTicks, EmbyPlaybackEvent.Stopped)
-		}
-		onPlaybackFinished()
-	}
 
 	val videoStream = item.mediaStreams.firstOrNull { it.type == "Video" }
 	val subtitleStreams = item.mediaStreams.filter { it.type == "Subtitle" }.joinToString(" | ") { it.displayLanguage ?: it.displayTitle }
@@ -304,46 +314,7 @@ fun ItemDetails(
 				}
 
 				Button(
-					onClick = {
-						scope.launch {
-							val parentFolderId = item.seasonId ?: item.parentId
-							val siblingItems = if (item.isEpisode() && !parentFolderId.isNullOrBlank()) {
-								runCatching { repository.items(parentFolderId).items }.getOrDefault(listOf(item))
-							} else {
-								listOf(item)
-							}
-
-							val currentIndex = siblingItems.indexOfFirst { it.id == item.id }.coerceAtLeast(0)
-							val playlistUris = ArrayList(siblingItems.map { repository.streamUrl(it).toUri() })
-							val currentUri = playlistUris.getOrNull(currentIndex) ?: repository.streamUrl(item).toUri()
-
-							val mpvPlayerIntent = Intent(Intent.ACTION_VIEW).apply {
-								setDataAndType(currentUri, "video/*")
-								setClassName("app.marlboroadvance.mpvex", "app.marlboroadvance.mpvex.ui.player.PlayerActivity")
-								putExtra("launch_source", "emby")
-								putExtra("title", item.name)
-								putExtra("emby_item_id", item.id)
-								putExtra("position", ((item.userData?.playbackPositionTicks ?: 0L) / 10_000L).toInt())
-								putParcelableArrayListExtra("playlist", playlistUris)
-								putExtra("playlist_index", currentIndex)
-								putExtra(
-									"headers",
-									arrayOf(
-										"User-Agent", "mpvEx",
-										"X-Emby-Token", session.accessToken,
-									),
-								)
-							}
-
-							repository.reportPlayback(item.id, item.userData?.playbackPositionTicks ?: 0L, EmbyPlaybackEvent.Started)
-
-							try {
-								mpvLauncher.launch(mpvPlayerIntent)
-							} catch (e: ActivityNotFoundException) {
-								e.printStackTrace()
-							}
-						}
-					},
+					onClick = onPlay,
 					modifier = Modifier
 						.fillMaxWidth()
 						.height(52.dp),

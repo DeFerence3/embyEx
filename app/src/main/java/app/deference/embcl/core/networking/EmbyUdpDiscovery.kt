@@ -6,11 +6,13 @@ import app.deference.embcl.domain.model.EmbyUdpServer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import org.koin.core.annotation.Single
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
 import java.net.NetworkInterface
 
+@Single
 class EmbyUdpDiscovery(
 	private val context: Context,
 ) {

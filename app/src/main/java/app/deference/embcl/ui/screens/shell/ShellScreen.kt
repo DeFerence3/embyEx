@@ -1,4 +1,4 @@
-package app.deference.embcl.ui.screens
+package app.deference.embcl.ui.screens.shell
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.background
@@ -11,14 +11,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
-import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -29,33 +27,45 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import app.deference.embcl.domain.model.EmbySession
 import app.deference.embcl.domain.repository.EmbyRepository
-import app.deference.embcl.ui.core.LocalBackStack
-import app.deference.embcl.ui.core.MainScreen
+import app.deference.embcl.ui.Screen
+import app.deference.embcl.ui.core.LocalNavigator
+import app.deference.embcl.ui.screens.home.HomeContent
+import app.deference.embcl.ui.screens.home.HomeViewModel
+import app.deference.embcl.ui.screens.libraries.LibrariesContent
+import app.deference.embcl.ui.screens.libraries.LibrariesViewModel
+import app.deference.embcl.ui.screens.library.EmbyLibraryScreen
+import app.deference.embcl.ui.screens.openItem
+import app.deference.embcl.ui.screens.search.SearchContent
+import app.deference.embcl.ui.screens.search.SearchViewModel
 import coil3.compose.AsyncImage
+import kotlinx.serialization.Serializable
 import org.koin.compose.koinInject
-
-enum class EmbyTab { Home, Libraries, Search }
+import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EmbyShell(session: EmbySession) {
+fun EmbyShellContent(
+	session: EmbySession,
+	state: ShellState,
+	onAction: (ShellAction) -> Unit,
+	homeState: app.deference.embcl.ui.screens.home.HomeState,
+	onHomeAction: (app.deference.embcl.ui.screens.home.HomeAction) -> Unit,
+	librariesState: app.deference.embcl.ui.screens.libraries.LibrariesState,
+	onLibrariesAction: (app.deference.embcl.ui.screens.libraries.LibrariesAction) -> Unit,
+	searchState: app.deference.embcl.ui.screens.search.SearchState,
+	onSearchAction: (app.deference.embcl.ui.screens.search.SearchAction) -> Unit,
+) {
 	val repository = koinInject<EmbyRepository>()
-	val backStack = LocalBackStack.current
-	var tabIndex by rememberSaveable { mutableIntStateOf(0) }
-	var menuExpanded by remember { mutableStateOf(false) }
-	val tab = EmbyTab.entries[tabIndex]
+	val backStack = LocalNavigator.current
+	val tab = state.selectedTab
 	
 	Scaffold(
 		contentWindowInsets = WindowInsets.navigationBars,
@@ -75,7 +85,7 @@ fun EmbyShell(session: EmbySession) {
 				},
 				actions = {
 					Box {
-						IconButton(onClick = { menuExpanded = true }) {
+						IconButton(onClick = { onAction(ShellAction.SetAccountMenuOpen(true)) }) {
 							AsyncImage(
 								model = repository.userImageUrl(),
 								contentDescription = "Account",
@@ -86,22 +96,12 @@ fun EmbyShell(session: EmbySession) {
 								contentScale = ContentScale.Crop,
 							)
 						}
-						DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
-							DropdownMenuItem(
-								text = { Text("Local files") },
-								leadingIcon = { Icon(Icons.Filled.Folder, null) },
-								onClick = {
-									menuExpanded = false
-									backStack.add(MainScreen)
-								},
-							)
-							HorizontalDivider()
+						DropdownMenu(expanded = state.isAccountMenuOpen, onDismissRequest = { onAction(ShellAction.SetAccountMenuOpen(false)) }) {
 							DropdownMenuItem(
 								text = { Text("Sign out") },
 								leadingIcon = { Icon(Icons.AutoMirrored.Filled.Logout, null) },
 								onClick = {
-									menuExpanded = false
-									repository.logout()
+									onAction(ShellAction.SignOut)
 								},
 							)
 						}
@@ -114,19 +114,19 @@ fun EmbyShell(session: EmbySession) {
 			NavigationBar {
 				NavigationBarItem(
 					selected = tab == EmbyTab.Home,
-					onClick = { tabIndex = 0 },
+					onClick = { onAction(ShellAction.SelectTab(EmbyTab.Home)) },
 					icon = { Icon(Icons.Filled.Home, null) },
 					label = { Text("Home") },
 				)
 				NavigationBarItem(
 					selected = tab == EmbyTab.Libraries,
-					onClick = { tabIndex = 1 },
+					onClick = { onAction(ShellAction.SelectTab(EmbyTab.Libraries)) },
 					icon = { Icon(Icons.Filled.VideoLibrary, null) },
 					label = { Text("Libraries") },
 				)
 				NavigationBarItem(
 					selected = tab == EmbyTab.Search,
-					onClick = { tabIndex = 2 },
+					onClick = { onAction(ShellAction.SelectTab(EmbyTab.Search)) },
 					icon = { Icon(Icons.Filled.Search, null) },
 					label = { Text("Search") },
 				)
@@ -137,26 +137,59 @@ fun EmbyShell(session: EmbySession) {
 			when (selected) {
 				EmbyTab.Home -> HomeContent(
 					session = session,
+					state = homeState,
+					onAction = onHomeAction,
 					modifier = Modifier.padding(padding),
 					repository = repository,
 					onItemClick = { item -> openItem(item, backStack) },
-					onLibraryClick = { lib -> backStack.add(EmbyLibraryScreen(lib.id, lib.name)) },
+					onLibraryClick = { lib -> backStack.goTo(EmbyLibraryScreen(lib.id, lib.name)) },
 				)
 				
 				EmbyTab.Libraries -> LibrariesContent(
 					session = session,
+					state = librariesState,
+					onAction = onLibrariesAction,
 					modifier = Modifier.padding(padding),
 					repository = repository,
-					onLibraryClick = { lib -> backStack.add(EmbyLibraryScreen(lib.id, lib.name)) },
+					onLibraryClick = { lib -> backStack.goTo(EmbyLibraryScreen(lib.id, lib.name)) },
 				)
 				
 				EmbyTab.Search -> SearchContent(
 					session = session,
+					state = searchState,
+					onAction = onSearchAction,
 					modifier = Modifier.padding(padding),
 					repository = repository,
 					onItemClick = { item -> openItem(item, backStack) },
 				)
 			}
 		}
+	}
+}
+
+@Serializable
+data class EmbyShellScreen(private val session: EmbySession) : Screen {
+	
+	@Composable
+	override fun Content() {
+		val shellViewModel = koinViewModel<ShellViewModel>()
+		val homeViewModel = koinViewModel<HomeViewModel>()
+		val librariesViewModel = koinViewModel<LibrariesViewModel>()
+		val searchViewModel = koinViewModel<SearchViewModel>()
+		val shellState by shellViewModel.state.collectAsState()
+		val homeState by homeViewModel.state.collectAsState()
+		val librariesState by librariesViewModel.state.collectAsState()
+		val searchState by searchViewModel.state.collectAsState()
+		EmbyShellContent(
+			session = session,
+			state = shellState,
+			onAction = shellViewModel::onAction,
+			homeState = homeState,
+			onHomeAction = homeViewModel::onAction,
+			librariesState = librariesState,
+			onLibrariesAction = librariesViewModel::onAction,
+			searchState = searchState,
+			onSearchAction = searchViewModel::onAction,
+		)
 	}
 }

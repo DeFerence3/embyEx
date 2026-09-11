@@ -1,39 +1,31 @@
-package app.deference.embcl.ui.screens
+package app.deference.embcl.ui.screens.home
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.produceState
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import app.deference.embcl.domain.model.EmbyHome
 import app.deference.embcl.domain.model.EmbyItem
 import app.deference.embcl.domain.model.EmbySession
 import app.deference.embcl.domain.repository.EmbyRepository
-import app.deference.embcl.ui.components.EmptyState
-import app.deference.embcl.ui.components.LibraryRow
-import app.deference.embcl.ui.components.LoadState
-import app.deference.embcl.ui.components.MediaRow
+import app.deference.embcl.ui.core.components.EmptyState
+import app.deference.embcl.ui.core.components.LibraryRow
+import app.deference.embcl.ui.core.components.LoadState
+import app.deference.embcl.ui.core.components.MediaRow
 
 @Composable
 fun HomeContent(
 	session: EmbySession,
+	state: HomeState,
+	onAction: (HomeAction) -> Unit,
 	modifier: Modifier = Modifier,
 	repository: EmbyRepository,
 	onItemClick: (EmbyItem) -> Unit,
 	onLibraryClick: (EmbyItem) -> Unit,
 ) {
-	var reload by remember { mutableIntStateOf(0) }
-	val state by produceState<Result<EmbyHome>?>(null, session, reload) {
-		value = runCatching { repository.home() }
-	}
-	LoadState(state, modifier, onRetry = { reload ++ }) { home ->
+	LoadState(state.content, modifier, onRetry = { onAction(HomeAction.Retry) }) { home ->
 		LazyColumn(
 			modifier = Modifier.fillMaxSize(),
 			contentPadding = PaddingValues(vertical = 12.dp),

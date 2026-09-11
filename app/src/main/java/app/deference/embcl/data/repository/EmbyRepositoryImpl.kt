@@ -23,10 +23,12 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import org.koin.core.annotation.Single
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
+@Single
 class EmbyRepositoryImpl(
 	private val api: EmbyApiService,
 	private val sessionStore: EmbySessionStore,

@@ -1,4 +1,5 @@
 [versions]
+kotzilla = "2.3.5"
 agp = "9.4.0"
 coreKtx = "1.19.0"
 junit = "4.13.2"
@@ -6,15 +7,14 @@ junitVersion = "1.3.0"
 espressoCore = "3.7.0"
 lifecycleRuntimeKtx = "2.11.0"
 activityCompose = "1.13.0"
-kotlin = "2.4.10"
-composeBom = "2026.08.00"
+kotlin = "2.4.0"
+composeBom = "2026.09.00"
 
 room = "2.8.4"
 
 retrofit = "3.0.0"
 retrofit2-kotlin-coroutines-adapter = "0.9.2"
 logging-interceptor = "5.5.0"
-converter-moshi = "2.9.0"
 retrofit2KotlinxSerializationConverter = "1.0.0"
 converterKotlinxSerialization = "3.0.0"
 
@@ -24,10 +24,14 @@ androidx-nav3 = "1.2.0-alpha02"
 coil = "3.6.2"
 
 koin-bom = "4.2.2"
+koin-plugin = "1.1.0"
 
 koasty = "0.0.1"
 
+datastore = "1.2.1"
+
 [libraries]
+kotzilla-sdk-compose = { group = "io.kotzilla", name = "kotzilla-sdk-compose", version.ref = "kotzilla" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
@@ -43,7 +47,7 @@ androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-
 androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
 androidx-compose-material3-adaptive-navigation-suite = { group = "androidx.compose.material3", name = "material3-adaptive-navigation-suite" }
-androidx-material3-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended", version = "1.7.8" }
+androidx-material3-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended" }
 
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
 logging-interceptor = { module = "com.squareup.okhttp3:logging-interceptor", version.ref = "logging-interceptor" }
@@ -61,6 +65,7 @@ koin-android = { module = "io.insert-koin:koin-android" }
 koin-androidx-compose = { module = "io.insert-koin:koin-androidx-compose" }
 koin-compose = { module = "io.insert-koin:koin-compose" }
 koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel" }
+koin-annotations = { module = "io.insert-koin:koin-annotations" }
 
 compose-nav3 = { module = "org.jetbrains.androidx.navigation3:navigation3-ui", version.ref = "androidx-nav3" }
 lifecycle-viewmodel-navigation3 = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "androidx-lifecycle" }
@@ -68,11 +73,16 @@ lifecycle-viewmodel-navigation3 = { module = "org.jetbrains.androidx.lifecycle:l
 koasty = { module = "io.github.deference3:koasty", version.ref = "koasty" }
 
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version = "0.8.0" }
+
+androidx-datastore = { module = "androidx.datastore:datastore", version.ref = "datastore" }
+androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
+
 [plugins]
+kotzilla = { id = "io.kotzilla.kotzilla-plugin", version.ref = "kotzilla" }
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version = "2.3.9" }
-room = { id = "androidx.room", version.ref = "room" }
+koin-compiler = { id = "io.insert-koin.compiler.plugin", version.ref = "koin-plugin" }
 kotlinx-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 
 [bundles]
@@ -87,5 +97,6 @@ koin = [
     "koin-android",
     "koin-androidx-compose",
     "koin-compose",
+    "koin-annotations",
     "koin-compose-viewmodel"
 ]

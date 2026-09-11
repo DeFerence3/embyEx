@@ -2,6 +2,7 @@ package app.deference.embcl.core.di
 
 import app.deference.embcl.core.networking.AuthInterceptor
 import app.deference.embcl.core.networking.HostSelectionInterceptor
+import app.deference.embcl.core.session.EmbySessionStore
 import app.deference.embcl.data.remote.EmbyApiService
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
@@ -17,11 +18,12 @@ val networkModule = module {
 	single { AuthInterceptor(get()) }
 	single {
 		HttpLoggingInterceptor().apply {
-			level = HttpLoggingInterceptor.Level.BODY
+			level = HttpLoggingInterceptor.Level.BASIC
 		}
 	}
+	factory { OkHttpClient.Builder() }
 	single {
-		OkHttpClient.Builder()
+		get<OkHttpClient.Builder>()
 			.connectTimeout(30, TimeUnit.SECONDS)
 			.readTimeout(30, TimeUnit.SECONDS)
 			.writeTimeout(30, TimeUnit.SECONDS)
@@ -31,6 +33,8 @@ val networkModule = module {
 			.build()
 	}
 	single {
+		val sessionStore = get<EmbySessionStore>()
+		val url = sessionStore.getLastServerUrl() ?: "http://localhost:8096/"
 		val json = Json {
 			ignoreUnknownKeys = true
 			encodeDefaults = true
@@ -38,7 +42,7 @@ val networkModule = module {
 			coerceInputValues = true
 		}
 		Retrofit.Builder()
-			.baseUrl("http://localhost:8096/")
+			.baseUrl(url)
 			.client(get())
 			.addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
 			.build()

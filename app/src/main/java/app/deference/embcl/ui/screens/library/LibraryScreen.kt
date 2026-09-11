@@ -1,4 +1,4 @@
-package app.deference.embcl.ui.screens
+package app.deference.embcl.ui.screens.library
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
@@ -14,35 +14,35 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.produceState
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import app.deference.embcl.core.session.EmbySessionStore
 import app.deference.embcl.domain.model.EmbyItem
-import app.deference.embcl.domain.model.EmbyItemsResult
 import app.deference.embcl.domain.repository.EmbyRepository
 import app.deference.embcl.ui.Screen
-import app.deference.embcl.ui.components.DetailTopBar
-import app.deference.embcl.ui.components.EmptyState
-import app.deference.embcl.ui.components.LoadState
-import app.deference.embcl.ui.components.MediaCard
-import app.deference.embcl.ui.core.LocalBackStack
+import app.deference.embcl.ui.core.LocalNavigator
+import app.deference.embcl.ui.core.components.DetailTopBar
+import app.deference.embcl.ui.core.components.EmptyState
+import app.deference.embcl.ui.core.components.LoadState
+import app.deference.embcl.ui.core.components.MediaCard
+import app.deference.embcl.ui.screens.openItem
 import kotlinx.serialization.Serializable
 import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.parameter.parametersOf
 
 @Serializable
 data class EmbyLibraryScreen(val id: String, val title: String) : Screen {
 	
 	@Composable
 	override fun Content() {
-		val backStack = LocalBackStack.current
+		val backStack = LocalNavigator.current
+		val viewModel = koinViewModel<LibraryViewModel>(parameters = { parametersOf(id) })
+		val state by viewModel.state.collectAsState()
 		LibraryContent(
-			id = id,
 			title = title,
-			onBack = { if (backStack.size > 1) backStack.removeAt(backStack.lastIndex) },
+			state = state,
+			onAction = viewModel::onAction,
+			onBack = { backStack.goBack() },
 			onItemClick = { item -> openItem(item, backStack) },
 		)
 	}
@@ -51,22 +51,17 @@ data class EmbyLibraryScreen(val id: String, val title: String) : Screen {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LibraryContent(
-	id: String,
 	title: String,
+	state: LibraryState,
+	onAction: (LibraryAction) -> Unit,
 	onBack: () -> Unit = {},
 	onItemClick: (EmbyItem) -> Unit = {},
+	repository: EmbyRepository = koinInject(),
 ) {
-	val repository = koinInject<EmbyRepository>()
-	val sessionStore = koinInject<EmbySessionStore>()
-	val session by sessionStore.session.collectAsState()
-	val current = session
+	val current = state.session
 	if (current == null) {
 		EmptyState("Signed out", "Return to the Emby home screen to sign in.")
 		return
-	}
-	var reload by remember { mutableIntStateOf(0) }
-	val state by produceState<Result<EmbyItemsResult>?>(null, current, id, reload) {
-		value = runCatching { repository.items(id) }
 	}
 	Scaffold(
 		topBar = {
@@ -75,7 +70,7 @@ fun LibraryContent(
 			}
 		},
 	) { padding ->
-		LoadState(state, Modifier.padding(padding), onRetry = { reload ++ }) { result ->
+		LoadState(state.content, Modifier.padding(padding), onRetry = { onAction(LibraryAction.Retry) }) { result ->
 			if (result.items.isEmpty()) {
 				EmptyState("Nothing here", "This library does not contain any visible media.")
 			} else {
