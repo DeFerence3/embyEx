@@ -8,7 +8,7 @@ data class EmbyMediaStream(
 	@SerialName("Type")
 	val type: String? = null,
 	@SerialName("DisplayTitle")
-	val displayTitle: String,
+	val displayTitle: String? = null,
 	@SerialName("DisplayLanguage")
 	val displayLanguage: String? = null,
 	@SerialName("Language")

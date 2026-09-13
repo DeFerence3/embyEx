@@ -3,6 +3,7 @@ package app.deference.embcl.ui.screens.signin
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.deference.embcl.domain.model.EmbyUser
+import app.deference.embcl.domain.repository.AuthRepo
 import app.deference.embcl.domain.repository.EmbyRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,7 +13,10 @@ import kotlinx.coroutines.launch
 import org.koin.core.annotation.KoinViewModel
 
 @KoinViewModel
-class SignInViewModel(private val repository: EmbyRepository) : ViewModel() {
+class SignInViewModel(
+	private val repository: EmbyRepository,
+	private val authRepo: AuthRepo
+) : ViewModel() {
 	private val _state = MutableStateFlow(SignInState())
 	val state = _state.asStateFlow()
 	private val _events = Channel<SignInEvent>(Channel.BUFFERED)
@@ -44,12 +48,12 @@ class SignInViewModel(private val repository: EmbyRepository) : ViewModel() {
 			SignInAction.UseLocalFiles -> viewModelScope.launch { /*_events.send(SignInEvent.OpenLocalFiles)*/ }
 		}
 	}
-
+	
 	private fun discoverServer(address: String) {
 		if (_state.value.isBusy || address.isBlank()) return
 		update { it.copy(isBusy = true, error = null) }
 		viewModelScope.launch {
-			runCatching { repository.discoverServer(address) }
+			runCatching { authRepo.discoverServer(address) }
 				.onSuccess { discovery ->
 					update {
 						it.copy(
@@ -70,7 +74,7 @@ class SignInViewModel(private val repository: EmbyRepository) : ViewModel() {
 		if (_state.value.isSearchingLocal) return
 		update { it.copy(isSearchingLocal = true) }
 		viewModelScope.launch {
-			val local = runCatching { repository.discoverLocalServers() }.getOrDefault(emptyList())
+			val local = runCatching { authRepo.discoverLocalServers() }.getOrDefault(emptyList())
 			val saved = repository.getSavedServerUrl()
 			update { it.copy(discoveredServers = local, isSearchingLocal = false) }
 			if (_state.value.discovery == null) {
@@ -101,7 +105,7 @@ class SignInViewModel(private val repository: EmbyRepository) : ViewModel() {
 		if (_state.value.isBusy || _state.value.username.isBlank()) return
 		update { it.copy(isBusy = true, error = null) }
 		viewModelScope.launch {
-			runCatching { repository.authenticate(discovery, _state.value.username, _state.value.password) }
+			runCatching { authRepo.authenticate(discovery, _state.value.username, _state.value.password) }
 				.onSuccess { update { it.copy(isBusy = false) } }
 				.onFailure { fail(it, "Could not sign in to Emby.") }
 		}
@@ -112,7 +116,7 @@ class SignInViewModel(private val repository: EmbyRepository) : ViewModel() {
 		if (_state.value.isBusy) return
 		update { it.copy(selectedUser = user, isBusy = true, error = null) }
 		viewModelScope.launch {
-			runCatching { repository.authenticate(discovery, user, password) }
+			runCatching { authRepo.authenticate(discovery, user, password) }
 				.onSuccess { update { it.copy(isBusy = false) } }
 				.onFailure { fail(it, "Could not sign in as ${user.name}.") }
 		}

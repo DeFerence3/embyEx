@@ -9,12 +9,7 @@ import app.deference.embcl.domain.model.EmbySession
 import app.deference.embcl.domain.model.EmbyUser
 
 interface EmbyRepository {
-	suspend fun authenticate(server: String, username: String, password: String): EmbySession
-	suspend fun discoverServer(server: String): EmbyServerDiscovery
-	suspend fun discoverLocalServers(): List<app.deference.embcl.domain.model.EmbyUdpServer>
 	fun getSavedServerUrl(): String?
-	suspend fun authenticate(discovery: EmbyServerDiscovery, username: String, password: String): EmbySession
-	suspend fun authenticate(discovery: EmbyServerDiscovery, user: EmbyUser, password: String): EmbySession
 	fun publicUserImageUrl(discovery: EmbyServerDiscovery, user: EmbyUser): String?
 	suspend fun home(): EmbyHome
 	suspend fun libraries(): List<EmbyItem>

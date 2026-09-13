@@ -148,12 +148,12 @@ fun ItemDetails(
 	val logoUrl = repository.imageUrl(item, type = "Logo", maxWidth = 600)
 
 	val videoStream = item.mediaStreams.firstOrNull { it.type == "Video" }
-	val subtitleStreams = item.mediaStreams.filter { it.type == "Subtitle" }.joinToString(" | ") { it.displayLanguage ?: it.displayTitle }
+	val subtitleStreams = item.mediaStreams.filter { it.type == "Subtitle" }.joinToString(" | ") { it.displayLanguage ?: it.displayTitle ?: "" }
 	
 	val videoResolution = videoStream?.displayTitle
 		?: item.container?.uppercase()
 		?: "HD"
-	val audioTitle = item.mediaStreams.filter { it.type == "Audio" }.joinToString(" | ") { it.displayLanguage ?: it.displayTitle }
+	val audioTitle = item.mediaStreams.filter { it.type == "Audio" }.joinToString(" | ") { it.displayLanguage ?: it.displayTitle ?: "" }
 
 
 	val runTimeText = item.runTimeTicks?.asRuntime()

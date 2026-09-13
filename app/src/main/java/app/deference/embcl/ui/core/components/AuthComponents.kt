@@ -87,7 +87,15 @@ fun PublicUserCard(
 			}
 			Spacer(Modifier.width(14.dp))
 			Column(Modifier.weight(1f)) {
-				Text(user.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+				Text(
+					modifier = Modifier
+						.semantics {
+							contentType = ContentType.Username
+						},
+					text = user.name,
+					style = MaterialTheme.typography.titleMedium,
+					fontWeight = FontWeight.SemiBold
+				)
 				if (user.hasPassword || user.hasConfiguredPassword) {
 					Text("Password required", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 				}
