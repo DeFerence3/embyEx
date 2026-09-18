@@ -1,12 +1,12 @@
 package app.deference.embcl.data.repository
 
-import app.deference.embcl.core.networking.ApiResponseHandler.safeApiCall
 import app.deference.embcl.core.networking.EmbyMdnsDiscovery
 import app.deference.embcl.core.networking.EmbyUdpDiscovery
 import app.deference.embcl.core.networking.dontIntercept
 import app.deference.embcl.core.session.Server
 import app.deference.embcl.core.session.Session
 import app.deference.embcl.core.utils.HttpScheme
+import app.deference.embcl.core.utils.NetworkUtils.safeApiCall
 import app.deference.embcl.core.utils.toUrl
 import app.deference.embcl.domain.model.EmbyServer
 import app.deference.embcl.domain.model.EmbyServerDiscovery
@@ -27,13 +27,15 @@ class ServerFinderRepoImpl(
 ) : ServerFinderRepo {
 	
 	override suspend fun searchForLocallyRunningServers(): List<EmbyServer> {
-		//first check for emby's inbuilt udp discovery
+		/** first check for emby's inbuilt udp discovery */
 		val udpServers = udpDiscovery.discover()
 		if (udpServers.isNotEmpty()) {
 			return udpServers
 		}
-		//if not found try mdns discovery, a 3rd party discovery service
-		// https://github.com/DeFerence3/emby-mDNS
+		/**
+		 * if not found try mdns discovery, a 3rd party discovery service
+		 * https:https://github.com/DeFerence3/emby-mDNS
+		 * */
 		return mdnsDiscovery.discover()
 	}
 	
@@ -48,7 +50,6 @@ class ServerFinderRepoImpl(
 						port = serverUrl.port
 					)
 				}.body<PublicSystemInfo>()
-//				api.publicSystemInfo()
 			}
 			val users = safeApiCall {
 				httpClient.get("/Users/Public") {
@@ -57,14 +58,13 @@ class ServerFinderRepoImpl(
 						port = serverUrl.port
 					)
 				}.body<List<EmbyUser>>()
-//				api.publicUsers()
 			}
 			val server = Server(
 				host = serverUrl.host,
 				port = serverUrl.port,
 				scheme = HttpScheme.fromHttpUrl(serverUrl)
 			)
-			EmbyServerDiscovery(server,publicInfo, users, deviceId)
+			EmbyServerDiscovery(server, publicInfo, users, deviceId)
 		} catch (e: Exception) {
 			throw e
 		}

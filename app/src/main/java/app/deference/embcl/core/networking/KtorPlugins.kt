@@ -1,6 +1,5 @@
 package app.deference.embcl.core.networking
 
-import android.os.Build
 import app.deference.embcl.BuildConfig
 import app.deference.embcl.core.session.Session
 import app.deference.embcl.core.session.Session.deviceId
@@ -22,9 +21,7 @@ import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.accept
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
-import io.ktor.http.HeadersBuilder
 import io.ktor.http.contentType
-import io.ktor.http.headers
 import io.ktor.http.userAgent
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.util.AttributeKey
@@ -38,7 +35,7 @@ val DONT_INTERCEPT = AttributeKey<Boolean>("DONT_INTERCEPT")
  */
 fun HttpRequestBuilder.dontIntercept(
 	host: String,
-	port: Int
+	port: Int,
 ) {
 	url {
 		this.host = host
@@ -51,12 +48,12 @@ fun HttpClient.invalidateAuthTokens() {
 	authProvider<BearerAuthProvider>()?.clearToken()
 }
 
-fun HttpClient.urlInterceptor(){
+fun HttpClient.urlInterceptor() {
 	plugin(HttpSend).intercept { request ->
 		val dontIntercept = request.attributes.getOrNull(DONT_INTERCEPT)
-		val proccessedRequest = if (dontIntercept == true){
+		val proccessedRequest = if (dontIntercept == true) {
 			request
-		}else{
+		} else {
 			val dynamicBase = Session.serverUrl.toHttpUrl()
 			request.url.host = dynamicBase.host
 			request.url.port = dynamicBase.port
@@ -88,15 +85,13 @@ fun HttpClientConfig<*>.configureDefaultRequest(userAgent: UserAgentProvider) {
 				append(", UserId=\"${Session.userId}\"")
 				Session.accessToken?.let { append(", Token=\"$it\"") }
 			}
-			val singleString =
-				"Emby UserId=\"${Session.userId}\", Client=\"Mpv-Android\", Device=\"${Build.DEVICE}\", DeviceId=\"${deviceId}\", Version=\"${BuildConfig.VERSION_NAME}\""
 			
 			append("Emby-Client", "mpvEx")
 			append("Device", "Android")
 			append("DeviceId", deviceId)
 			append("Version", BuildConfig.VERSION_NAME)
 			append("UserId", Session.userId)
-			append("X-Emby-Authorization", singleString)
+			append("X-Emby-Authorization", authHeader)
 			Session.accessToken?.let { append("X-Emby-Token", it) }
 		}
 	}
@@ -135,30 +130,6 @@ fun HttpClientConfig<*>.configureAuth() {
 					BearerTokens(it, null)
 				}
 			}
-		}
-		
-		headers {
-			val authHeader = buildString {
-				append("Emby Client=\"mpvEx\", Device=\"Android\", DeviceId=\"")
-				append(deviceId)
-				append("\", Version=\"")
-				append(BuildConfig.VERSION_NAME)
-				append('"')
-				append(", UserId=\"${Session.userId}\"")
-				Session.accessToken?.let { append(", Token=\"$it\"") }
-			}
-			val singleString =
-				"Emby UserId=\"${Session.userId}\", Client=\"Mpv-Android\", Device=\"${Build.DEVICE}\", DeviceId=\"${deviceId}\", Version=\"${BuildConfig.VERSION_NAME}\""
-			
-			HeadersBuilder().apply {
-				append("Emby-Client", "mpvEx")
-				append("Device", "Android")
-				append("DeviceId", deviceId)
-				append("Version", BuildConfig.VERSION_NAME)
-				append("UserId", Session.userId)
-				append("X-Emby-Authorization", singleString)
-				Session.accessToken?.let { append("X-Emby-Token", it) }
-			}.build()
 		}
 	}
 }

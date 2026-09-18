@@ -1,12 +1,13 @@
-package app.deference.embcl.core.networking
+package app.deference.embcl.core.utils
 
+import app.deference.embcl.core.networking.DataState
 import app.deference.embcl.core.networking.ResponseHandler.toDataState
 import io.ktor.client.statement.HttpResponse
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.serialization.SerializationException
 import java.io.IOException
 
-object ApiResponseHandler {
+object NetworkUtils {
 	
 	suspend fun <T> safeApiCall(call: suspend () -> T): T = try {
 		call()
@@ -17,15 +18,7 @@ object ApiResponseHandler {
 	} catch (e: IOException) {
 		throw IOException(e.message ?: "Unable to connect to Emby server. Check address.", e)
 	}
-	/*	suspend inline fun <T> safeDataState(
-			crossinline apiCall: suspend () -> DataState<T>
-		): DataState<T> {
-			return runCatching {
-				apiCall()
-			}.getOrElse { e ->
-				handleException(e)
-			}
-		}*/
+	
 	suspend inline fun <reified T> safeDataState(
 		crossinline call: suspend () -> HttpResponse,
 	): DataState<T> {

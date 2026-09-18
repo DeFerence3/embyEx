@@ -1,7 +1,7 @@
 package app.deference.embcl.data.repository
 
-import app.deference.embcl.core.networking.ApiResponseHandler.safeApiCall
 import app.deference.embcl.core.session.Session
+import app.deference.embcl.core.utils.NetworkUtils.safeApiCall
 import app.deference.embcl.core.utils.toUrl
 import app.deference.embcl.domain.model.EmbyHome
 import app.deference.embcl.domain.model.EmbyItem
@@ -31,9 +31,7 @@ import org.koin.core.annotation.Single
 class EmbyRepositoryImpl(
 	private val httpClient: HttpClient,
 ) : EmbyRepository {
-	/*	val ession by lazy {
-			sessionStore.Session.value ?: throw IllegalStateException("No Session found")
-		}*/
+	
 	override fun getSavedServerUrl(): String? = Session.getLastServerUrl()
 	
 	override fun publicUserImageUrl(discovery: EmbyServerDiscovery, user: EmbyUser): String? {
@@ -59,17 +57,6 @@ class EmbyRepositoryImpl(
 						"ImageTypeLimit" to "1",
 					).forEach { (key, value) -> parameter(key, value) }
 				}.body<EmbyItemsResult>()
-				/*api.resumeItems(
-					userId = Session.userId,
-					options = mapOf(
-						"Limit" to "20",
-						"MediaTypes" to "Video",
-						"Fields" to ITEM_FIELDS,
-						"EnableImages" to "true",
-						"EnableUserData" to "true",
-						"ImageTypeLimit" to "1",
-					),
-				)*/
 			}.items
 		}
 		val latest = async {
@@ -84,17 +71,6 @@ class EmbyRepositoryImpl(
 						"ImageTypeLimit" to "1",
 					).forEach { (key, value) -> parameter(key, value) }
 				}.body<List<EmbyItem>>()
-				/*api.latestItems(
-					userId = Session.userId,
-					options = mapOf(
-						"Limit" to "24",
-						"IncludeItemTypes" to "Movie,Episode",
-						"Fields" to ITEM_FIELDS,
-						"EnableImages" to "true",
-						"EnableUserData" to "true",
-						"ImageTypeLimit" to "1",
-					),
-				)*/
 			}
 		}
 		EmbyHome(views.await(), resume.await(), latest.await())
@@ -104,12 +80,6 @@ class EmbyRepositoryImpl(
 		httpClient.get("/Users/${Session.userId}/Views") {
 			parameter("IncludeExternalContent", false)
 		}.body<EmbyItemsResult>().items
-		/*return safeApiCall {
-			api.userViews(
-				userId = Session.userId,
-				options = mapOf("IncludeExternalContent" to "false"),
-			)
-		}.items*/
 	}
 	
 	override suspend fun items(
@@ -124,26 +94,11 @@ class EmbyRepositoryImpl(
 					"Limit" to "100",
 					"SortBy" to "SortName",
 					"SortOrder" to "Ascending",
-					//"Fields" to ITEM_FIELDS,
 					"EnableImages" to "true",
 					"EnableUserData" to "true",
 					"ImageTypeLimit" to "1",
 				).forEach { (name, value) -> parameter(name, value) }
 			}.body<EmbyItemsResult>()
-			/*api.userItems(
-				userId = Session.userId,
-				options = mapOf(
-					"ParentId" to parentId,
-					"StartIndex" to startIndex.toString(),
-					"Limit" to "100",
-					"SortBy" to "SortName",
-					"SortOrder" to "Ascending",
-					//"Fields" to ITEM_FIELDS,
-					"EnableImages" to "true",
-					"EnableUserData" to "true",
-					"ImageTypeLimit" to "1",
-				),
-			)*/
 		}
 	}
 	
@@ -162,19 +117,6 @@ class EmbyRepositoryImpl(
 					"ImageTypeLimit" to "1",
 				).forEach { (name, value) -> parameter(name, value) }
 			}.body<EmbyItemsResult>()
-			/*api.userItems(
-				userId = Session.userId,
-				options = mapOf(
-					"SearchTerm" to term.trim(),
-					"Recursive" to "true",
-					"Limit" to "60",
-					"IncludeItemTypes" to "Movie,Series,Season,Episode,Video",
-					"Fields" to ITEM_FIELDS,
-					"EnableImages" to "true",
-					"EnableUserData" to "true",
-					"ImageTypeLimit" to "1",
-				),
-			)*/
 		}.items
 	}
 	
@@ -183,10 +125,6 @@ class EmbyRepositoryImpl(
 			httpClient
 				.get("/Users/${Session.userId}/Items/${id}")
 				.body<EmbyItem>()
-			/*api.item(
-				userId = Session.userId,
-				itemId = id
-			)*/
 		}
 	}
 	
@@ -243,10 +181,8 @@ class EmbyRepositoryImpl(
 		safeApiCall {
 			if (isFavorite) {
 				httpClient.post("/Users/${Session.userId}/FavoriteItems/${itemId}")
-//				api.markFavorite(Session.userId, itemId)
 			} else {
 				httpClient.delete("/Users/${Session.userId}/FavoriteItems/${itemId}")
-//				api.unmarkFavorite(Session.userId, itemId)
 			}
 		}
 	}
@@ -255,10 +191,8 @@ class EmbyRepositoryImpl(
 		safeApiCall {
 			if (isPlayed) {
 				httpClient.post("/Users/${Session.userId}/PlayedItems/${itemId}")
-//				api.markPlayed(Session.userId, itemId)
 			} else {
 				httpClient.delete("/Users/${Session.userId}/PlayedItems/${itemId}")
-//				api.unmarkPlayed(Session.userId, itemId)
 			}
 		}
 	}
@@ -281,31 +215,24 @@ class EmbyRepositoryImpl(
 				httpClient.post("/Sessions/Playing") {
 					setBody(report)
 				}
-//				api.reportPlayback(report)
 			}
 			
 			EmbyPlaybackEvent.Progress -> suspend {
 				httpClient.post("/Sessions/Playing/Progress") {
 					setBody(report)
 				}
-//				api.reportPlaybackProgress(report)
 			}
 			
 			EmbyPlaybackEvent.Stopped -> suspend {
 				httpClient.post("/Sessions/Playing/Stopped") {
 					setBody(report)
 				}
-//				api.reportPlaybackStopped(report)
 			}
 		}
 		
 		CoroutineScope(Dispatchers.IO).launch {
 			call.invoke()
 		}
-		/*call.enqueue(object : Callback<Void> {
-			override fun onResponse(call: Call<Void>, response: Response<Void>) = Unit
-			override fun onFailure(call: Call<Void>, error: Throwable) = Unit
-		})*/
 	}
 	
 	private fun buildUrl(base: String, path: String, parameters: Map<String, String?>): HttpUrl {

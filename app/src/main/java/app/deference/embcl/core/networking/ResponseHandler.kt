@@ -6,7 +6,6 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -15,11 +14,6 @@ import kotlinx.serialization.json.jsonPrimitive
 object ResponseHandler {
 	
 	val HttpResponse.isSuccess get() = (this.status.value in 200..299)
-	val myJsonConf = Json {
-		ignoreUnknownKeys = true
-		encodeDefaults = true
-		explicitNulls = false
-	}
 	
 	suspend inline fun <reified T> HttpResponse.toDataState(): DataState<T> {
 		if (T::class == Unit::class) {
@@ -31,22 +25,7 @@ object ResponseHandler {
 		}
 		return decodeAndWrap()
 	}
-	/*suspend inline fun <reified T> HttpResponse.toResult(): Result<T> {
-		if (T::class == Unit::class) {
-			return if (this.isSuccess) {
-				DataState.Success(Unit as T)
-			} else {
-				handleErrorResponse(this) as DataState<T>
-			}
-		}
-		return decodeAndWrap { json -> myJsonConf.decodeFromJsonElement<T>(json) }
-	}*/
-	/*	suspend inline fun <reified T> HttpResponse.toDataStateFromPaginated(): DataState<List<T>> {
-			return decodeAndWrap {
-				val wrapper = myJsonConf.decodeFromJsonElement<Paginated<T>>(it)
-				wrapper.items
-			}
-		}*/
+	
 	suspend inline fun <reified R> HttpResponse.decodeAndWrap(): DataState<R> {
 		return if (isSuccess) {
 			try {

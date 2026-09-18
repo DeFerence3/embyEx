@@ -1,8 +1,8 @@
 package app.deference.embcl.data.repository
 
-import app.deference.embcl.core.networking.ApiResponseHandler.safeDataState
 import app.deference.embcl.core.networking.DataState
 import app.deference.embcl.core.networking.dontIntercept
+import app.deference.embcl.core.utils.NetworkUtils.safeDataState
 import app.deference.embcl.domain.model.AuthenticateRequest
 import app.deference.embcl.domain.model.AuthenticateUserRequest
 import app.deference.embcl.domain.model.AuthenticationResult

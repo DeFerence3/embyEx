@@ -163,9 +163,11 @@ fun ItemDetails(
 	val directors = item.people.filter { it.type == "Director" }.mapNotNull { it.name }
 	val writers = item.people.filter { it.type == "Writer" }.mapNotNull { it.name }
 	
-	Box(modifier = Modifier
-		.fillMaxSize()
-		.background(Color(0xFF101012))) {
+	Box(
+		modifier = Modifier
+			.fillMaxSize()
+			.background(Color(0xFF101012))
+	) {
 		Column(
 			modifier = Modifier
 				.fillMaxSize()

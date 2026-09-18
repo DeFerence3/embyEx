@@ -7,7 +7,8 @@ import kotlinx.serialization.Serializable
 data class Server(
 	val host: String,
 	val port: Int,
-	val scheme: HttpScheme
-){
+	val scheme: HttpScheme,
+) {
+	
 	fun toUrl(): String = "${scheme.value}://$host:$port"
 }

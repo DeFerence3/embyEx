@@ -86,7 +86,7 @@ class SignInViewModel(
 			val local = runCatching { serverFinderRepo.searchForLocallyRunningServers() }.getOrDefault(emptyList())
 			val saved = Session.getLastServerUrl()
 			update { it.copy(discoveredServers = local, isSearchingLocal = false) }
-			if (local.size == 1){
+			if (local.size == 1) {
 				val target = local.firstOrNull()
 				if (target != null) {
 					update { it.copy(server = target.address) }
@@ -116,7 +116,7 @@ class SignInViewModel(
 			authRepo.authenticate(discovery, _state.value.username, _state.value.password)
 				.onSuccess { result ->
 					val server = discovery.server
-					Session.login(result, server.host.toUrl(server.port,server.scheme), discovery.serverInfo.serverName)
+					Session.login(result, server.host.toUrl(server.port, server.scheme), discovery.serverInfo.serverName)
 					update { it.copy(isBusy = false) }
 				}
 				.onFailure { fail(it) }
@@ -131,7 +131,7 @@ class SignInViewModel(
 			authRepo.authenticate(discovery, user, password)
 				.onSuccess { result ->
 					val server = discovery.server
-					Session.login(result, server.host.toUrl(server.port,server.scheme), discovery.serverInfo.serverName)
+					Session.login(result, server.host.toUrl(server.port, server.scheme), discovery.serverInfo.serverName)
 					update { it.copy(isBusy = false) }
 				}
 				.onFailure { fail(it) }
