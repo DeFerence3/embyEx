@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import app.deference.embcl.core.networking.DataState.Loading.onFailure
 import app.deference.embcl.core.networking.DataState.Loading.onSuccess
 import app.deference.embcl.core.session.Session
+import app.deference.embcl.core.utils.toUrl
 import app.deference.embcl.domain.model.EmbyUser
 import app.deference.embcl.domain.repository.AuthRepo
 import app.deference.embcl.domain.repository.ServerFinderRepo
@@ -85,16 +86,15 @@ class SignInViewModel(
 			val local = runCatching { serverFinderRepo.searchForLocallyRunningServers() }.getOrDefault(emptyList())
 			val saved = Session.getLastServerUrl()
 			update { it.copy(discoveredServers = local, isSearchingLocal = false) }
-			if (_state.value.discovery == null) {
-				val target = local.firstOrNull { it.address.trimEnd('/') == saved?.trimEnd('/') }
-					?: local.firstOrNull()
+			if (local.size == 1){
+				val target = local.firstOrNull()
 				if (target != null) {
 					update { it.copy(server = target.address) }
 					discoverServer(target.address)
-				} else if (! saved.isNullOrBlank()) {
-					update { it.copy(server = saved) }
-					discoverServer(saved)
 				}
+			} else if (saved != null) {
+				update { it.copy(server = saved) }
+				discoverServer(saved)
 			}
 		}
 	}
@@ -115,7 +115,8 @@ class SignInViewModel(
 		viewModelScope.launch {
 			authRepo.authenticate(discovery, _state.value.username, _state.value.password)
 				.onSuccess { result ->
-					Session.login(result, discovery.serverUrl, discovery.serverInfo.serverName)
+					val server = discovery.server
+					Session.login(result, server.host.toUrl(server.port,server.scheme), discovery.serverInfo.serverName)
 					update { it.copy(isBusy = false) }
 				}
 				.onFailure { fail(it) }
@@ -129,7 +130,8 @@ class SignInViewModel(
 		viewModelScope.launch {
 			authRepo.authenticate(discovery, user, password)
 				.onSuccess { result ->
-					Session.login(result, discovery.serverUrl, discovery.serverInfo.serverName)
+					val server = discovery.server
+					Session.login(result, server.host.toUrl(server.port,server.scheme), discovery.serverInfo.serverName)
 					update { it.copy(isBusy = false) }
 				}
 				.onFailure { fail(it) }
@@ -137,6 +139,7 @@ class SignInViewModel(
 	}
 	
 	private suspend fun fail(throwable: Throwable, fallback: String) {
+		throwable.printStackTrace()
 		val message = throwable.message ?: fallback
 		update { it.copy(isBusy = false, error = message) }
 		_events.send(SignInEvent.Error(message))

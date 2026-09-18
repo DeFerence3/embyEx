@@ -2,6 +2,7 @@ package app.deference.embcl.data.repository
 
 import app.deference.embcl.core.networking.ApiResponseHandler.safeApiCall
 import app.deference.embcl.core.session.Session
+import app.deference.embcl.core.utils.toUrl
 import app.deference.embcl.domain.model.EmbyHome
 import app.deference.embcl.domain.model.EmbyItem
 import app.deference.embcl.domain.model.EmbyItemsResult
@@ -38,7 +39,7 @@ class EmbyRepositoryImpl(
 	override fun publicUserImageUrl(discovery: EmbyServerDiscovery, user: EmbyUser): String? {
 		val tag = user.primaryImageTag ?: return null
 		return buildUrl(
-			discovery.serverUrl,
+			discovery.server.toUrl(),
 			"/Users/${user.id}/Images/Primary",
 			mapOf("MaxWidth" to "192", "Quality" to "90", "Tag" to tag),
 		).toString()
@@ -308,7 +309,7 @@ class EmbyRepositoryImpl(
 	}
 	
 	private fun buildUrl(base: String, path: String, parameters: Map<String, String?>): HttpUrl {
-		val baseUrl = base.toHttpUrlOrNull() ?: throw IllegalArgumentException("Invalid Emby server address.")
+		val baseUrl = base.toUrl().toHttpUrlOrNull() ?: throw IllegalArgumentException("Invalid Emby server address: $base")
 		return baseUrl.newBuilder().addPathSegments(path.trimStart('/')).apply {
 			parameters.forEach { (name, value) -> value?.let { addQueryParameter(name, it) } }
 		}.build()

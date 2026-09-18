@@ -3,8 +3,10 @@ package app.deference.embcl.data.repository
 import app.deference.embcl.core.networking.ApiResponseHandler.safeApiCall
 import app.deference.embcl.core.networking.EmbyMdnsDiscovery
 import app.deference.embcl.core.networking.EmbyUdpDiscovery
+import app.deference.embcl.core.networking.dontIntercept
+import app.deference.embcl.core.session.Server
 import app.deference.embcl.core.session.Session
-import app.deference.embcl.core.utils.Log
+import app.deference.embcl.core.utils.HttpScheme
 import app.deference.embcl.core.utils.toUrl
 import app.deference.embcl.domain.model.EmbyServer
 import app.deference.embcl.domain.model.EmbyServerDiscovery
@@ -14,6 +16,7 @@ import app.deference.embcl.domain.repository.ServerFinderRepo
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.koin.core.annotation.Single
 
 @Single
@@ -34,24 +37,34 @@ class ServerFinderRepoImpl(
 		return mdnsDiscovery.discover()
 	}
 	
-	override suspend fun discoverServer(server: String): EmbyServerDiscovery {
-		val serverUrl = server.toUrl()
+	override suspend fun discoverServer(rawIp: String): EmbyServerDiscovery {
+		val serverUrl = rawIp.toUrl().toHttpUrl()
 		val deviceId = Session.deviceId
-		Log.i("ServerFinderRepoImpl") { "ServerUrl---> $serverUrl" }
 		return try {
 			val publicInfo = safeApiCall {
 				httpClient.get("/System/Info/Public") {
-					url {
-						host = serverUrl
-					}
+					dontIntercept(
+						host = serverUrl.host,
+						port = serverUrl.port
+					)
 				}.body<PublicSystemInfo>()
 //				api.publicSystemInfo()
 			}
 			val users = safeApiCall {
-				httpClient.get("/Users/Public").body<List<EmbyUser>>()
+				httpClient.get("/Users/Public") {
+					dontIntercept(
+						host = serverUrl.host,
+						port = serverUrl.port
+					)
+				}.body<List<EmbyUser>>()
 //				api.publicUsers()
 			}
-			EmbyServerDiscovery(serverUrl, publicInfo, users, deviceId)
+			val server = Server(
+				host = serverUrl.host,
+				port = serverUrl.port,
+				scheme = HttpScheme.fromHttpUrl(serverUrl)
+			)
+			EmbyServerDiscovery(server,publicInfo, users, deviceId)
 		} catch (e: Exception) {
 			throw e
 		}

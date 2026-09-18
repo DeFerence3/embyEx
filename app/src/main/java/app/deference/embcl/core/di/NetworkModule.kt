@@ -5,13 +5,10 @@ import app.deference.embcl.core.networking.configureContentNegotiation
 import app.deference.embcl.core.networking.configureDefaultRequest
 import app.deference.embcl.core.networking.configureLogging
 import app.deference.embcl.core.networking.configureValidation
-import app.deference.embcl.core.session.Session
+import app.deference.embcl.core.networking.urlInterceptor
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.okhttp.OkHttp
-import io.ktor.client.plugins.HttpSend
-import io.ktor.client.plugins.plugin
-import io.ktor.http.Url
 import org.koin.dsl.module
 
 val networkModule = module {
@@ -33,13 +30,7 @@ val networkModule = module {
 			configureAuth()
 			configureLogging()
 		}.apply {
-			plugin(HttpSend).intercept { request ->
-				val dynamicBase = Url(Session.serverUrl)
-				request.url.protocol = dynamicBase.protocol
-				request.url.host = dynamicBase.host
-				request.url.port = dynamicBase.port
-				execute(request)
-			}
+			urlInterceptor()
 		}
 	}
 	/*single {

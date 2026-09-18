@@ -2,6 +2,7 @@ package app.deference.embcl.data.repository
 
 import app.deference.embcl.core.networking.ApiResponseHandler.safeDataState
 import app.deference.embcl.core.networking.DataState
+import app.deference.embcl.core.networking.dontIntercept
 import app.deference.embcl.domain.model.AuthenticateRequest
 import app.deference.embcl.domain.model.AuthenticateUserRequest
 import app.deference.embcl.domain.model.AuthenticationResult
@@ -24,9 +25,10 @@ class AuthRepoImpl(
 		password: String,
 	): DataState<AuthenticationResult> = safeDataState {
 		httpClient.post("/Users/AuthenticateByName") {
-			url {
-				host = discovery.serverUrl
-			}
+			dontIntercept(
+				host = discovery.server.host,
+				port = discovery.server.port
+			)
 			setBody(AuthenticateRequest(username.trim(), password))
 		}
 	}
@@ -37,9 +39,10 @@ class AuthRepoImpl(
 		password: String,
 	): DataState<AuthenticationResult> = safeDataState {
 		httpClient.post("/Users/${user.id}/Authenticate") {
-			url {
-				host = discovery.serverUrl
-			}
+			dontIntercept(
+				host = discovery.server.host,
+				port = discovery.server.port
+			)
 			setBody(AuthenticateUserRequest(password))
 		}
 	}

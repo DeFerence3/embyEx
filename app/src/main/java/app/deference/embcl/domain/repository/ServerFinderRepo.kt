@@ -7,6 +7,6 @@ import org.koin.core.annotation.Single
 @Single
 interface ServerFinderRepo {
 	
-	suspend fun discoverServer(server: String): EmbyServerDiscovery
+	suspend fun discoverServer(rawIp: String): EmbyServerDiscovery
 	suspend fun searchForLocallyRunningServers(): List<EmbyServer>
 }

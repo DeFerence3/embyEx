@@ -9,6 +9,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.plugins.DefaultRequest
 import io.ktor.client.plugins.HttpResponseValidator
+import io.ktor.client.plugins.HttpSend
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.auth.Auth
 import io.ktor.client.plugins.auth.authProvider
@@ -16,6 +17,8 @@ import io.ktor.client.plugins.auth.providers.BearerAuthProvider
 import io.ktor.client.plugins.auth.providers.BearerTokens
 import io.ktor.client.plugins.auth.providers.bearer
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.plugin
+import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.accept
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
@@ -24,14 +27,48 @@ import io.ktor.http.contentType
 import io.ktor.http.headers
 import io.ktor.http.userAgent
 import io.ktor.serialization.kotlinx.json.json
+import io.ktor.util.AttributeKey
+import okhttp3.HttpUrl.Companion.toHttpUrl
+
+val DONT_INTERCEPT = AttributeKey<Boolean>("DONT_INTERCEPT")
+
+/**
+ * Don't intercept this request for setting server url,
+ * instead uses provided host and port
+ */
+fun HttpRequestBuilder.dontIntercept(
+	host: String,
+	port: Int
+) {
+	url {
+		this.host = host
+		this.port = port
+	}
+	attributes[DONT_INTERCEPT] = true
+}
 
 fun HttpClient.invalidateAuthTokens() {
 	authProvider<BearerAuthProvider>()?.clearToken()
 }
 
+fun HttpClient.urlInterceptor(){
+	plugin(HttpSend).intercept { request ->
+		val dontIntercept = request.attributes.getOrNull(DONT_INTERCEPT)
+		val proccessedRequest = if (dontIntercept == true){
+			request
+		}else{
+			val dynamicBase = Session.serverUrl.toHttpUrl()
+			request.url.host = dynamicBase.host
+			request.url.port = dynamicBase.port
+			request
+		}
+		execute(proccessedRequest)
+	}
+}
+
 fun HttpClientConfig<*>.configureLogging() {
 	install(DFLogger) {
-		logRequest = true
+		logRequest = false
 		logOnError = true
 	}
 }
