@@ -21,7 +21,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import app.deference.embcl.domain.model.EmbyItem
-import app.deference.embcl.domain.repository.EmbyRepository
 import app.deference.embcl.ui.core.components.EmptyState
 import app.deference.embcl.ui.core.components.ErrorState
 import app.deference.embcl.ui.core.components.MediaCard
@@ -31,7 +30,6 @@ fun SearchContent(
 	state: SearchState,
 	onAction: (SearchAction) -> Unit,
 	modifier: Modifier = Modifier,
-	repository: EmbyRepository,
 	onItemClick: (EmbyItem) -> Unit,
 ) {
 	Column(
@@ -64,7 +62,7 @@ fun SearchContent(
 				verticalArrangement = Arrangement.spacedBy(16.dp),
 			) {
 				items(state.results, key = { it.id }) { item ->
-					MediaCard(item, repository) { onItemClick(item) }
+					MediaCard(item) { onItemClick(item) }
 				}
 			}
 		}

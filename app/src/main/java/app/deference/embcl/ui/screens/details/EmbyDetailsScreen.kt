@@ -49,14 +49,12 @@ import androidx.core.net.toUri
 import app.deference.embcl.core.utils.asRuntime
 import app.deference.embcl.core.utils.formatToString
 import app.deference.embcl.domain.model.EmbyItem
-import app.deference.embcl.domain.repository.EmbyRepository
 import app.deference.embcl.ui.Screen
 import app.deference.embcl.ui.core.LocalNavigator
 import app.deference.embcl.ui.core.components.LoadingScaffold
 import app.deference.embcl.ui.core.components.ObserveEvent
 import coil3.compose.AsyncImage
 import kotlinx.serialization.Serializable
-import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
@@ -84,7 +82,6 @@ fun DetailsContent(
 	events: kotlinx.coroutines.flow.Flow<EmbyDetailsEvent>,
 	onAction: (EmbyDetailsAction) -> Unit,
 	onBack: () -> Unit = {},
-	repository: EmbyRepository = koinInject(),
 ) {
 	val mpvLauncher = rememberLauncherForActivityResult(
 		contract = ActivityResultContracts.StartActivityForResult(),
@@ -126,7 +123,6 @@ fun DetailsContent(
 		content = { item ->
 			ItemDetails(
 				item = item,
-				repository = repository,
 				onBack = onBack,
 				onPlay = { onAction(EmbyDetailsAction.Play) },
 			)
@@ -137,12 +133,11 @@ fun DetailsContent(
 @Composable
 fun ItemDetails(
 	item: EmbyItem,
-	repository: EmbyRepository,
 	onBack: () -> Unit,
 	onPlay: () -> Unit,
 ) {
-	val backdrop = repository.imageUrl(item, type = "Primary", maxWidth = 1280)
-	val logoUrl = repository.imageUrl(item, type = "Logo", maxWidth = 600)
+	val backdrop = item.imageUrl(type = "Primary", maxWidth = 1280)
+	val logoUrl = item.imageUrl(type = "Logo", maxWidth = 600)
 	val videoStream = item.mediaStreams.firstOrNull { it.type == "Video" }
 	val subtitleStreams = item.mediaStreams.filter { it.type == "Subtitle" }.joinToString(" | ") { it.displayLanguage ?: it.displayTitle ?: "" }
 	val videoResolution = videoStream?.displayTitle

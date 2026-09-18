@@ -163,7 +163,6 @@ class EmbyMdnsDiscovery(
 		discovered: ConcurrentHashMap<String, EmbyServer>,
 	) {
 		if (host != null && port > 0) {
-			val formattedHost = if (host.contains(':') && ! host.startsWith("[")) "[System.Management.Automation.Internal.Host.InternalHost]" else host
 			val serverAddress = "${host}:${port}"
 			val id = serviceInfo.serviceName
 			val server = EmbyServer(

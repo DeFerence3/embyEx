@@ -2,7 +2,7 @@ package app.deference.embcl.data.repository
 
 import app.deference.embcl.core.session.Session
 import app.deference.embcl.core.utils.NetworkUtils.safeApiCall
-import app.deference.embcl.core.utils.toUrl
+import app.deference.embcl.core.utils.buildUrl
 import app.deference.embcl.domain.model.EmbyHome
 import app.deference.embcl.domain.model.EmbyItem
 import app.deference.embcl.domain.model.EmbyItemsResult
@@ -23,17 +23,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import okhttp3.HttpUrl
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import org.koin.core.annotation.Single
 
 @Single
 class EmbyRepositoryImpl(
 	private val httpClient: HttpClient,
 ) : EmbyRepository {
-	
-	override fun getSavedServerUrl(): String? = Session.getLastServerUrl()
-	
+
 	override fun publicUserImageUrl(discovery: EmbyServerDiscovery, user: EmbyUser): String? {
 		val tag = user.primaryImageTag ?: return null
 		return buildUrl(
@@ -128,36 +124,6 @@ class EmbyRepositoryImpl(
 		}
 	}
 	
-	override fun imageUrl(
-		item: EmbyItem,
-		type: String,
-		maxWidth: Int,
-	): String? {
-		val imageItemId = when (type) {
-			"Backdrop" if item.backdropImageTags.isNotEmpty() -> item.id
-			"Backdrop" if item.parentBackdropImageTags.isNotEmpty() -> item.parentBackdropItemId
-			"Logo" if item.imageTags.containsKey("Logo") -> item.id
-			"Logo" if ! item.parentLogoItemId.isNullOrBlank() -> item.parentLogoItemId
-			"Primary" if item.imageTags.containsKey("Primary") -> item.id
-			else -> null
-		} ?: return null
-		val tag = when (type) {
-			"Backdrop" -> item.backdropImageTags.firstOrNull() ?: item.parentBackdropImageTags.firstOrNull()
-			"Logo" -> item.imageTags["Logo"] ?: item.parentLogoImageTag
-			else -> item.imageTags[type]
-		}
-		return buildUrl(
-			Session.serverUrl,
-			"/Items/$imageItemId/Images/$type",
-			mapOf(
-				"MaxWidth" to maxWidth.toString(),
-				"Quality" to "90",
-				"Tag" to tag,
-				"api_key" to Session.accessToken,
-			),
-		).toString()
-	}
-	
 	override fun userImageUrl(): String = buildUrl(
 		Session.serverUrl,
 		"/Users/${Session.userId}/Images/Primary",
@@ -233,13 +199,6 @@ class EmbyRepositoryImpl(
 		CoroutineScope(Dispatchers.IO).launch {
 			call.invoke()
 		}
-	}
-	
-	private fun buildUrl(base: String, path: String, parameters: Map<String, String?>): HttpUrl {
-		val baseUrl = base.toUrl().toHttpUrlOrNull() ?: throw IllegalArgumentException("Invalid Emby server address: $base")
-		return baseUrl.newBuilder().addPathSegments(path.trimStart('/')).apply {
-			parameters.forEach { (name, value) -> value?.let { addQueryParameter(name, it) } }
-		}.build()
 	}
 	
 	private companion object {

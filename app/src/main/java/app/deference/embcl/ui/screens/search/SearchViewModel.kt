@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import org.koin.core.annotation.KoinViewModel
+import kotlin.time.Duration.Companion.milliseconds
 
 @KoinViewModel
 class SearchViewModel(private val repository: EmbyRepository) : ViewModel() {
@@ -40,7 +41,7 @@ class SearchViewModel(private val repository: EmbyRepository) : ViewModel() {
 			return
 		}
 		searchJob = viewModelScope.launch {
-			if (debounce) delay(350)
+			if (debounce) delay(350.milliseconds)
 			_state.value = _state.value.copy(isLoading = true, error = null)
 			runCatching { repository.search(query) }
 				.onSuccess { _state.value = _state.value.copy(results = it, isLoading = false) }

@@ -1,5 +1,7 @@
 package app.deference.embcl.domain.model
 
+import app.deference.embcl.core.session.Session
+import app.deference.embcl.core.utils.buildUrl
 import app.deference.embcl.core.utils.or
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -77,5 +79,31 @@ data class EmbyItem(
 		productionYear != null -> productionYear.toString()
 		collectionType != null -> collectionType.replaceFirstChar { it.uppercase() }
 		else -> type.takeIf { it.isNotBlank() }
+	}
+	
+	fun imageUrl(type: String = "Primary", maxWidth: Int = 600): String?{
+		val imageItemId = when (type) {
+			"Backdrop" if backdropImageTags.isNotEmpty() -> id
+			"Backdrop" if parentBackdropImageTags.isNotEmpty() -> parentBackdropItemId
+			"Logo" if imageTags.containsKey("Logo") -> id
+			"Logo" if ! parentLogoItemId.isNullOrBlank() -> parentLogoItemId
+			"Primary" if imageTags.containsKey("Primary") -> id
+			else -> null
+		} ?: return null
+		val tag = when (type) {
+			"Backdrop" -> backdropImageTags.firstOrNull() ?: parentBackdropImageTags.firstOrNull()
+			"Logo" -> imageTags["Logo"] ?: parentLogoImageTag
+			else -> imageTags[type]
+		}
+		return buildUrl(
+			Session.serverUrl,
+			"/Items/$imageItemId/Images/$type",
+			mapOf(
+				"MaxWidth" to maxWidth.toString(),
+				"Quality" to "90",
+				"Tag" to tag,
+				"api_key" to Session.accessToken,
+			),
+		).toString()
 	}
 }

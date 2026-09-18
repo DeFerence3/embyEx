@@ -1,5 +1,6 @@
 package app.deference.embcl.core.utils
 
+import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
 fun <T> T?.or(predicate: () -> T): T = this ?: predicate()
@@ -30,8 +31,15 @@ enum class HttpScheme(val value: String) {
 	
 	companion object {
 		
-		fun fromHttpUrl(url: okhttp3.HttpUrl): HttpScheme {
+		fun fromHttpUrl(url: HttpUrl): HttpScheme {
 			return if (url.scheme == "http") Http else Https
 		}
 	}
+}
+
+fun buildUrl(base: String, path: String, parameters: Map<String, String?>): HttpUrl {
+	val baseUrl = base.toUrl().toHttpUrlOrNull() ?: throw IllegalArgumentException("Invalid Emby server address: $base")
+	return baseUrl.newBuilder().addPathSegments(path.trimStart('/')).apply {
+		parameters.forEach { (name, value) -> value?.let { addQueryParameter(name, it) } }
+	}.build()
 }

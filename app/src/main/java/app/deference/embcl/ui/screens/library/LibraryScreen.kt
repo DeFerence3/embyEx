@@ -17,7 +17,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import app.deference.embcl.domain.model.EmbyItem
-import app.deference.embcl.domain.repository.EmbyRepository
 import app.deference.embcl.ui.Screen
 import app.deference.embcl.ui.core.LocalNavigator
 import app.deference.embcl.ui.core.components.DetailTopBar
@@ -26,7 +25,6 @@ import app.deference.embcl.ui.core.components.LoadState
 import app.deference.embcl.ui.core.components.MediaCard
 import app.deference.embcl.ui.screens.openItem
 import kotlinx.serialization.Serializable
-import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
@@ -56,7 +54,6 @@ fun LibraryContent(
 	onAction: (LibraryAction) -> Unit,
 	onBack: () -> Unit = {},
 	onItemClick: (EmbyItem) -> Unit = {},
-	repository: EmbyRepository = koinInject(),
 ) {
 	Scaffold(
 		topBar = {
@@ -76,7 +73,7 @@ fun LibraryContent(
 						verticalArrangement = Arrangement.spacedBy(18.dp),
 					) {
 						items(result.items.sortedBy { it.indexNumber }, key = { it.id }) { item ->
-							MediaCard(item, repository) { onItemClick(item) }
+							MediaCard(item) { onItemClick(item) }
 						}
 					}
 				} else {
@@ -88,7 +85,7 @@ fun LibraryContent(
 						verticalArrangement = Arrangement.spacedBy(18.dp),
 					) {
 						items(result.items.sortedBy { it.indexNumber }, key = { it.id }) { item ->
-							MediaCard(item, repository) { onItemClick(item) }
+							MediaCard(item) { onItemClick(item) }
 						}
 					}
 				}

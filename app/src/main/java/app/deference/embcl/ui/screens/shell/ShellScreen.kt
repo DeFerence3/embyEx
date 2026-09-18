@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material3.DropdownMenu
@@ -31,10 +32,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import app.deference.embcl.core.session.Session
-import app.deference.embcl.domain.repository.EmbyRepository
 import app.deference.embcl.ui.Screen
 import app.deference.embcl.ui.core.LocalNavigator
 import app.deference.embcl.ui.screens.home.HomeContent
@@ -47,7 +48,6 @@ import app.deference.embcl.ui.screens.search.SearchContent
 import app.deference.embcl.ui.screens.search.SearchViewModel
 import coil3.compose.AsyncImage
 import kotlinx.serialization.Serializable
-import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -62,7 +62,6 @@ fun EmbyShellContent(
 	searchState: app.deference.embcl.ui.screens.search.SearchState,
 	onSearchAction: (app.deference.embcl.ui.screens.search.SearchAction) -> Unit,
 ) {
-	val repository = koinInject<EmbyRepository>()
 	val backStack = LocalNavigator.current
 	val tab = state.selectedTab
 	
@@ -75,7 +74,7 @@ fun EmbyShellContent(
 						Text(if (tab == EmbyTab.Home) Session.serverName else tab.name)
 						if (tab == EmbyTab.Home) {
 							Text(
-								Session.userName,
+								Session.user.name,
 								style = MaterialTheme.typography.labelMedium,
 								color = MaterialTheme.colorScheme.onSurfaceVariant,
 							)
@@ -86,13 +85,17 @@ fun EmbyShellContent(
 					Box {
 						IconButton(onClick = { onAction(ShellAction.SetAccountMenuOpen(true)) }) {
 							AsyncImage(
-								model = repository.userImageUrl(),
+								model = Session.user.primaryImageUrl,
 								contentDescription = "Account",
 								modifier = Modifier
-									.size(36.dp)
+									.background(MaterialTheme.colorScheme.secondaryContainer)
+									.padding(4.dp)
 									.clip(CircleShape)
-									.background(MaterialTheme.colorScheme.secondaryContainer),
+									.size(36.dp)
+								,
 								contentScale = ContentScale.Crop,
+								error = rememberVectorPainter(Icons.Default.Person),
+								placeholder = rememberVectorPainter(Icons.Default.Person),
 							)
 						}
 						DropdownMenu(expanded = state.isAccountMenuOpen, onDismissRequest = { onAction(ShellAction.SetAccountMenuOpen(false)) }) {
@@ -138,26 +141,20 @@ fun EmbyShellContent(
 					state = homeState,
 					onAction = onHomeAction,
 					modifier = Modifier.padding(padding),
-					repository = repository,
 					onItemClick = { item -> openItem(item, backStack) },
-					onLibraryClick = { lib -> backStack.goTo(EmbyLibraryScreen(lib.id, lib.name)) },
-				)
+				) { lib -> backStack.goTo(EmbyLibraryScreen(lib.id, lib.name)) }
 				
 				EmbyTab.Libraries -> LibrariesContent(
 					state = librariesState,
 					onAction = onLibrariesAction,
 					modifier = Modifier.padding(padding),
-					repository = repository,
-					onLibraryClick = { lib -> backStack.goTo(EmbyLibraryScreen(lib.id, lib.name)) },
-				)
+				) { lib -> backStack.goTo(EmbyLibraryScreen(lib.id, lib.name)) }
 				
 				EmbyTab.Search -> SearchContent(
 					state = searchState,
 					onAction = onSearchAction,
 					modifier = Modifier.padding(padding),
-					repository = repository,
-					onItemClick = { item -> openItem(item, backStack) },
-				)
+				) { item -> openItem(item, backStack) }
 			}
 		}
 	}

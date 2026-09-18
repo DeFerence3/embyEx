@@ -2,7 +2,6 @@ package app.deference.embcl.ui.screens.shell
 
 import androidx.lifecycle.ViewModel
 import app.deference.embcl.core.session.Session
-import app.deference.embcl.domain.repository.EmbyRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -10,7 +9,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import org.koin.core.annotation.KoinViewModel
 
 @KoinViewModel
-class ShellViewModel(private val repository: EmbyRepository) : ViewModel() {
+class ShellViewModel: ViewModel() {
 	
 	private val _state = MutableStateFlow(ShellState())
 	val state = _state.asStateFlow()

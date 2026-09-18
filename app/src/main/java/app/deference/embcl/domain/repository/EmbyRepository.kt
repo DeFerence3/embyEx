@@ -9,14 +9,12 @@ import app.deference.embcl.domain.model.EmbyUser
 
 interface EmbyRepository {
 	
-	fun getSavedServerUrl(): String?
 	fun publicUserImageUrl(discovery: EmbyServerDiscovery, user: EmbyUser): String?
 	suspend fun home(): EmbyHome
 	suspend fun libraries(): List<EmbyItem>
 	suspend fun items(parentId: String, startIndex: Int = 0): EmbyItemsResult
 	suspend fun search(term: String): List<EmbyItem>
 	suspend fun item(id: String): EmbyItem
-	fun imageUrl(item: EmbyItem, type: String = "Primary", maxWidth: Int = 600): String?
 	fun userImageUrl(): String
 	fun streamUrl(item: EmbyItem): String
 	suspend fun toggleFavorite(itemId: String, isFavorite: Boolean)

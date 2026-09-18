@@ -29,28 +29,23 @@ object Session {
 		get() = preferences.getString(KEY_DEVICE_ID) ?: Uuid.random().toString().also {
 			preferences.save(KEY_DEVICE_ID, it)
 		}
+	
 	val accessToken: String?
 		get() = preferences.getString(ACCESS_TOKEN)
+	
 	val serverUrl: String
-		get() = preferences.getString(SERVER_URL) ?: {
-			logout()
-			"http://localhost:8096"
-		}.invoke()
+		get() = safeGet(SERVER_URL, default = "http://localhost:8096")
+	
 	val serverName: String
-		get() = preferences.getString(SERVER_NAME) ?: {
-			logout()
-			""
-		}.invoke()
+		get() = safeGet(SERVER_NAME)
+	
 	val userId: String
-		get() = preferences.getString(USER_ID) ?: {
-			logout()
-			""
-		}.invoke()
-	val userName: String
-		get() = preferences.getString(USERNAME) ?: {
-			logout()
-			""
-		}.invoke()
+		get() = safeGet(USER_ID)
+	
+	val user: User get() {
+		val imageUrl = "$serverUrl/Users/$userId/Images/Primary?MaxWidth=160"
+		return User(safeGet(USERNAME), safeGet(USER_ID),imageUrl)
+	}
 	
 	fun login(
 		userData: AuthenticationResult,
@@ -78,4 +73,9 @@ object Session {
 	}
 	
 	fun getLastServerUrl(): String? = preferences.getString(KEY_LAST_SERVER_URL)
+	
+	private fun safeGet(key: String, default: String = "", run: () -> Unit = ::logout): String = preferences.getString(key) ?: run {
+		run()
+		default
+	}
 }
