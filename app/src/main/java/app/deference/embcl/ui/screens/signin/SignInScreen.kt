@@ -47,7 +47,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import app.deference.embcl.domain.repository.EmbyRepository
 import app.deference.embcl.ui.Screen
 import app.deference.embcl.ui.core.components.ObserveEvent
 import app.deference.embcl.ui.core.components.PasswordField
@@ -55,14 +54,12 @@ import app.deference.embcl.ui.core.components.PublicUserCard
 import app.deference.embcl.ui.core.components.SignInButton
 import app.deference.embcl.ui.core.components.SignInError
 import kotlinx.serialization.Serializable
-import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun SignInContent(
 	state: SignInState,
-	onAction: (SignInAction) -> Unit,
-	repository: EmbyRepository = koinInject(),
+	onAction: (SignInAction) -> Unit
 ) {
 	Column(
 		modifier = Modifier
@@ -188,7 +185,7 @@ fun SignInContent(
 					when {
 						state.selectedUser != null -> {
 							val user = state.selectedUser
-							PublicUserCard(user, currentDiscovery, repository, enabled = false, isSelected = true) {}
+							PublicUserCard(user, currentDiscovery, enabled = false, isSelected = true) {}
 							PasswordField(
 								password = state.password,
 								onPasswordChange = { onAction(SignInAction.PasswordChanged(it)) },
@@ -240,7 +237,7 @@ fun SignInContent(
 								)
 							} else {
 								currentDiscovery.users.forEach { user ->
-									PublicUserCard(user, currentDiscovery, repository, enabled = ! state.isBusy) {
+									PublicUserCard(user, currentDiscovery, enabled = ! state.isBusy) {
 										onAction(SignInAction.SelectUser(user))
 									}
 								}

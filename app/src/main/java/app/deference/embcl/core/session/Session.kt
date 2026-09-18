@@ -43,7 +43,7 @@ object Session {
 		get() = safeGet(USER_ID)
 	
 	val user: User get() {
-		val imageUrl = "$serverUrl/Users/$userId/Images/Primary?MaxWidth=160"
+		val imageUrl = "$serverUrl/Users/$userId/Images/Primary?MaxWidth=160&Quality=90"
 		return User(safeGet(USERNAME), safeGet(USER_ID),imageUrl)
 	}
 	

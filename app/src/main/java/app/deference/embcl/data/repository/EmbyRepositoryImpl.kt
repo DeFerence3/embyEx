@@ -8,16 +8,19 @@ import app.deference.embcl.domain.model.EmbyItem
 import app.deference.embcl.domain.model.EmbyItemsResult
 import app.deference.embcl.domain.model.EmbyPlaybackEvent
 import app.deference.embcl.domain.model.EmbyPlaybackReport
-import app.deference.embcl.domain.model.EmbyServerDiscovery
-import app.deference.embcl.domain.model.EmbyUser
+import app.deference.embcl.domain.model.ServerDetails
+import app.deference.embcl.domain.model.ServerInfo
 import app.deference.embcl.domain.repository.EmbyRepository
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.plugins.expectSuccess
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.isSuccess
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -29,14 +32,17 @@ import org.koin.core.annotation.Single
 class EmbyRepositoryImpl(
 	private val httpClient: HttpClient,
 ) : EmbyRepository {
-
-	override fun publicUserImageUrl(discovery: EmbyServerDiscovery, user: EmbyUser): String? {
-		val tag = user.primaryImageTag ?: return null
-		return buildUrl(
-			discovery.server.toUrl(),
-			"/Users/${user.id}/Images/Primary",
-			mapOf("MaxWidth" to "192", "Quality" to "90", "Tag" to tag),
-		).toString()
+	
+	override suspend fun serverInfo(): ServerDetails {
+		var response = httpClient.get("/System/Info") { expectSuccess = false }
+		val isLimited = response.status == HttpStatusCode.Forbidden
+		if (isLimited) {
+			response = httpClient.get("/System/Info/Public") { expectSuccess = false }
+		}
+		if (!response.status.isSuccess()) {
+			throw kotlinx.io.IOException("Could not load server information (HTTP ${response.status.value}).")
+		}
+		return ServerDetails(response.body<ServerInfo>(), isLimited)
 	}
 	
 	override suspend fun home(): EmbyHome = coroutineScope {

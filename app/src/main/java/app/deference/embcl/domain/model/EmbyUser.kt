@@ -17,4 +17,6 @@ data class EmbyUser(
 	val hasPassword: Boolean = false,
 	@SerialName("HasConfiguredPassword")
 	val hasConfiguredPassword: Boolean = false,
-)
+){
+	fun primaryImageUrl(discovery: EmbyServerDiscovery): String? = "${discovery.server.toUrl()}/Users/$id/Images/Primary?MaxWidth=164&Quality=90"
+}

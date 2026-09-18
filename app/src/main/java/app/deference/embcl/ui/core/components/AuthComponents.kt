@@ -46,14 +46,12 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import app.deference.embcl.domain.model.EmbyServerDiscovery
 import app.deference.embcl.domain.model.EmbyUser
-import app.deference.embcl.domain.repository.EmbyRepository
 import coil3.compose.AsyncImage
 
 @Composable
 fun PublicUserCard(
 	user: EmbyUser,
 	discovery: EmbyServerDiscovery,
-	repository: EmbyRepository,
 	enabled: Boolean,
 	isSelected: Boolean = false,
 	onClick: () -> Unit,
@@ -79,7 +77,7 @@ fun PublicUserCard(
 				contentAlignment = Alignment.Center,
 			) {
 				Icon(Icons.Filled.AccountCircle, null, modifier = Modifier.size(32.dp), tint = MaterialTheme.colorScheme.onPrimaryContainer)
-				repository.publicUserImageUrl(discovery, user)?.let { imageUrl ->
+				user.primaryImageUrl(discovery)?.let { imageUrl ->
 					AsyncImage(
 						model = imageUrl,
 						contentDescription = null,

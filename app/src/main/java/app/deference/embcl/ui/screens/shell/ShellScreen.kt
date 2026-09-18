@@ -14,6 +14,7 @@ import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -30,6 +31,9 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
@@ -38,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import app.deference.embcl.core.session.Session
 import app.deference.embcl.ui.Screen
 import app.deference.embcl.ui.core.LocalNavigator
+import app.deference.embcl.ui.core.components.SignOutConfirmationDialog
 import app.deference.embcl.ui.screens.home.HomeContent
 import app.deference.embcl.ui.screens.home.HomeViewModel
 import app.deference.embcl.ui.screens.libraries.LibrariesContent
@@ -46,6 +51,7 @@ import app.deference.embcl.ui.screens.library.EmbyLibraryScreen
 import app.deference.embcl.ui.screens.openItem
 import app.deference.embcl.ui.screens.search.SearchContent
 import app.deference.embcl.ui.screens.search.SearchViewModel
+import app.deference.embcl.ui.screens.settings.EmbySettingsScreen
 import coil3.compose.AsyncImage
 import kotlinx.serialization.Serializable
 import org.koin.compose.viewmodel.koinViewModel
@@ -64,6 +70,18 @@ fun EmbyShellContent(
 ) {
 	val backStack = LocalNavigator.current
 	val tab = state.selectedTab
+	
+	var showSignOutConfirmation by rememberSaveable { mutableStateOf(false) }
+	if (showSignOutConfirmation) {
+		SignOutConfirmationDialog(
+			serverName = Session.serverName,
+			onConfirm = {
+				showSignOutConfirmation = false
+				onAction(ShellAction.SignOut)
+			},
+			onDismiss = { showSignOutConfirmation = false },
+		)
+	}
 	
 	Scaffold(
 		contentWindowInsets = WindowInsets.navigationBars,
@@ -95,15 +113,24 @@ fun EmbyShellContent(
 								,
 								contentScale = ContentScale.Crop,
 								error = rememberVectorPainter(Icons.Default.Person),
-								placeholder = rememberVectorPainter(Icons.Default.Person),
+								placeholder = rememberVectorPainter(Icons.Default.Person)
 							)
 						}
 						DropdownMenu(expanded = state.isAccountMenuOpen, onDismissRequest = { onAction(ShellAction.SetAccountMenuOpen(false)) }) {
 							DropdownMenuItem(
+								text = { Text("Settings") },
+								leadingIcon = { Icon(Icons.Filled.Settings, null) },
+								onClick = {
+									onAction(ShellAction.SetAccountMenuOpen(false))
+									backStack.goTo(EmbySettingsScreen)
+								},
+							)
+							DropdownMenuItem(
 								text = { Text("Sign out") },
 								leadingIcon = { Icon(Icons.AutoMirrored.Filled.Logout, null) },
 								onClick = {
-									onAction(ShellAction.SignOut)
+									onAction(ShellAction.SetAccountMenuOpen(false))
+									showSignOutConfirmation = !showSignOutConfirmation
 								},
 							)
 						}
