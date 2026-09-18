@@ -1,0 +1,57 @@
+name: Build Linux & Android
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "*"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository code
+        uses: actions/checkout@v7
+
+      - name: set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: "21"
+          distribution: "temurin"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Cache Gradle
+        uses: burrunan/gradle-cache-action@v3
+
+      - name: Create signing key
+        env:
+          DATA: ${{ secrets.ANDROID_KEYSTORE }}
+        run: |
+          echo "$DATA" | base64 --decode > ./app/keystore.jks
+
+      - name: Generate local.properties
+        env:
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        run: |
+          echo "storePassword=$STORE_PASSWORD" >> local.properties
+          echo "storeKeyPassword=$KEY_PASSWORD" >> local.properties
+          echo "storeKeyAlias=$KEY_ALIAS" >> local.properties
+          echo "storeFile=keystore.jks" >> local.properties
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build Prod Debug
+        run: ./gradlew assembleRelease
+
+      - name: Create Github Release
+        uses: softprops/action-gh-release@v3
+        with:
+          generate_release_notes: true
+          token: ${{ secrets.PAT }}
+          files: |
+            app/build/outputs/apk/release/*.apk

@@ -15,6 +15,21 @@ android {
 		version = release(37)
 	}
 	
+	signingConfigs {
+		val properties = Properties().apply {
+			val localPropertiesFile = rootProject.file("local.properties")
+			if (localPropertiesFile.exists()) {
+				localPropertiesFile.inputStream().use { load(it) }
+			}
+		}
+		create("all"){
+			storePassword = properties.getProperty("storePassword")
+			keyAlias = properties.getProperty("storeKeyAlias")
+			keyPassword = properties.getProperty("storeKeyPassword")
+			storeFile = file(properties.getProperty("storeFile"))
+		}
+	}
+	
 	defaultConfig {
 		applicationId = "app.deference.embcl"
 		minSdk = 24
@@ -22,23 +37,8 @@ android {
 		versionCode = 1
 		versionName = "1.0"
 		
-		
-		val properties = Properties().apply {
-			val localPropertiesFile = rootProject.file("local.properties")
-			if (localPropertiesFile.exists()) {
-				localPropertiesFile.inputStream().use { load(it) }
-			}
-		}
-		
-		signingConfigs {
-			all{
-				storePassword = properties.getProperty("storePassword")
-				keyAlias = properties.getProperty("storeKeyAlias")
-				keyPassword = properties.getProperty("storeKeyPassword")
-				storeFile = file(properties.getProperty("storeFile"))
-			}
-		}
 		testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+		signingConfig = signingConfigs.getByName("all")
 	}
 	
 	buildTypes {
@@ -52,6 +52,9 @@ android {
 				getDefaultProguardFile("proguard-android-optimize.txt"),
 				"proguard-rules.pro",
 			)
+		}
+		debug {
+			signingConfig = signingConfigs.getByName("all")
 		}
 	}
 	compileOptions {
