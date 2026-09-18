@@ -1,7 +1,7 @@
 import java.util.Properties
 
 plugins {
-	alias(libs.plugins.kotzilla)
+//	alias(libs.plugins.kotzilla)
 	alias(libs.plugins.android.application)
 	alias(libs.plugins.kotlin.compose)
 	alias(libs.plugins.kotlinx.serialization)
@@ -91,7 +91,7 @@ dependencies {
 	implementation(libs.kotlinx.serialization.json)
 	
 	// Retrofit
-	implementation(libs.bundles.retrofit)
+//	implementation(libs.bundles.retrofit)
 	
 	implementation(platform(libs.koin.bom))
 	implementation(libs.bundles.koin)
@@ -105,4 +105,6 @@ dependencies {
 	implementation(libs.androidx.datastore.preferences)
 	
 	implementation(libs.kotlinx.datetime)
+	
+	implementation(libs.bundles.ktor)
 }

@@ -14,19 +14,22 @@ import org.koin.core.annotation.KoinViewModel
 class HomeViewModel(
 	private val repository: EmbyRepository,
 ) : ViewModel() {
+	
 	private val _state = MutableStateFlow(HomeState())
 	val state = _state.asStateFlow()
 	private val _events = Channel<HomeEvent>(Channel.BUFFERED)
 	val events = _events.receiveAsFlow()
-
-	init { load() }
-
+	
+	init {
+		load()
+	}
+	
 	fun onAction(action: HomeAction) {
 		when (action) {
 			HomeAction.Retry -> load()
 		}
 	}
-
+	
 	private fun load() {
 		_state.value = HomeState()
 		viewModelScope.launch {

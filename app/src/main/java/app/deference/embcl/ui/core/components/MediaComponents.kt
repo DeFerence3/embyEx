@@ -39,7 +39,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.deference.embcl.core.utils.asRuntime
 import app.deference.embcl.domain.model.EmbyItem
-import app.deference.embcl.domain.model.EmbySession
 import app.deference.embcl.domain.repository.EmbyRepository
 import coil3.compose.AsyncImage
 
@@ -47,7 +46,6 @@ import coil3.compose.AsyncImage
 fun MediaRow(
 	title: String,
 	media: List<EmbyItem>,
-	session: EmbySession,
 	repository: EmbyRepository,
 	wide: Boolean = false,
 	onItemClick: (EmbyItem) -> Unit,
@@ -65,10 +63,10 @@ fun MediaRow(
 		) {
 			items(media, key = { it.id }) { item ->
 				if (wide) {
-					WideMediaCard(item, session, repository) { onItemClick(item) }
+					WideMediaCard(item, repository) { onItemClick(item) }
 				} else {
 					Box(Modifier.width(132.dp)) {
-						MediaCard(item, session, repository) { onItemClick(item) }
+						MediaCard(item, repository) { onItemClick(item) }
 					}
 				}
 			}
@@ -79,7 +77,6 @@ fun MediaRow(
 @Composable
 fun LibraryRow(
 	libraries: List<EmbyItem>,
-	session: EmbySession,
 	repository: EmbyRepository,
 	onLibraryClick: (EmbyItem) -> Unit,
 ) {
@@ -96,7 +93,7 @@ fun LibraryRow(
 		) {
 			items(libraries, key = { it.id }) { library ->
 				Box(Modifier.width(190.dp)) {
-					LibraryCard(library, session, repository) { onLibraryClick(library) }
+					LibraryCard(library, repository) { onLibraryClick(library) }
 				}
 			}
 		}
@@ -106,13 +103,12 @@ fun LibraryRow(
 @Composable
 fun MediaCard(
 	item: EmbyItem,
-	session: EmbySession,
 	repository: EmbyRepository,
 	onClick: () -> Unit,
 ) {
-	if (item.type == "Episode"){
-		EpisodeListItem(item, session, repository, onClick)
-	}else{
+	if (item.type == "Episode") {
+		EpisodeListItem(item, repository, onClick)
+	} else {
 		Column(
 			modifier = Modifier
 				.fillMaxWidth()
@@ -125,7 +121,7 @@ fun MediaCard(
 					.fillMaxWidth()
 					.aspectRatio(2f / 3f),
 			) {
-				Poster(item, session, repository)
+				Poster(item, repository)
 			}
 			Text(
 				item.name,
@@ -150,7 +146,6 @@ fun MediaCard(
 @Composable
 fun EpisodeListItem(
 	item: EmbyItem,
-	session: EmbySession,
 	repository: EmbyRepository,
 	onClick: () -> Unit,
 	modifier: Modifier = Modifier,
@@ -164,16 +159,15 @@ fun EpisodeListItem(
 		// Episode thumbnail
 		Box {
 			Poster(
+				item = item,
+				repository = repository,
 				modifier = Modifier
 					.width(112.dp)
 					.aspectRatio(16f / 9f)
 					.clip(MaterialTheme.shapes.small),
-				item = item,
-				session = session,
-				repository = repository,
 			)
 			val runTime = item.runTimeTicks?.asRuntime()
-			runTime?.let{
+			runTime?.let {
 				Surface(
 					modifier = Modifier
 						.align(Alignment.BottomStart)
@@ -232,7 +226,6 @@ fun EpisodeListItem(
 @Composable
 fun WideMediaCard(
 	item: EmbyItem,
-	session: EmbySession,
 	repository: EmbyRepository,
 	onClick: () -> Unit,
 ) {
@@ -248,7 +241,7 @@ fun WideMediaCard(
 					.fillMaxWidth()
 					.aspectRatio(16f / 9f),
 			) {
-				Poster(item, session, repository, backdrop = true)
+				Poster(item, repository, backdrop = true)
 				item.userData?.playedPercentage?.takeIf { it in 0.1..99.9 }?.let { progress ->
 					Box(
 						Modifier
@@ -272,7 +265,6 @@ fun WideMediaCard(
 @Composable
 fun LibraryCard(
 	item: EmbyItem,
-	session: EmbySession,
 	repository: EmbyRepository,
 	onClick: () -> Unit,
 ) {
@@ -284,7 +276,7 @@ fun LibraryCard(
 		shape = RoundedCornerShape(18.dp),
 	) {
 		Box(Modifier.fillMaxSize()) {
-			Poster(item, session, repository, backdrop = true)
+			Poster(item, repository, backdrop = true)
 			Box(
 				Modifier
 					.fillMaxSize()
@@ -307,13 +299,12 @@ fun LibraryCard(
 @Composable
 fun Poster(
 	item: EmbyItem,
-	session: EmbySession,
 	repository: EmbyRepository,
 	modifier: Modifier = Modifier,
 	backdrop: Boolean = false,
 ) {
 	val url = repository.imageUrl(item, if (backdrop) "Backdrop" else "Primary")
-	if (item.isEpisode()){
+	if (item.isEpisode()) {
 		Box(
 			modifier
 				.aspectRatio(1.7777778f)
@@ -335,7 +326,7 @@ fun Poster(
 				)
 			}
 		}
-	}else{
+	} else {
 		Box(
 			modifier
 				.fillMaxSize()

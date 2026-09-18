@@ -24,14 +24,12 @@ import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDe
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
-import app.deference.embcl.core.session.EmbySessionStore
-import app.deference.embcl.domain.model.EmbySession
+import app.deference.embcl.core.session.Session
 import app.deference.embcl.ui.core.LocalNavigator
 import app.deference.embcl.ui.core.nav.Navigator
 import app.deference.embcl.ui.screens.shell.EmbyShellScreen
 import app.deference.embcl.ui.screens.signin.EmbySignInScreen
 import app.deference.embcl.ui.theme.EmbympvTheme
-import org.koin.compose.koinInject
 
 class MainActivity : ComponentActivity() {
 	
@@ -40,10 +38,9 @@ class MainActivity : ComponentActivity() {
 		enableEdgeToEdge()
 		setContent {
 			EmbympvTheme {
-				val sessionStore = koinInject<EmbySessionStore>()
-				val session by sessionStore.session.collectAsState()
-				Surface{
-					EmbympvApp(session)
+				val isLoggedIn by Session.isLoggedInState.collectAsState()
+				Surface {
+					EmbympvApp(isLoggedIn)
 				}
 			}
 		}
@@ -51,9 +48,9 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun EmbympvApp(session: EmbySession?) {
-	val navigator = retain(session) {
-		val startDestination = if (session != null) EmbyShellScreen(session) else EmbySignInScreen
+fun EmbympvApp(isLoggedIn: Boolean) {
+	val navigator = retain(isLoggedIn) {
+		val startDestination = if (isLoggedIn) EmbyShellScreen else EmbySignInScreen
 		Navigator(startDestination)
 	}
 	CompositionLocalProvider(LocalNavigator provides navigator) {

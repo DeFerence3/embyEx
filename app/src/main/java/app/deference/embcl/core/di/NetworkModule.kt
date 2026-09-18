@@ -1,28 +1,48 @@
 package app.deference.embcl.core.di
 
-import app.deference.embcl.core.networking.AuthInterceptor
-import app.deference.embcl.core.networking.HostSelectionInterceptor
-import app.deference.embcl.core.session.EmbySessionStore
-import app.deference.embcl.data.remote.EmbyApiService
-import kotlinx.serialization.json.Json
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
+import app.deference.embcl.core.networking.configureAuth
+import app.deference.embcl.core.networking.configureContentNegotiation
+import app.deference.embcl.core.networking.configureDefaultRequest
+import app.deference.embcl.core.networking.configureLogging
+import app.deference.embcl.core.networking.configureValidation
+import app.deference.embcl.core.session.Session
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.HttpClientEngine
+import io.ktor.client.engine.okhttp.OkHttp
+import io.ktor.client.plugins.HttpSend
+import io.ktor.client.plugins.plugin
+import io.ktor.http.Url
 import org.koin.dsl.module
-import retrofit2.Retrofit
-import retrofit2.converter.kotlinx.serialization.asConverterFactory
-import java.util.concurrent.TimeUnit
 
 val networkModule = module {
-	single { HostSelectionInterceptor(get()) }
-	single { AuthInterceptor(get()) }
-	single {
+//	single { AuthInterceptor(get()) }
+	/*single {
 		HttpLoggingInterceptor().apply {
 			level = HttpLoggingInterceptor.Level.BASIC
 		}
 	}
-	factory { OkHttpClient.Builder() }
-	single {
+	factory { OkHttpClient.Builder() }*/
+	
+	single<HttpClientEngine> { OkHttp.create() }
+	
+	single<HttpClient> {
+		HttpClient(get()) {
+			configureValidation()
+			configureDefaultRequest(get())
+			configureContentNegotiation()
+			configureAuth()
+			configureLogging()
+		}.apply {
+			plugin(HttpSend).intercept { request ->
+				val dynamicBase = Url(Session.serverUrl)
+				request.url.protocol = dynamicBase.protocol
+				request.url.host = dynamicBase.host
+				request.url.port = dynamicBase.port
+				execute(request)
+			}
+		}
+	}
+	/*single {
 		get<OkHttpClient.Builder>()
 			.connectTimeout(30, TimeUnit.SECONDS)
 			.readTimeout(30, TimeUnit.SECONDS)
@@ -49,5 +69,5 @@ val networkModule = module {
 	}
 	single<EmbyApiService> {
 		get<Retrofit>().create(EmbyApiService::class.java)
-	}
+	}*/
 }

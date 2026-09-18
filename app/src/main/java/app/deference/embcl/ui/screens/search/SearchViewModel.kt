@@ -14,22 +14,24 @@ import org.koin.core.annotation.KoinViewModel
 
 @KoinViewModel
 class SearchViewModel(private val repository: EmbyRepository) : ViewModel() {
+	
 	private val _state = MutableStateFlow(SearchState())
 	val state = _state.asStateFlow()
 	private val _events = Channel<SearchEvent>(Channel.BUFFERED)
 	val events = _events.receiveAsFlow()
 	private var searchJob: Job? = null
-
+	
 	fun onAction(action: SearchAction) {
 		when (action) {
 			is SearchAction.QueryChanged -> {
 				_state.value = _state.value.copy(query = action.query)
 				search(debounce = true)
 			}
+			
 			SearchAction.Retry -> search(debounce = false)
 		}
 	}
-
+	
 	private fun search(debounce: Boolean) {
 		searchJob?.cancel()
 		val query = _state.value.query.trim()

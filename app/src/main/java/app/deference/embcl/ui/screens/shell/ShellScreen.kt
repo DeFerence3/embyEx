@@ -33,7 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
-import app.deference.embcl.domain.model.EmbySession
+import app.deference.embcl.core.session.Session
 import app.deference.embcl.domain.repository.EmbyRepository
 import app.deference.embcl.ui.Screen
 import app.deference.embcl.ui.core.LocalNavigator
@@ -53,7 +53,6 @@ import org.koin.compose.viewmodel.koinViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EmbyShellContent(
-	session: EmbySession,
 	state: ShellState,
 	onAction: (ShellAction) -> Unit,
 	homeState: app.deference.embcl.ui.screens.home.HomeState,
@@ -73,10 +72,10 @@ fun EmbyShellContent(
 			TopAppBar(
 				title = {
 					Column {
-						Text(if (tab == EmbyTab.Home) session.serverName else tab.name)
+						Text(if (tab == EmbyTab.Home) Session.serverName else tab.name)
 						if (tab == EmbyTab.Home) {
 							Text(
-								session.userName,
+								Session.userName,
 								style = MaterialTheme.typography.labelMedium,
 								color = MaterialTheme.colorScheme.onSurfaceVariant,
 							)
@@ -136,7 +135,6 @@ fun EmbyShellContent(
 		AnimatedContent(targetState = tab, label = "emby_tab") { selected ->
 			when (selected) {
 				EmbyTab.Home -> HomeContent(
-					session = session,
 					state = homeState,
 					onAction = onHomeAction,
 					modifier = Modifier.padding(padding),
@@ -146,7 +144,6 @@ fun EmbyShellContent(
 				)
 				
 				EmbyTab.Libraries -> LibrariesContent(
-					session = session,
 					state = librariesState,
 					onAction = onLibrariesAction,
 					modifier = Modifier.padding(padding),
@@ -155,7 +152,6 @@ fun EmbyShellContent(
 				)
 				
 				EmbyTab.Search -> SearchContent(
-					session = session,
 					state = searchState,
 					onAction = onSearchAction,
 					modifier = Modifier.padding(padding),
@@ -168,7 +164,7 @@ fun EmbyShellContent(
 }
 
 @Serializable
-data class EmbyShellScreen(private val session: EmbySession) : Screen {
+data object EmbyShellScreen : Screen {
 	
 	@Composable
 	override fun Content() {
@@ -181,7 +177,6 @@ data class EmbyShellScreen(private val session: EmbySession) : Screen {
 		val librariesState by librariesViewModel.state.collectAsState()
 		val searchState by searchViewModel.state.collectAsState()
 		EmbyShellContent(
-			session = session,
 			state = shellState,
 			onAction = shellViewModel::onAction,
 			homeState = homeState,

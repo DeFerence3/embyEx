@@ -5,10 +5,10 @@ import app.deference.embcl.domain.model.EmbyItem
 import app.deference.embcl.domain.model.EmbyItemsResult
 import app.deference.embcl.domain.model.EmbyPlaybackEvent
 import app.deference.embcl.domain.model.EmbyServerDiscovery
-import app.deference.embcl.domain.model.EmbySession
 import app.deference.embcl.domain.model.EmbyUser
 
 interface EmbyRepository {
+	
 	fun getSavedServerUrl(): String?
 	fun publicUserImageUrl(discovery: EmbyServerDiscovery, user: EmbyUser): String?
 	suspend fun home(): EmbyHome
@@ -19,7 +19,6 @@ interface EmbyRepository {
 	fun imageUrl(item: EmbyItem, type: String = "Primary", maxWidth: Int = 600): String?
 	fun userImageUrl(): String
 	fun streamUrl(item: EmbyItem): String
-	fun logout()
 	suspend fun toggleFavorite(itemId: String, isFavorite: Boolean)
 	suspend fun togglePlayed(itemId: String, isPlayed: Boolean)
 	fun reportPlayback(itemId: String, positionTicks: Long, event: EmbyPlaybackEvent, isPaused: Boolean = false)

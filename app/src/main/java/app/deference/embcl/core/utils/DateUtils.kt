@@ -16,7 +16,6 @@ val LocalDateTime.Companion.FORMAT: DateTimeFormat<LocalDateTime>
 		char(' ')
 		year()
 	}
-
 val Instant.Companion.FORMAT: DateTimeFormat<DateTimeComponents>
 	get() = DateTimeComponents.Format {
 		day()
@@ -27,13 +26,13 @@ val Instant.Companion.FORMAT: DateTimeFormat<DateTimeComponents>
 	}
 
 fun LocalDateTime.formatToString(
-	dateFormat: DateTimeFormat<LocalDateTime> = LocalDateTime.FORMAT
+	dateFormat: DateTimeFormat<LocalDateTime> = LocalDateTime.FORMAT,
 ): String {
 	return this.format(dateFormat)
 }
 
 fun Instant.formatToString(
-	dateFormat: DateTimeFormat<DateTimeComponents> = Instant.FORMAT
+	dateFormat: DateTimeFormat<DateTimeComponents> = Instant.FORMAT,
 ): String {
 	return this.format(dateFormat)
 }

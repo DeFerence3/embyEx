@@ -8,7 +8,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import app.deference.embcl.domain.model.EmbyItem
-import app.deference.embcl.domain.model.EmbySession
 import app.deference.embcl.domain.repository.EmbyRepository
 import app.deference.embcl.ui.core.components.EmptyState
 import app.deference.embcl.ui.core.components.LibraryRow
@@ -17,7 +16,6 @@ import app.deference.embcl.ui.core.components.MediaRow
 
 @Composable
 fun HomeContent(
-	session: EmbySession,
 	state: HomeState,
 	onAction: (HomeAction) -> Unit,
 	modifier: Modifier = Modifier,
@@ -36,7 +34,6 @@ fun HomeContent(
 					MediaRow(
 						title = "Continue watching",
 						media = home.resume,
-						session = session,
 						repository = repository,
 						wide = true,
 						onItemClick = onItemClick,
@@ -48,7 +45,6 @@ fun HomeContent(
 					MediaRow(
 						title = "Recently added",
 						media = home.latest,
-						session = session,
 						repository = repository,
 						onItemClick = onItemClick,
 					)
@@ -58,7 +54,6 @@ fun HomeContent(
 				item {
 					LibraryRow(
 						libraries = home.views,
-						session = session,
 						repository = repository,
 						onLibraryClick = onLibraryClick,
 					)

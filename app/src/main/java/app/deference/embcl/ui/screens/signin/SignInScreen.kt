@@ -104,7 +104,9 @@ fun SignInContent(
 					)
 					if (state.isSearchingLocal) {
 						Row(
-							modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+							modifier = Modifier
+								.fillMaxWidth()
+								.padding(vertical = 4.dp),
 							verticalAlignment = Alignment.CenterVertically,
 							horizontalArrangement = Arrangement.spacedBy(8.dp),
 						) {
@@ -126,7 +128,9 @@ fun SignInContent(
 									),
 								) {
 									Row(
-										modifier = Modifier.fillMaxWidth().padding(12.dp),
+										modifier = Modifier
+											.fillMaxWidth()
+											.padding(12.dp),
 										verticalAlignment = Alignment.CenterVertically,
 										horizontalArrangement = Arrangement.spacedBy(12.dp),
 									) {
@@ -140,7 +144,7 @@ fun SignInContent(
 							}
 						}
 					}
-
+					
 					OutlinedTextField(
 						value = state.server,
 						onValueChange = { onAction(SignInAction.ServerChanged(it)) },
@@ -149,7 +153,7 @@ fun SignInContent(
 						placeholder = { Text("http://192.168.1.10:8096") },
 						leadingIcon = { Icon(Icons.Filled.Storage, null) },
 						trailingIcon = {
-							IconButton(onClick = { onAction(SignInAction.ScanLocalServers) }, enabled = !state.isSearchingLocal) {
+							IconButton(onClick = { onAction(SignInAction.ScanLocalServers) }, enabled = ! state.isSearchingLocal) {
 								Icon(Icons.Filled.Refresh, contentDescription = "Scan network")
 							}
 						},
@@ -232,7 +236,7 @@ fun SignInContent(
 								)
 							} else {
 								currentDiscovery.users.forEach { user ->
-									PublicUserCard(user, currentDiscovery, repository, enabled = !state.isBusy) {
+									PublicUserCard(user, currentDiscovery, repository, enabled = ! state.isBusy) {
 										onAction(SignInAction.SelectUser(user))
 									}
 								}
@@ -243,7 +247,7 @@ fun SignInContent(
 								modifier = Modifier
 									.fillMaxWidth()
 									.height(52.dp),
-								enabled = !state.isBusy,
+								enabled = ! state.isBusy,
 							) {
 								Icon(Icons.Filled.AccountCircle, null)
 								Spacer(Modifier.width(8.dp))
@@ -275,9 +279,9 @@ data object EmbySignInScreen : Screen {
 		val state by viewModel.state.collectAsState()
 		viewModel.events.ObserveEvent { event ->
 			when (event) {
-/*				SignInEvent.OpenLocalFiles -> {
-					backStack.goTo(MainScreen)
-				}*/
+				/*				SignInEvent.OpenLocalFiles -> {
+									backStack.goTo(MainScreen)
+								}*/
 				is SignInEvent.Error -> Unit
 			}
 		}

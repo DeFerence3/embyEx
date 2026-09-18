@@ -1,11 +1,7 @@
 package app.deference.embcl.data.repository
 
 import app.deference.embcl.core.networking.ApiResponseHandler.safeApiCall
-import app.deference.embcl.core.networking.EmbyMdnsDiscovery
-import app.deference.embcl.core.networking.EmbyUdpDiscovery
-import app.deference.embcl.core.networking.HostSelectionInterceptor
-import app.deference.embcl.core.session.EmbySessionStore
-import app.deference.embcl.data.remote.EmbyApiService
+import app.deference.embcl.core.session.Session
 import app.deference.embcl.domain.model.EmbyHome
 import app.deference.embcl.domain.model.EmbyItem
 import app.deference.embcl.domain.model.EmbyItemsResult
@@ -14,27 +10,30 @@ import app.deference.embcl.domain.model.EmbyPlaybackReport
 import app.deference.embcl.domain.model.EmbyServerDiscovery
 import app.deference.embcl.domain.model.EmbyUser
 import app.deference.embcl.domain.repository.EmbyRepository
+import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.request.delete
+import io.ktor.client.request.get
+import io.ktor.client.request.parameter
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import org.koin.core.annotation.Single
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
 
 @Single
 class EmbyRepositoryImpl(
-	private val api: EmbyApiService,
-	private val sessionStore: EmbySessionStore,
-	private val hostSelectionInterceptor: HostSelectionInterceptor,
+	private val httpClient: HttpClient,
 ) : EmbyRepository {
-	
-	val session by lazy {
-		sessionStore.session.value ?: throw IllegalStateException("No session found")
-	}
-	
-	override fun getSavedServerUrl(): String? = sessionStore.getLastServerUrl()
+	/*	val ession by lazy {
+			sessionStore.Session.value ?: throw IllegalStateException("No Session found")
+		}*/
+	override fun getSavedServerUrl(): String? = Session.getLastServerUrl()
 	
 	override fun publicUserImageUrl(discovery: EmbyServerDiscovery, user: EmbyUser): String? {
 		val tag = user.primaryImageTag ?: return null
@@ -46,12 +45,21 @@ class EmbyRepositoryImpl(
 	}
 	
 	override suspend fun home(): EmbyHome = coroutineScope {
-		hostSelectionInterceptor.hostUrl = session.serverUrl
 		val views = async { libraries() }
 		val resume = async {
 			safeApiCall {
-				api.resumeItems(
-					userId = session.userId,
+				httpClient.get("/Users/${Session.userId}/Items/Resume") {
+					mapOf(
+						"Limit" to "20",
+						"MediaTypes" to "Video",
+						"Fields" to ITEM_FIELDS,
+						"EnableImages" to "true",
+						"EnableUserData" to "true",
+						"ImageTypeLimit" to "1",
+					).forEach { (key, value) -> parameter(key, value) }
+				}.body<EmbyItemsResult>()
+				/*api.resumeItems(
+					userId = Session.userId,
 					options = mapOf(
 						"Limit" to "20",
 						"MediaTypes" to "Video",
@@ -60,13 +68,23 @@ class EmbyRepositoryImpl(
 						"EnableUserData" to "true",
 						"ImageTypeLimit" to "1",
 					),
-				)
+				)*/
 			}.items
 		}
 		val latest = async {
 			safeApiCall {
-				api.latestItems(
-					userId = session.userId,
+				httpClient.get("/Users/${Session.userId}/Items/Latest") {
+					mapOf(
+						"Limit" to "24",
+						"IncludeItemTypes" to "Movie,Episode",
+						"Fields" to ITEM_FIELDS,
+						"EnableImages" to "true",
+						"EnableUserData" to "true",
+						"ImageTypeLimit" to "1",
+					).forEach { (key, value) -> parameter(key, value) }
+				}.body<List<EmbyItem>>()
+				/*api.latestItems(
+					userId = Session.userId,
 					options = mapOf(
 						"Limit" to "24",
 						"IncludeItemTypes" to "Movie,Episode",
@@ -75,30 +93,44 @@ class EmbyRepositoryImpl(
 						"EnableUserData" to "true",
 						"ImageTypeLimit" to "1",
 					),
-				)
+				)*/
 			}
 		}
 		EmbyHome(views.await(), resume.await(), latest.await())
 	}
 	
-	override suspend fun libraries(): List<EmbyItem> {
-		hostSelectionInterceptor.hostUrl = session.serverUrl
-		return safeApiCall {
+	override suspend fun libraries(): List<EmbyItem> = safeApiCall {
+		httpClient.get("/Users/${Session.userId}/Views") {
+			parameter("IncludeExternalContent", false)
+		}.body<EmbyItemsResult>().items
+		/*return safeApiCall {
 			api.userViews(
-				userId = session.userId,
+				userId = Session.userId,
 				options = mapOf("IncludeExternalContent" to "false"),
 			)
-		}.items
+		}.items*/
 	}
 	
 	override suspend fun items(
 		parentId: String,
 		startIndex: Int,
 	): EmbyItemsResult {
-		hostSelectionInterceptor.hostUrl = session.serverUrl
 		return safeApiCall {
-			api.userItems(
-				userId = session.userId,
+			httpClient.get("/Users/${Session.userId}/Items") {
+				mapOf(
+					"ParentId" to parentId,
+					"StartIndex" to startIndex.toString(),
+					"Limit" to "100",
+					"SortBy" to "SortName",
+					"SortOrder" to "Ascending",
+					//"Fields" to ITEM_FIELDS,
+					"EnableImages" to "true",
+					"EnableUserData" to "true",
+					"ImageTypeLimit" to "1",
+				).forEach { (name, value) -> parameter(name, value) }
+			}.body<EmbyItemsResult>()
+			/*api.userItems(
+				userId = Session.userId,
 				options = mapOf(
 					"ParentId" to parentId,
 					"StartIndex" to startIndex.toString(),
@@ -110,16 +142,27 @@ class EmbyRepositoryImpl(
 					"EnableUserData" to "true",
 					"ImageTypeLimit" to "1",
 				),
-			)
+			)*/
 		}
 	}
 	
 	override suspend fun search(term: String): List<EmbyItem> {
 		if (term.isBlank()) return emptyList()
-		hostSelectionInterceptor.hostUrl = session.serverUrl
 		return safeApiCall {
-			api.userItems(
-				userId = session.userId,
+			httpClient.get("/Users/${Session.userId}/Items") {
+				mapOf(
+					"SearchTerm" to term.trim(),
+					"Recursive" to "true",
+					"Limit" to "60",
+					"IncludeItemTypes" to "Movie,Series,Season,Episode,Video",
+					"Fields" to ITEM_FIELDS,
+					"EnableImages" to "true",
+					"EnableUserData" to "true",
+					"ImageTypeLimit" to "1",
+				).forEach { (name, value) -> parameter(name, value) }
+			}.body<EmbyItemsResult>()
+			/*api.userItems(
+				userId = Session.userId,
 				options = mapOf(
 					"SearchTerm" to term.trim(),
 					"Recursive" to "true",
@@ -130,17 +173,19 @@ class EmbyRepositoryImpl(
 					"EnableUserData" to "true",
 					"ImageTypeLimit" to "1",
 				),
-			)
+			)*/
 		}.items
 	}
 	
 	override suspend fun item(id: String): EmbyItem {
-		hostSelectionInterceptor.hostUrl = session.serverUrl
 		return safeApiCall {
-			api.item(
-				userId = session.userId,
+			httpClient
+				.get("/Users/${Session.userId}/Items/${id}")
+				.body<EmbyItem>()
+			/*api.item(
+				userId = Session.userId,
 				itemId = id
-			)
+			)*/
 		}
 	}
 	
@@ -163,59 +208,56 @@ class EmbyRepositoryImpl(
 			else -> item.imageTags[type]
 		}
 		return buildUrl(
-			session.serverUrl,
+			Session.serverUrl,
 			"/Items/$imageItemId/Images/$type",
 			mapOf(
 				"MaxWidth" to maxWidth.toString(),
 				"Quality" to "90",
 				"Tag" to tag,
-				"api_key" to session.accessToken,
+				"api_key" to Session.accessToken,
 			),
 		).toString()
 	}
 	
 	override fun userImageUrl(): String = buildUrl(
-		session.serverUrl,
-		"/Users/${session.userId}/Images/Primary",
-		mapOf("MaxWidth" to "160", "api_key" to session.accessToken),
+		Session.serverUrl,
+		"/Users/${Session.userId}/Images/Primary",
+		mapOf("MaxWidth" to "160"),
 	).toString()
 	
 	override fun streamUrl(item: EmbyItem): String {
 		val extension = item.container?.substringBefore(',')?.ifBlank { null } ?: "mkv"
 		return buildUrl(
-			session.serverUrl,
+			Session.serverUrl,
 			"/Videos/${item.id}/stream.$extension",
 			mapOf(
 				"Static" to "true",
-				"DeviceId" to session.deviceId,
-				"api_key" to session.accessToken,
+				"DeviceId" to Session.deviceId,
+				"api_key" to Session.accessToken,
 			),
 		).toString()
 	}
 	
-	override fun logout() {
-		sessionStore.clear()
-		hostSelectionInterceptor.hostUrl = null
-	}
-	
 	override suspend fun toggleFavorite(itemId: String, isFavorite: Boolean) {
-		hostSelectionInterceptor.hostUrl = session.serverUrl
 		safeApiCall {
 			if (isFavorite) {
-				api.markFavorite(session.userId, itemId)
+				httpClient.post("/Users/${Session.userId}/FavoriteItems/${itemId}")
+//				api.markFavorite(Session.userId, itemId)
 			} else {
-				api.unmarkFavorite(session.userId, itemId)
+				httpClient.delete("/Users/${Session.userId}/FavoriteItems/${itemId}")
+//				api.unmarkFavorite(Session.userId, itemId)
 			}
 		}
 	}
 	
 	override suspend fun togglePlayed(itemId: String, isPlayed: Boolean) {
-		hostSelectionInterceptor.hostUrl = session.serverUrl
 		safeApiCall {
 			if (isPlayed) {
-				api.markPlayed(session.userId, itemId)
+				httpClient.post("/Users/${Session.userId}/PlayedItems/${itemId}")
+//				api.markPlayed(Session.userId, itemId)
 			} else {
-				api.unmarkPlayed(session.userId, itemId)
+				httpClient.delete("/Users/${Session.userId}/PlayedItems/${itemId}")
+//				api.unmarkPlayed(Session.userId, itemId)
 			}
 		}
 	}
@@ -226,9 +268,7 @@ class EmbyRepositoryImpl(
 		event: EmbyPlaybackEvent,
 		isPaused: Boolean,
 	) {
-		val session = sessionStore.session.value ?: return
-		hostSelectionInterceptor.hostUrl = session.serverUrl
-		val playSessionId = "${session.deviceId}_$itemId"
+		val playSessionId = "${Session.deviceId}_$itemId"
 		val report = EmbyPlaybackReport(
 			itemId = itemId,
 			positionTicks = positionTicks.coerceAtLeast(0),
@@ -236,14 +276,35 @@ class EmbyRepositoryImpl(
 			isPaused = isPaused,
 		)
 		val call = when (event) {
-			EmbyPlaybackEvent.Started -> api.reportPlayback(report)
-			EmbyPlaybackEvent.Progress -> api.reportPlaybackProgress(report)
-			EmbyPlaybackEvent.Stopped -> api.reportPlaybackStopped(report)
+			EmbyPlaybackEvent.Started -> suspend {
+				httpClient.post("/Sessions/Playing") {
+					setBody(report)
+				}
+//				api.reportPlayback(report)
+			}
+			
+			EmbyPlaybackEvent.Progress -> suspend {
+				httpClient.post("/Sessions/Playing/Progress") {
+					setBody(report)
+				}
+//				api.reportPlaybackProgress(report)
+			}
+			
+			EmbyPlaybackEvent.Stopped -> suspend {
+				httpClient.post("/Sessions/Playing/Stopped") {
+					setBody(report)
+				}
+//				api.reportPlaybackStopped(report)
+			}
 		}
-		call.enqueue(object : Callback<Void> {
+		
+		CoroutineScope(Dispatchers.IO).launch {
+			call.invoke()
+		}
+		/*call.enqueue(object : Callback<Void> {
 			override fun onResponse(call: Call<Void>, response: Response<Void>) = Unit
 			override fun onFailure(call: Call<Void>, error: Throwable) = Unit
-		})
+		})*/
 	}
 	
 	private fun buildUrl(base: String, path: String, parameters: Map<String, String?>): HttpUrl {

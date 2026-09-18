@@ -58,11 +58,6 @@ fun LibraryContent(
 	onItemClick: (EmbyItem) -> Unit = {},
 	repository: EmbyRepository = koinInject(),
 ) {
-	val current = state.session
-	if (current == null) {
-		EmptyState("Signed out", "Return to the Emby home screen to sign in.")
-		return
-	}
 	Scaffold(
 		topBar = {
 			DetailTopBar(title) {
@@ -81,10 +76,10 @@ fun LibraryContent(
 						verticalArrangement = Arrangement.spacedBy(18.dp),
 					) {
 						items(result.items.sortedBy { it.indexNumber }, key = { it.id }) { item ->
-							MediaCard(item, current, repository) { onItemClick(item) }
+							MediaCard(item, repository) { onItemClick(item) }
 						}
 					}
-				}else{
+				} else {
 					LazyVerticalGrid(
 						columns = GridCells.Adaptive(132.dp),
 						modifier = Modifier.fillMaxSize(),
@@ -93,7 +88,7 @@ fun LibraryContent(
 						verticalArrangement = Arrangement.spacedBy(18.dp),
 					) {
 						items(result.items.sortedBy { it.indexNumber }, key = { it.id }) { item ->
-							MediaCard(item, current, repository) { onItemClick(item) }
+							MediaCard(item, repository) { onItemClick(item) }
 						}
 					}
 				}

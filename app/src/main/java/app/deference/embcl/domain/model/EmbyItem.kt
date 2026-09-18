@@ -68,10 +68,11 @@ data class EmbyItem(
 	@SerialName("UserData")
 	val userData: EmbyUserData? = null,
 ) {
+	
 	fun isEpisode() = type == "Episode"
 	
 	fun subtitle(): String? = when {
-		isEpisode() -> "S${parentIndexNumber.or{ "Unknown" }} Ep $indexNumber"
+		isEpisode() -> "S${parentIndexNumber.or { "Unknown" }} Ep $indexNumber"
 		type == "Season" -> "Season $indexNumber"
 		productionYear != null -> productionYear.toString()
 		collectionType != null -> collectionType.replaceFirstChar { it.uppercase() }

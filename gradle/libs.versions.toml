@@ -30,6 +30,8 @@ koasty = "0.0.1"
 
 datastore = "1.2.1"
 
+ktor = "3.5.2"
+
 [libraries]
 kotzilla-sdk-compose = { group = "io.kotzilla", name = "kotzilla-sdk-compose", version.ref = "kotzilla" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -77,6 +79,15 @@ kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version 
 androidx-datastore = { module = "androidx.datastore:datastore", version.ref = "datastore" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
 
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
+ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktor" }
+ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-client-logging = { module = "io.ktor:ktor-client-logging", version.ref = "ktor" }
+ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
+ktor-client-auth = { module = "io.ktor:ktor-client-auth", version.ref = "ktor" }
+ktor-defautl-header = { module = "io.ktor:ktor-server-default-headers", version.ref = "ktor" }
+
 [plugins]
 kotzilla = { id = "io.kotzilla.kotzilla-plugin", version.ref = "kotzilla" }
 android-application = { id = "com.android.application", version.ref = "agp" }
@@ -86,11 +97,14 @@ koin-compiler = { id = "io.insert-koin.compiler.plugin", version.ref = "koin-plu
 kotlinx-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 
 [bundles]
-retrofit = [
-    "retrofit",
-    "logging-interceptor",
-    "converter-kotlinx-serialization",
-    "retrofit2-kotlinx-serialization-converter"
+ktor = [
+    "ktor-client-core",
+    "ktor-client-content-negotiation",
+    "ktor-client-auth",
+    "ktor-client-logging",
+    "ktor-client-okhttp",
+    "ktor-defautl-header",
+    "ktor-serialization-kotlinx-json",
 ]
 koin = [
     "koin-core",

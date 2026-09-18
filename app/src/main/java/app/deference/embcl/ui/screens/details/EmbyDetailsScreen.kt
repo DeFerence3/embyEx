@@ -52,7 +52,6 @@ import app.deference.embcl.domain.model.EmbyItem
 import app.deference.embcl.domain.repository.EmbyRepository
 import app.deference.embcl.ui.Screen
 import app.deference.embcl.ui.core.LocalNavigator
-import app.deference.embcl.ui.core.components.EmptyState
 import app.deference.embcl.ui.core.components.LoadingScaffold
 import app.deference.embcl.ui.core.components.ObserveEvent
 import coil3.compose.AsyncImage
@@ -87,20 +86,15 @@ fun DetailsContent(
 	onBack: () -> Unit = {},
 	repository: EmbyRepository = koinInject(),
 ) {
-	val current = state.session
-	if (current == null) {
-		EmptyState("Signed out", "Return to the Emby home screen to sign in.")
-		return
-	}
 	val mpvLauncher = rememberLauncherForActivityResult(
 		contract = ActivityResultContracts.StartActivityForResult(),
 	) { result ->
 		val data = result.data
-		val positionMs = data?.getIntExtra("position", -1)?.takeIf { it >= 0 }?.toLong()
-			?: data?.getLongExtra("position", -1L)?.takeIf { it >= 0L }
+		val positionMs = data?.getIntExtra("position", - 1)?.takeIf { it >= 0 }?.toLong()
+			?: data?.getLongExtra("position", - 1L)?.takeIf { it >= 0L }
 		onAction(EmbyDetailsAction.PlaybackFinished(positionMs))
 	}
-	events.ObserveEvent{ event ->
+	events.ObserveEvent { event ->
 		when (event) {
 			is EmbyDetailsEvent.Error -> Unit
 			is EmbyDetailsEvent.LaunchPlayback -> {
@@ -117,11 +111,14 @@ fun DetailsContent(
 					putExtra("playlist_index", request.selectedIndex)
 					putExtra("headers", arrayOf("User-Agent", "mpvEx", "X-Emby-Token", request.accessToken))
 				}
-				try { mpvLauncher.launch(intent) } catch (_: ActivityNotFoundException) { }
+				try {
+					mpvLauncher.launch(intent)
+				} catch (_: ActivityNotFoundException) {
+				}
 			}
 		}
-  	}
-
+	}
+	
 	LoadingScaffold(
 		state = state.content,
 		onRetry = { onAction(EmbyDetailsAction.Retry) },
@@ -146,34 +143,29 @@ fun ItemDetails(
 ) {
 	val backdrop = repository.imageUrl(item, type = "Primary", maxWidth = 1280)
 	val logoUrl = repository.imageUrl(item, type = "Logo", maxWidth = 600)
-
 	val videoStream = item.mediaStreams.firstOrNull { it.type == "Video" }
 	val subtitleStreams = item.mediaStreams.filter { it.type == "Subtitle" }.joinToString(" | ") { it.displayLanguage ?: it.displayTitle ?: "" }
-	
 	val videoResolution = videoStream?.displayTitle
 		?: item.container?.uppercase()
 		?: "HD"
 	val audioTitle = item.mediaStreams.filter { it.type == "Audio" }.joinToString(" | ") { it.displayLanguage ?: it.displayTitle ?: "" }
-
-
 	val runTimeText = item.runTimeTicks?.asRuntime()
-
 	val currentPositionTicks = item.userData?.playbackPositionTicks ?: 0L
 	val totalRunTimeTicks = item.runTimeTicks ?: 0L
 	val isResume = currentPositionTicks > 0L
 	val progressFraction = if (totalRunTimeTicks > 0L && isResume) {
 		(currentPositionTicks.toFloat() / totalRunTimeTicks.toFloat()).coerceIn(0f, 1f)
 	} else 0f
-
 	val remainingMinutes = if (totalRunTimeTicks > currentPositionTicks && isResume) {
 		val remainingTicks = totalRunTimeTicks - currentPositionTicks
 		(remainingTicks / 10_000_000L / 60L).coerceAtLeast(1)
 	} else null
-
 	val directors = item.people.filter { it.type == "Director" }.mapNotNull { it.name }
 	val writers = item.people.filter { it.type == "Writer" }.mapNotNull { it.name }
-
-	Box(modifier = Modifier.fillMaxSize().background(Color(0xFF101012))) {
+	
+	Box(modifier = Modifier
+		.fillMaxSize()
+		.background(Color(0xFF101012))) {
 		Column(
 			modifier = Modifier
 				.fillMaxSize()
@@ -207,14 +199,14 @@ fun ItemDetails(
 						),
 				)
 			}
-
+			
 			Column(
 				modifier = Modifier
 					.padding(horizontal = 20.dp)
 					.padding(top = 4.dp, bottom = 48.dp),
 				verticalArrangement = Arrangement.spacedBy(16.dp),
 			) {
-				if (!logoUrl.isNullOrBlank()) {
+				if (! logoUrl.isNullOrBlank()) {
 					AsyncImage(
 						model = logoUrl,
 						contentDescription = item.seriesName ?: item.name,
@@ -225,30 +217,30 @@ fun ItemDetails(
 						alignment = Alignment.CenterStart,
 					)
 				}
-
+				
 				Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
 					val episodeHeader = item.name
-
+					
 					Text(
 						text = episodeHeader,
 						style = MaterialTheme.typography.titleLarge,
 						fontWeight = FontWeight.Bold,
 						color = Color.White,
 					)
-
+					
 					Row(
 						horizontalArrangement = Arrangement.spacedBy(12.dp),
 						verticalAlignment = Alignment.CenterVertically,
 					) {
 						val airDate = item.premiereDate?.formatToString() ?: item.productionYear?.toString()
-						if (!airDate.isNullOrBlank()) {
+						if (! airDate.isNullOrBlank()) {
 							Text(
 								text = airDate,
 								style = MaterialTheme.typography.bodyMedium,
 								color = Color(0xFFB0B0B8),
 							)
 						}
-						if (!runTimeText.isNullOrBlank()) {
+						if (! runTimeText.isNullOrBlank()) {
 							Text(
 								text = runTimeText,
 								style = MaterialTheme.typography.bodyMedium,
@@ -257,7 +249,7 @@ fun ItemDetails(
 						}
 					}
 				}
-
+				
 				Row(
 					horizontalArrangement = Arrangement.spacedBy(16.dp),
 					verticalAlignment = Alignment.Top,
@@ -275,7 +267,7 @@ fun ItemDetails(
 							color = Color.White,
 						)
 					}
-
+					
 					Row(
 						horizontalArrangement = Arrangement.spacedBy(6.dp),
 					) {
@@ -292,7 +284,7 @@ fun ItemDetails(
 						)
 					}
 				}
-
+				
 				if (subtitleStreams.isNotEmpty()) {
 					Row(
 						verticalAlignment = Alignment.CenterVertically,
@@ -312,7 +304,7 @@ fun ItemDetails(
 						)
 					}
 				}
-
+				
 				Button(
 					onClick = onPlay,
 					modifier = Modifier
@@ -337,7 +329,7 @@ fun ItemDetails(
 						fontWeight = FontWeight.Bold,
 					)
 				}
-
+				
 				if (isResume && progressFraction > 0f) {
 					Row(
 						modifier = Modifier.fillMaxWidth(),
@@ -362,7 +354,7 @@ fun ItemDetails(
 						}
 					}
 				}
-
+				
 				item.overview?.takeIf { it.isNotBlank() }?.let { overview ->
 					Text(
 						text = overview,
@@ -371,7 +363,7 @@ fun ItemDetails(
 						lineHeight = 22.sp,
 					)
 				}
-
+				
 				if (directors.isNotEmpty()) {
 					Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
 						Text(
@@ -386,7 +378,7 @@ fun ItemDetails(
 						)
 					}
 				}
-
+				
 				if (writers.isNotEmpty()) {
 					Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
 						Text(
@@ -403,7 +395,7 @@ fun ItemDetails(
 				}
 			}
 		}
-
+		
 		Row(
 			modifier = Modifier
 				.fillMaxWidth()

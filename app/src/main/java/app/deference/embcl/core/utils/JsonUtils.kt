@@ -3,6 +3,7 @@ package app.deference.embcl.core.utils
 import kotlinx.serialization.json.Json
 
 object JsonUtils {
+	
 	val json: Json by lazy {
 		Json {
 			encodeDefaults = true
@@ -17,10 +18,10 @@ object JsonUtils {
 	/***
 	 * Pretty prints a Kotlin object
 	 */
-	inline fun <reified T> prettyPrint(input: T,tag: String = "PrettyPrint") {
+	inline fun <reified T> prettyPrint(input: T, tag: String = "PrettyPrint") {
 		val prettyJsonString = json.encodeToString(input)
 		println("$tag--->Start")
-		println( prettyJsonString)
+		println(prettyJsonString)
 		println("$tag--->End")
 	}
 	
@@ -32,7 +33,7 @@ object JsonUtils {
 	/***
 	 * Pretty prints a json string
 	 */
-	fun prettyPrintString(input: String,tag: String = "PrettyPrintString") {
+	fun prettyPrintString(input: String, tag: String = "PrettyPrintString") {
 		val prettyJsonString: String = prettifyJsonString(input)
 		println("$tag--->Start")
 		println(prettyJsonString)

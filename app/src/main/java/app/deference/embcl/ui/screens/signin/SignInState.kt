@@ -1,7 +1,7 @@
 package app.deference.embcl.ui.screens.signin
 
+import app.deference.embcl.domain.model.EmbyServer
 import app.deference.embcl.domain.model.EmbyServerDiscovery
-import app.deference.embcl.domain.model.EmbyUdpServer
 import app.deference.embcl.domain.model.EmbyUser
 
 data class SignInState(
@@ -15,5 +15,5 @@ data class SignInState(
 	val isBusy: Boolean = false,
 	val error: String? = null,
 	val isSearchingLocal: Boolean = false,
-	val discoveredServers: List<EmbyUdpServer> = emptyList(),
+	val discoveredServers: List<EmbyServer> = emptyList(),
 )

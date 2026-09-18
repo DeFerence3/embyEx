@@ -41,7 +41,7 @@ class EmbyPreference(private val dataStore: DataStore<Preferences>) {
 		}
 	}
 	
-	fun getString(key: String,default: String): String {
+	fun getString(key: String, default: String): String {
 		return runBlocking {
 			val preferences = dataStore.data.first()
 			preferences[stringPreferencesKey(key)] ?: default

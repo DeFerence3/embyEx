@@ -12,17 +12,22 @@ import org.koin.core.annotation.KoinViewModel
 
 @KoinViewModel
 class LibrariesViewModel(private val repository: EmbyRepository) : ViewModel() {
+	
 	private val _state = MutableStateFlow(LibrariesState())
 	val state = _state.asStateFlow()
 	private val _events = Channel<LibrariesEvent>(Channel.BUFFERED)
 	val events = _events.receiveAsFlow()
-
-	init { load() }
-
-	fun onAction(action: LibrariesAction) {
-		when (action) { LibrariesAction.Retry -> load() }
+	
+	init {
+		load()
 	}
-
+	
+	fun onAction(action: LibrariesAction) {
+		when (action) {
+			LibrariesAction.Retry -> load()
+		}
+	}
+	
 	private fun load() {
 		_state.value = LibrariesState()
 		viewModelScope.launch {

@@ -1,11 +1,5 @@
 package app.deference.embcl.core.networking
-
-import app.deference.embcl.BuildConfig
-import app.deference.embcl.core.session.EmbySessionStore
-import okhttp3.Interceptor
-import okhttp3.Response
-import java.io.IOException
-
+/*
 class AuthInterceptor(
 	private val sessionStore: EmbySessionStore,
 ) : Interceptor {
@@ -45,3 +39,4 @@ class AuthInterceptor(
 		return response
 	}
 }
+*/

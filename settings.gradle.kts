@@ -22,6 +22,6 @@ dependencyResolutionManagement {
 	}
 }
 
-rootProject.name = "Emby-mpv"
+rootProject.name = "embyEx"
 include(":app")
  

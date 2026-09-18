@@ -10,14 +10,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import app.deference.embcl.domain.model.EmbyItem
-import app.deference.embcl.domain.model.EmbySession
 import app.deference.embcl.domain.repository.EmbyRepository
 import app.deference.embcl.ui.core.components.LibraryCard
 import app.deference.embcl.ui.core.components.LoadState
 
 @Composable
 fun LibrariesContent(
-	session: EmbySession,
 	state: LibrariesState,
 	onAction: (LibrariesAction) -> Unit,
 	modifier: Modifier = Modifier,
@@ -33,7 +31,7 @@ fun LibrariesContent(
 			verticalArrangement = Arrangement.spacedBy(14.dp),
 		) {
 			items(libraries, key = { it.id }) { library ->
-				LibraryCard(library, session, repository) { onLibraryClick(library) }
+				LibraryCard(library, repository) { onLibraryClick(library) }
 			}
 		}
 	}
