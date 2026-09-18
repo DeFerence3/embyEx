@@ -40,13 +40,15 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.semantics.contentType
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import app.deference.embcl.domain.repository.EmbyRepository
 import app.deference.embcl.ui.Screen
-import app.deference.embcl.ui.core.LocalNavigator
 import app.deference.embcl.ui.core.components.ObserveEvent
 import app.deference.embcl.ui.core.components.PasswordField
 import app.deference.embcl.ui.core.components.PublicUserCard
@@ -186,7 +188,7 @@ fun SignInContent(
 					when {
 						state.selectedUser != null -> {
 							val user = state.selectedUser
-							PublicUserCard(user, currentDiscovery, repository, enabled = false) {}
+							PublicUserCard(user, currentDiscovery, repository, enabled = false, isSelected = true) {}
 							PasswordField(
 								password = state.password,
 								onPasswordChange = { onAction(SignInAction.PasswordChanged(it)) },
@@ -207,11 +209,13 @@ fun SignInContent(
 							OutlinedTextField(
 								value = state.username,
 								onValueChange = { onAction(SignInAction.UsernameChanged(it)) },
-								modifier = Modifier.fillMaxWidth(),
+								modifier = Modifier
+									.fillMaxWidth()
+									.semantics { contentType = ContentType.Username },
 								label = { Text("Username") },
 								leadingIcon = { Icon(Icons.Filled.AccountCircle, null) },
 								singleLine = true,
-								keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+								keyboardOptions = KeyboardOptions(autoCorrectEnabled = false, imeAction = ImeAction.Next),
 							)
 							PasswordField(
 								password = state.password,
@@ -274,14 +278,10 @@ data object EmbySignInScreen : Screen {
 	
 	@Composable
 	override fun Content() {
-		val backStack = LocalNavigator.current
 		val viewModel = koinViewModel<SignInViewModel>()
 		val state by viewModel.state.collectAsState()
 		viewModel.events.ObserveEvent { event ->
 			when (event) {
-				/*				SignInEvent.OpenLocalFiles -> {
-									backStack.goTo(MainScreen)
-								}*/
 				is SignInEvent.Error -> Unit
 			}
 		}

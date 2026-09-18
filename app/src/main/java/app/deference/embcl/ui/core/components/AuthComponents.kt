@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -39,6 +40,7 @@ import androidx.compose.ui.semantics.contentType
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
@@ -53,12 +55,13 @@ fun PublicUserCard(
 	discovery: EmbyServerDiscovery,
 	repository: EmbyRepository,
 	enabled: Boolean,
+	isSelected: Boolean = false,
 	onClick: () -> Unit,
 ) {
 	Card(
 		modifier = Modifier
 			.fillMaxWidth()
-			.clickable(enabled = enabled, onClick = onClick),
+			.then(if (enabled) Modifier.clickable(onClick = onClick) else Modifier),
 		shape = RoundedCornerShape(18.dp),
 		colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
 	) {
@@ -87,15 +90,29 @@ fun PublicUserCard(
 			}
 			Spacer(Modifier.width(14.dp))
 			Column(Modifier.weight(1f)) {
-				Text(
-					modifier = Modifier
-						.semantics {
+				if (isSelected) {
+					/* A Text label has no autofill value. Expose the fixed account name
+					as a read-only field so it can be saved with the password. */
+					BasicTextField(
+						value = user.name,
+						onValueChange = {},
+						readOnly = true,
+						singleLine = true,
+						modifier = Modifier.semantics {
 							contentType = ContentType.Username
 						},
-					text = user.name,
-					style = MaterialTheme.typography.titleMedium,
-					fontWeight = FontWeight.SemiBold
-				)
+						textStyle = MaterialTheme.typography.titleMedium.copy(
+							fontWeight = FontWeight.SemiBold,
+							color = MaterialTheme.colorScheme.onSurface,
+						),
+					)
+				} else {
+					Text(
+						text = user.name,
+						style = MaterialTheme.typography.titleMedium,
+						fontWeight = FontWeight.SemiBold,
+					)
+				}
 				if (user.hasPassword || user.hasConfiguredPassword) {
 					Text("Password required", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 				}
@@ -125,7 +142,11 @@ fun PasswordField(
 		trailingIcon = { IconButton(onClick = onVisibilityChange) { Icon(Icons.Default.RemoveRedEye, null) } },
 		singleLine = true,
 		visualTransformation = if (visible) VisualTransformation.None else PasswordVisualTransformation(),
-		keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+		keyboardOptions = KeyboardOptions(
+			keyboardType = KeyboardType.Password,
+			autoCorrectEnabled = false,
+			imeAction = ImeAction.Done,
+		),
 		keyboardActions = KeyboardActions(onDone = { onDone() }),
 	)
 }
