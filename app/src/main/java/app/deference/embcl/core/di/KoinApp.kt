@@ -7,6 +7,7 @@ import org.koin.core.annotation.KoinApplication
 		DataModule::class,
 		DomainModule::class,
 		UiModule::class,
+		NetworkModule::class,
 		CoreModule::class
 	]
 )

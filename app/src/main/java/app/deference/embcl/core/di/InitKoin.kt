@@ -5,5 +5,4 @@ import org.koin.plugin.module.dsl.startKoin
 
 fun initKoin(appDeclaration: KoinAppDeclaration = {}) = startKoin<KoinApp> {
 	appDeclaration()
-	modules(networkModule)
 }

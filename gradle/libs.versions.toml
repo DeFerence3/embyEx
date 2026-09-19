@@ -30,7 +30,7 @@ koasty = "0.0.1"
 
 datastore = "1.2.1"
 
-ktor = "3.5.2"
+ktor = "3.6.0"
 
 [libraries]
 kotzilla-sdk-compose = { group = "io.kotzilla", name = "kotzilla-sdk-compose", version.ref = "kotzilla" }

@@ -2,6 +2,7 @@ package app.deference.embcl.ui.screens.details
 
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -42,6 +43,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -83,6 +85,7 @@ fun DetailsContent(
 	onAction: (EmbyDetailsAction) -> Unit,
 	onBack: () -> Unit = {},
 ) {
+	val context = LocalContext.current
 	val mpvLauncher = rememberLauncherForActivityResult(
 		contract = ActivityResultContracts.StartActivityForResult(),
 	) { result ->
@@ -111,6 +114,10 @@ fun DetailsContent(
 				try {
 					mpvLauncher.launch(intent)
 				} catch (_: ActivityNotFoundException) {
+					Toast.makeText(context, "mpvEx not installed, install it.", Toast.LENGTH_SHORT).show()
+					val url = "https://github.com/marlboro-advance/mpvEx/releases/latest"
+					val intent = Intent(Intent.ACTION_VIEW, url.toUri())
+					context.startActivity(intent)
 				}
 			}
 		}
