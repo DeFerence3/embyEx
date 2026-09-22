@@ -1,0 +1,93 @@
+package app.deference.embycl.core.networking
+
+import app.deference.embycl.domain.model.EmbyServer
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
+import org.koin.core.annotation.Single
+import java.net.DatagramPacket
+import java.net.DatagramSocket
+import java.net.InetAddress
+import java.net.NetworkInterface
+
+@Single
+actual class EmbyUdpDiscovery {
+	
+	private val json = Json { ignoreUnknownKeys = true }
+	
+	actual suspend fun discover(timeoutMs: Int): List<EmbyServer> = withContext(Dispatchers.IO) {
+		val servers = mutableListOf<EmbyServer>()
+		val seenIds = mutableSetOf<String>()
+		var socket: DatagramSocket? = null
+		try {
+			socket = DatagramSocket().apply {
+				broadcast = true
+				soTimeout = timeoutMs
+			}
+			val messageBytes = "who is EmbyServer?".toByteArray(Charsets.UTF_8)
+			val broadcastAddresses = getBroadcastAddresses()
+			
+			for (address in broadcastAddresses) {
+				try {
+					val packet = DatagramPacket(messageBytes, messageBytes.size, address, PORT)
+					socket.send(packet)
+				} catch (_: Exception) {
+				}
+			}
+			val buffer = ByteArray(2048)
+			val endTime = System.currentTimeMillis() + timeoutMs
+			
+			while (System.currentTimeMillis() < endTime) {
+				val remainingTime = (endTime - System.currentTimeMillis()).toInt()
+				if (remainingTime <= 0) break
+				socket.soTimeout = remainingTime
+				val responsePacket = DatagramPacket(buffer, buffer.size)
+				try {
+					socket.receive(responsePacket)
+					val responseStr = String(responsePacket.data, 0, responsePacket.length, Charsets.UTF_8)
+					val parsed = runCatching { json.decodeFromString<EmbyServer>(responseStr) }.getOrNull()
+					if (parsed != null && seenIds.add(parsed.id)) {
+						servers.add(parsed)
+					}
+				} catch (_: java.net.SocketTimeoutException) {
+					break
+				} catch (_: Exception) {
+				}
+			}
+		} catch (_: Exception) {
+		} finally {
+			socket?.close()
+		}
+		
+		servers
+	}
+	
+	private fun getBroadcastAddresses(): List<InetAddress> {
+		val broadcastList = mutableListOf<InetAddress>()
+		try {
+			val interfaces = NetworkInterface.getNetworkInterfaces() ?: return listOf(InetAddress.getByName("255.255.255.255"))
+			while (interfaces.hasMoreElements()) {
+				val networkInterface = interfaces.nextElement()
+				if (networkInterface.isLoopback || ! networkInterface.isUp) continue
+				
+				for (interfaceAddress in networkInterface.interfaceAddresses) {
+					val broadcast = interfaceAddress.broadcast
+					if (broadcast != null) {
+						broadcastList.add(broadcast)
+					}
+				}
+			}
+		} catch (_: Exception) {
+		}
+		
+		if (broadcastList.isEmpty()) {
+			runCatching { broadcastList.add(InetAddress.getByName("255.255.255.255")) }
+		}
+		return broadcastList
+	}
+	
+	companion object {
+		
+		const val PORT = 7359
+	}
+}

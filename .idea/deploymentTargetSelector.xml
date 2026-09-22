@@ -2,12 +2,12 @@
 <project version="4">
   <component name="deploymentTargetSelector">
     <selectionStates>
-      <SelectionState runConfigName="app">
+      <SelectionState runConfigName="androidApp">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2026-09-15T15:14:37.371051600Z">
+        <DropdownSelection timestamp="2026-09-22T19:13:30.080509200Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="Wireless" identifier="serviceName=adb-b9bbdc47-HMQcSY" />
+              <DeviceId pluginId="PhysicalDevice" identifier="serial=1be98055" />
             </handle>
           </Target>
         </DropdownSelection>
