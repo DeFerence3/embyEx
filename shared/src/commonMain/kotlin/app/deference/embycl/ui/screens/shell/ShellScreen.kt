@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.VideoLibrary
@@ -43,6 +44,7 @@ import app.deference.embycl.core.session.Session
 import app.deference.embycl.ui.Screen
 import app.deference.embycl.ui.core.LocalNavigator
 import app.deference.embycl.ui.core.components.SignOutConfirmationDialog
+import app.deference.embycl.ui.screens.home.HomeAction
 import app.deference.embycl.ui.screens.home.HomeContent
 import app.deference.embycl.ui.screens.home.HomeViewModel
 import app.deference.embycl.ui.screens.libraries.LibrariesContent
@@ -62,7 +64,7 @@ fun EmbyShellContent(
 	state: ShellState,
 	onAction: (ShellAction) -> Unit,
 	homeState: app.deference.embycl.ui.screens.home.HomeState,
-	onHomeAction: (app.deference.embycl.ui.screens.home.HomeAction) -> Unit,
+	onHomeAction: (HomeAction) -> Unit,
 	librariesState: app.deference.embycl.ui.screens.libraries.LibrariesState,
 	onLibrariesAction: (app.deference.embycl.ui.screens.libraries.LibrariesAction) -> Unit,
 	searchState: app.deference.embycl.ui.screens.search.SearchState,
@@ -100,6 +102,11 @@ fun EmbyShellContent(
 					}
 				},
 				actions = {
+					if (tab == EmbyTab.Home) {
+						IconButton(onClick = { onHomeAction(HomeAction.Refresh) }) {
+							Icon(Icons.Filled.Refresh, contentDescription = "Refresh")
+						}
+					}
 					Box {
 						IconButton(onClick = { onAction(ShellAction.SetAccountMenuOpen(true)) }) {
 							AsyncImage(

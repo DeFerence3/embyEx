@@ -26,7 +26,8 @@ class HomeViewModel(
 	
 	fun onAction(action: HomeAction) {
 		when (action) {
-			HomeAction.Retry -> load()
+			HomeAction.Retry,
+			HomeAction.Refresh -> load()
 		}
 	}
 	
