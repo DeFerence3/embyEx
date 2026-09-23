@@ -103,6 +103,10 @@ fun SettingsContent(
 					UserCard(account)
 				}
 				
+				if (hasPlayerSettings) {
+					item { PlayerSettings() }
+				}
+				
 				item {
 					InfoSection(
 						"Server Information",
