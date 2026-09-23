@@ -1,54 +1,48 @@
 package app.deference.embycl.ui.screens.details
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import app.deference.embycl.core.utils.asRuntime
 import app.deference.embycl.core.utils.formatToString
 import app.deference.embycl.domain.model.EmbyItem
 import app.deference.embycl.ui.Screen
 import app.deference.embycl.ui.core.LocalNavigator
+import app.deference.embycl.ui.core.adaptive.DeviceConfiguration
 import app.deference.embycl.ui.core.components.LoadingScaffold
 import app.deference.embycl.ui.screens.details.components.PlaybackEffect
-import coil3.compose.AsyncImage
+import app.deference.embycl.ui.screens.details.components.adaptive.DesktopDetailsLayout
+import app.deference.embycl.ui.screens.details.components.adaptive.ItemDetailsData
+import app.deference.embycl.ui.screens.details.components.adaptive.LandscapeDetailsLayout
+import app.deference.embycl.ui.screens.details.components.adaptive.PortraitDetailsLayout
 import kotlinx.serialization.Serializable
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -61,322 +55,270 @@ data class EmbyDetailsScreen(val id: String) : Screen {
 		val backStack = LocalNavigator.current
 		val viewModel = koinViewModel<EmbyDetailsVM>(parameters = { parametersOf(id) })
 		val state by viewModel.state.collectAsState()
-		DetailsContent(
-			state = state,
-			events = viewModel.events,
-			onAction = viewModel::onAction,
-			onBack = { backStack.goBack() },
+		val events = viewModel.events
+		val onAction = viewModel::onAction
+		val onBack = { backStack.goBack() }
+		
+		PlaybackEffect(events, onAction)
+		LoadingScaffold(
+			state = state.content,
+			onRetry = { onAction(EmbyDetailsAction.Retry) },
+			modifier = Modifier.fillMaxSize(),
+			content = { item ->
+				ItemDetails(
+					item = item,
+					onBack = onBack,
+					onPlay = { onAction(EmbyDetailsAction.Play) },
+				)
+			}
 		)
 	}
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DetailsContent(
-	state: EmbyDetailsState,
-	events: kotlinx.coroutines.flow.Flow<EmbyDetailsEvent>,
-	onAction: (EmbyDetailsAction) -> Unit,
-	onBack: () -> Unit = {},
-) {
-	PlaybackEffect(events, onAction)
-	LoadingScaffold(
-		state = state.content,
-		onRetry = { onAction(EmbyDetailsAction.Retry) },
-		modifier = Modifier.fillMaxSize(),
-		content = { item ->
-			ItemDetails(
-				item = item,
-				onBack = onBack,
-				onPlay = { onAction(EmbyDetailsAction.Play) },
-			)
-		}
-	)
-}
-
-@Composable
-fun ItemDetails(
+private fun ItemDetails(
 	item: EmbyItem,
 	onBack: () -> Unit,
 	onPlay: () -> Unit,
 ) {
-	val backdrop = item.imageUrl(type = "Primary", maxWidth = 1280)
-	val logoUrl = item.imageUrl(type = "Logo", maxWidth = 600)
-	val videoStream = item.mediaStreams.firstOrNull { it.type == "Video" }
-	val subtitleStreams = item.mediaStreams.filter { it.type == "Subtitle" }.joinToString(" | ") { it.displayLanguage ?: it.displayTitle ?: "" }
-	val videoResolution = videoStream?.displayTitle
-		?: item.container?.uppercase()
-		?: "HD"
-	val audioTitle = item.mediaStreams.filter { it.type == "Audio" }.joinToString(" | ") { it.displayLanguage ?: it.displayTitle ?: "" }
-	val runTimeText = item.runTimeTicks?.asRuntime()
-	val currentPositionTicks = item.userData?.playbackPositionTicks ?: 0L
-	val totalRunTimeTicks = item.runTimeTicks ?: 0L
-	val isResume = currentPositionTicks > 0L
-	val progressFraction = if (totalRunTimeTicks > 0L && isResume) {
-		(currentPositionTicks.toFloat() / totalRunTimeTicks.toFloat()).coerceIn(0f, 1f)
-	} else 0f
-	val remainingMinutes = if (totalRunTimeTicks > currentPositionTicks && isResume) {
-		val remainingTicks = totalRunTimeTicks - currentPositionTicks
-		(remainingTicks / 10_000_000L / 60L).coerceAtLeast(1)
-	} else null
-	val directors = item.people.filter { it.type == "Director" }.mapNotNull { it.name }
-	val writers = item.people.filter { it.type == "Writer" }.mapNotNull { it.name }
+	val windowSizeClass =
+		currentWindowAdaptiveInfo().windowSizeClass
+	
+	val configuration =
+		DeviceConfiguration.fromWindowSizeClass(windowSizeClass)
+	
+	ItemDetailsContent(
+		item = item,
+		configuration = configuration,
+		onBack = onBack,
+		onPlay = onPlay,
+	)
+}
+
+@Composable
+private fun ItemDetailsContent(
+	item: EmbyItem,
+	configuration: DeviceConfiguration,
+	onBack: () -> Unit,
+	onPlay: () -> Unit,
+) {
+	val backdrop =
+		item.imageUrl(type = "Backdrop", maxWidth = 1920)
+			?: item.imageUrl(type = "Primary", maxWidth = 1280)
+	
+	val logoUrl =
+		item.imageUrl(type = "Logo", maxWidth = 800)
+	
+	val videoStream =
+		item.mediaStreams.firstOrNull { it.type == "Video" }
+	
+	val videoResolution =
+		videoStream?.displayTitle
+			?.takeIf { it.isNotBlank() }
+			?: item.container?.uppercase()
+			?: "HD"
+	
+	val audioTitle =
+		item.mediaStreams
+			.filter { it.type == "Audio" }
+			.mapNotNull {
+				(it.displayLanguage ?: it.displayTitle)
+					?.takeIf(String::isNotBlank)
+			}
+			.distinct()
+			.joinToString(" • ")
+			.ifBlank { "Unknown" }
+	
+	val subtitleStreams =
+		item.mediaStreams
+			.filter { it.type == "Subtitle" }
+			.mapNotNull {
+				(it.displayLanguage ?: it.displayTitle)
+					?.takeIf(String::isNotBlank)
+			}
+			.distinct()
+			.joinToString(" • ")
+			.ifBlank { "None" }
+	
+	val airDate =
+		item.premiereDate?.formatToString()
+			?: item.productionYear?.toString()
+	
+	val runtime =
+		item.runTimeTicks?.asRuntime()
+	
+	val position =
+		item.userData?.playbackPositionTicks ?: 0L
+	
+	val duration =
+		item.runTimeTicks ?: 0L
+	
+	val isResume =
+		position > 0L
+	
+	val progress =
+		if (duration > 0L && position > 0L) {
+			(position.toFloat() / duration.toFloat())
+				.coerceIn(0f, 1f)
+		} else {
+			0f
+		}
+	
+	val remainingMinutes =
+		if (duration > position && isResume) {
+			((duration - position) /
+					10_000_000L /
+					60L
+					).coerceAtLeast(1)
+		} else {
+			null
+		}
+	
+	val directors =
+		item.people
+			.filter { it.type == "Director" }
+			.mapNotNull { it.name }
+			.distinct()
+	
+	val writers =
+		item.people
+			.filter { it.type == "Writer" }
+			.mapNotNull { it.name }
+			.distinct()
+	
+	val data = ItemDetailsData(
+		title = item.name,
+		backdrop = backdrop,
+		logo = logoUrl,
+		airDate = airDate,
+		runtime = runtime,
+		resolution = videoResolution,
+		audio = audioTitle,
+		subtitles = subtitleStreams,
+		overview = item.overview,
+		directors = directors,
+		writers = writers,
+		isResume = isResume,
+		progress = progress,
+		remainingMinutes = remainingMinutes,
+	)
 	
 	Box(
 		modifier = Modifier
 			.fillMaxSize()
-			.background(Color(0xFF101012))
+			.background(Color(0xFF0B0B0D)),
 	) {
-		Column(
-			modifier = Modifier
-				.fillMaxSize()
-				.verticalScroll(rememberScrollState()),
-		) {
-			Box(
-				modifier = Modifier
-					.fillMaxWidth()
-					.aspectRatio(16f / 9f),
-			) {
-				if (backdrop != null) {
-					AsyncImage(
-						model = backdrop,
-						contentDescription = null,
-						modifier = Modifier.fillMaxSize(),
-						contentScale = ContentScale.Crop,
-					)
-				}
-				Box(
-					modifier = Modifier
-						.fillMaxSize()
-						.background(
-							Brush.verticalGradient(
-								colorStops = arrayOf(
-									0.0f to Color.Black.copy(alpha = 0.5f),
-									0.4f to Color.Transparent,
-									0.75f to Color(0xFF101012).copy(alpha = 0.7f),
-									1.0f to Color(0xFF101012),
-								),
-							),
-						),
+		
+		AnimatedContent(
+			targetState = configuration,
+			transitionSpec = {
+				fadeIn(
+					tween(180)
+				) togetherWith fadeOut(
+					tween(120)
 				)
-			}
+			},
+			label = "ItemDetailsAdaptiveLayout",
+		) { currentConfiguration ->
 			
-			Column(
-				modifier = Modifier
-					.padding(horizontal = 20.dp)
-					.padding(top = 4.dp, bottom = 48.dp),
-				verticalArrangement = Arrangement.spacedBy(16.dp),
-			) {
-				if (! logoUrl.isNullOrBlank()) {
-					AsyncImage(
-						model = logoUrl,
-						contentDescription = item.seriesName ?: item.name,
-						modifier = Modifier
-							.height(56.dp)
-							.fillMaxWidth(0.6f),
-						contentScale = ContentScale.Fit,
-						alignment = Alignment.CenterStart,
+			when (currentConfiguration) {
+				
+				DeviceConfiguration.MOBILE_PORTRAIT -> {
+					PortraitDetailsLayout(
+						data = data,
+						tablet = false,
+						onPlay = onPlay,
 					)
 				}
 				
-				Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-					val episodeHeader = item.name
-					
-					Text(
-						text = episodeHeader,
-						style = MaterialTheme.typography.titleLarge,
-						fontWeight = FontWeight.Bold,
-						color = Color.White,
-					)
-					
-					Row(
-						horizontalArrangement = Arrangement.spacedBy(12.dp),
-						verticalAlignment = Alignment.CenterVertically,
-					) {
-						val airDate = item.premiereDate?.formatToString() ?: item.productionYear?.toString()
-						if (! airDate.isNullOrBlank()) {
-							Text(
-								text = airDate,
-								style = MaterialTheme.typography.bodyMedium,
-								color = Color(0xFFB0B0B8),
-							)
-						}
-						if (! runTimeText.isNullOrBlank()) {
-							Text(
-								text = runTimeText,
-								style = MaterialTheme.typography.bodyMedium,
-								color = Color(0xFFB0B0B8),
-							)
-						}
-					}
-				}
-				
-				Row(
-					horizontalArrangement = Arrangement.spacedBy(16.dp),
-					verticalAlignment = Alignment.Top,
-				) {
-					Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-						Text(
-							text = "Video",
-							style = MaterialTheme.typography.bodySmall,
-							color = Color(0xFF8E8E93),
-						)
-						Text(
-							text = videoResolution,
-							style = MaterialTheme.typography.bodySmall,
-							fontWeight = FontWeight.Medium,
-							color = Color.White,
-						)
-					}
-					
-					Row(
-						horizontalArrangement = Arrangement.spacedBy(6.dp),
-					) {
-						Text(
-							text = "Audio",
-							style = MaterialTheme.typography.bodySmall,
-							color = Color(0xFF8E8E93),
-						)
-						Text(
-							text = audioTitle,
-							style = MaterialTheme.typography.bodySmall,
-							fontWeight = FontWeight.Medium,
-							color = Color.White,
-						)
-					}
-				}
-				
-				if (subtitleStreams.isNotEmpty()) {
-					Row(
-						verticalAlignment = Alignment.CenterVertically,
-						horizontalArrangement = Arrangement.spacedBy(10.dp),
-					) {
-						Text(
-							text = "Subtitles",
-							style = MaterialTheme.typography.bodySmall,
-							color = Color(0xFF8E8E93),
-						)
-						
-						Text(
-							text = subtitleStreams.ifBlank { "None" },
-							style = MaterialTheme.typography.bodySmall,
-							fontWeight = FontWeight.Medium,
-							color = Color.White,
-						)
-					}
-				}
-				
-				Button(
-					onClick = onPlay,
-					modifier = Modifier
-						.fillMaxWidth()
-						.height(52.dp),
-					shape = RoundedCornerShape(26.dp),
-					colors = ButtonDefaults.buttonColors(
-						containerColor = Color.White,
-						contentColor = Color.Black,
-					),
-				) {
-					Icon(
-						imageVector = Icons.Filled.PlayArrow,
-						contentDescription = null,
-						tint = Color.Black,
-						modifier = Modifier.size(22.dp),
-					)
-					Spacer(Modifier.width(8.dp))
-					Text(
-						text = if (isResume) "Resume in  MpvEx" else "Play in MpvEx",
-						style = MaterialTheme.typography.titleMedium,
-						fontWeight = FontWeight.Bold,
+				DeviceConfiguration.MOBILE_LANDSCAPE -> {
+					LandscapeDetailsLayout(
+						data = data,
+						tablet = false,
+						onPlay = onPlay,
 					)
 				}
 				
-				if (isResume && progressFraction > 0f) {
-					Row(
-						modifier = Modifier.fillMaxWidth(),
-						verticalAlignment = Alignment.CenterVertically,
-						horizontalArrangement = Arrangement.spacedBy(12.dp),
-					) {
-						LinearProgressIndicator(
-							progress = { progressFraction },
-							modifier = Modifier
-								.weight(1f)
-								.height(4.dp)
-								.clip(RoundedCornerShape(2.dp)),
-							color = Color(0xFF52B54B),
-							trackColor = Color(0xFF333338),
-						)
-						if (remainingMinutes != null) {
-							Text(
-								text = "$remainingMinutes m remaining",
-								style = MaterialTheme.typography.bodySmall,
-								color = Color(0xFFB0B0B8),
-							)
-						}
-					}
-				}
-				
-				item.overview?.takeIf { it.isNotBlank() }?.let { overview ->
-					Text(
-						text = overview,
-						style = MaterialTheme.typography.bodyMedium,
-						color = Color(0xFFE0E0E6),
-						lineHeight = 22.sp,
+				DeviceConfiguration.TABLET_PORTRAIT -> {
+					PortraitDetailsLayout(
+						data = data,
+						tablet = true,
+						onPlay = onPlay,
 					)
 				}
 				
-				if (directors.isNotEmpty()) {
-					Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-						Text(
-							text = "Director:",
-							style = MaterialTheme.typography.bodyMedium,
-							color = Color(0xFF8E8E93),
-						)
-						Text(
-							text = directors.joinToString(", "),
-							style = MaterialTheme.typography.bodyMedium,
-							color = Color.White,
-						)
-					}
+				DeviceConfiguration.TABLET_LANDSCAPE -> {
+					LandscapeDetailsLayout(
+						data = data,
+						tablet = true,
+						onPlay = onPlay,
+					)
 				}
 				
-				if (writers.isNotEmpty()) {
-					Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-						Text(
-							text = "Writers:",
-							style = MaterialTheme.typography.bodyMedium,
-							color = Color(0xFF8E8E93),
-						)
-						Text(
-							text = writers.joinToString(", "),
-							style = MaterialTheme.typography.bodyMedium,
-							color = Color.White,
-						)
-					}
+				DeviceConfiguration.DESKTOP -> {
+					DesktopDetailsLayout(
+						data = data,
+						onPlay = onPlay,
+					)
 				}
 			}
 		}
 		
-		Row(
+		DetailsBackButton(
+			onClick = onBack,
+			compact = configuration == DeviceConfiguration.MOBILE_PORTRAIT ||
+					configuration == DeviceConfiguration.MOBILE_LANDSCAPE,
+		)
+	}
+}
+
+@Composable
+private fun DetailsBackButton(
+	onClick: () -> Unit,
+	compact: Boolean,
+) {
+	val interactionSource = remember {
+		MutableInteractionSource()
+	}
+	
+	val hovered by interactionSource.collectIsHoveredAsState()
+	
+	val scale by animateFloatAsState(
+		targetValue = if (hovered) 1.08f else 1f,
+		animationSpec = tween(120),
+		label = "backButtonScale",
+	)
+	
+	Row(
+		modifier = Modifier
+			.fillMaxWidth()
+			.statusBarsPadding()
+			.padding(
+				horizontal = if (compact) 10.dp else 24.dp,
+				vertical = 10.dp,
+			),
+	) {
+		IconButton(
+			onClick = onClick,
+			interactionSource = interactionSource,
 			modifier = Modifier
-				.fillMaxWidth()
-				.statusBarsPadding()
-				.padding(horizontal = 8.dp, vertical = 4.dp),
-			horizontalArrangement = Arrangement.SpaceBetween,
-			verticalAlignment = Alignment.CenterVertically,
+				.size(if (compact) 42.dp else 46.dp)
+				.graphicsLayer {
+					scaleX = scale
+					scaleY = scale
+				}
+				.clip(CircleShape)
+				.background(
+					Color.Black.copy(
+						alpha = if (hovered) 0.68f else 0.46f,
+					),
+				),
 		) {
-			IconButton(
-				onClick = onBack,
-				modifier = Modifier
-					.size(40.dp)
-					.clip(CircleShape)
-					.background(Color.Black.copy(alpha = 0.4f)),
-			) {
-				Icon(
-					imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-					contentDescription = "Back",
-					tint = Color.White,
-				)
-			}
+			Icon(
+				imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+				contentDescription = "Back",
+				tint = Color.White,
+			)
 		}
 	}
 }

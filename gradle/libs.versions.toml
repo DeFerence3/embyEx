@@ -3,7 +3,7 @@ agp = "9.1.1"
 android-compileSdk = "37"
 android-minSdk = "24"
 android-targetSdk = "37"
-version-name="1.1.1"
+version-name="1.1.2"
 version-code="1"
 androidx-activity = "1.13.0"
 androidx-appcompat = "1.8.0"
@@ -65,7 +65,7 @@ koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel" }
 koin-annotations = { module = "io.insert-koin:koin-annotations" }
 
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
-coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil" }
+coil-network-ktor = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coil" }
 
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version = "0.8.0" }
 
@@ -77,6 +77,8 @@ compose-icons = { module = "org.jetbrains.compose.material:material-icons-extend
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version = "1.2.1" }
 
 jmdns = { module = "org.jmdns:jmdns", version = "3.6.3" }
+
+material3-adaptive = { module = "org.jetbrains.compose.material3.adaptive:adaptive", version = "1.2.0" }
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 android-multiplatform-library = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }

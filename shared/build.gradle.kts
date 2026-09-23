@@ -23,9 +23,7 @@ kotlin {
 		namespace = "app.deference.embycl.shared"
 		compileSdk = libs.versions.android.compileSdk.get().toInt()
 		minSdk = libs.versions.android.minSdk.get().toInt()
-		/*compilerOptions {
-			jvmTarget = JvmTarget.JVM_21
-		}*/
+		
 		androidResources {
 			enable = true
 		}
@@ -62,7 +60,6 @@ kotlin {
 			implementation(libs.compose.material3)
 			implementation(libs.compose.ui)
 			implementation(libs.compose.components.resources)
-			/*implementation(libs.compose.uiToolingPreview)*/
 			implementation(libs.androidx.lifecycle.viewmodelCompose)
 			implementation(libs.androidx.lifecycle.runtimeCompose)
 			
@@ -74,7 +71,7 @@ kotlin {
 			implementation(libs.kotlinx.datetime)
 			
 			implementation(libs.coil.compose)
-			implementation("io.coil-kt.coil3:coil-network-ktor3:3.0.0")
+			implementation(libs.coil.network.ktor)
 			
 			implementation(libs.compose.nav3)
 			implementation(libs.lifecycle.viewmodel.navigation3)
@@ -82,6 +79,8 @@ kotlin {
 			implementation(libs.compose.icons)
 			
 			api(libs.androidx.datastore.preferences)
+			
+			implementation(libs.material3.adaptive)
 		}
 		
 		commonTest {
@@ -97,9 +96,7 @@ kotlin {
 		
 		androidMain {
 			dependencies {
-				/*implementation(libs.compose.uiTooling)*/
 				implementation(libs.ktor.client.okhttp)
-				implementation(libs.coil.network.okhttp)
 			}
 		}
 		
@@ -109,6 +106,3 @@ kotlin {
 	}
 }
 
-/*dependencies {
-	androidRuntimeClasspath(libs.compose.uiTooling)
-}*/

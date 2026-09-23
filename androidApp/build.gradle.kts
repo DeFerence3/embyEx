@@ -77,8 +77,4 @@ dependencies {
 	
 	implementation(libs.androidx.activity.compose)
 	debugImplementation(libs.compose.uiToolingPreview)
-
-	implementation(libs.koin.androidx.compose)
-
-	implementation(libs.androidx.datastore.preferences)
 }

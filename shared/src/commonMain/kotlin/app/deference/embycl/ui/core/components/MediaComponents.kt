@@ -2,6 +2,7 @@ package app.deference.embycl.ui.core.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,6 +29,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,6 +41,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.deference.embycl.core.utils.asRuntime
 import app.deference.embycl.domain.model.EmbyItem
+import app.deference.embycl.ui.core.animateWithHover
 import coil3.compose.AsyncImage
 
 @Composable
@@ -105,10 +108,12 @@ fun MediaCard(
 	if (item.type == "Episode") {
 		EpisodeListItem(item, onClick)
 	} else {
+		val interactionSource = remember { MutableInteractionSource() }
 		Column(
 			modifier = Modifier
 				.fillMaxWidth()
-				.clickable(onClick = onClick),
+				.clickable(onClick = onClick,interactionSource = interactionSource)
+				.animateWithHover(interactionSource),
 			verticalArrangement = Arrangement.spacedBy(7.dp),
 		) {
 			Card(
@@ -145,10 +150,12 @@ fun EpisodeListItem(
 	onClick: () -> Unit,
 	modifier: Modifier = Modifier,
 ) {
+	val interactionSource = remember { MutableInteractionSource() }
 	Row(
 		modifier = modifier
 			.fillMaxWidth()
-			.clickable(onClick = onClick),
+			.clickable(onClick = onClick, interactionSource = interactionSource)
+			.animateWithHover(interactionSource),
 		verticalAlignment = Alignment.CenterVertically,
 	) {
 		// Episode thumbnail
@@ -222,11 +229,14 @@ fun WideMediaCard(
 	item: EmbyItem,
 	onClick: () -> Unit,
 ) {
+	val interactionSource = remember { MutableInteractionSource() }
 	Card(
 		modifier = Modifier
 			.width(250.dp)
-			.clickable(onClick = onClick),
+			.animateWithHover(interactionSource),
 		shape = RoundedCornerShape(16.dp),
+		onClick = onClick,
+		interactionSource = interactionSource
 	) {
 		Column {
 			Box(
@@ -260,12 +270,15 @@ fun LibraryCard(
 	item: EmbyItem,
 	onClick: () -> Unit,
 ) {
+	val interactionSource = remember { MutableInteractionSource() }
 	Card(
 		modifier = Modifier
 			.fillMaxWidth()
 			.aspectRatio(16f / 10f)
-			.clickable(onClick = onClick),
+			.animateWithHover(interactionSource),
 		shape = RoundedCornerShape(18.dp),
+		onClick = onClick,
+		interactionSource = interactionSource
 	) {
 		Box(Modifier.fillMaxSize()) {
 			Poster(item, backdrop = true)
