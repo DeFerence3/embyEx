@@ -1,6 +1,7 @@
 package app.deference.embycl.core.di
 
 import app.deference.embycl.core.networking.UserAgentProvider
+import app.deference.embycl.core.networking.clientEngine
 import app.deference.embycl.core.networking.configureAuth
 import app.deference.embycl.core.networking.configureContentNegotiation
 import app.deference.embycl.core.networking.configureDefaultRequest
@@ -25,7 +26,7 @@ class NetworkModule {
 	fun provideHttpClient(
 		userAgentProvider: UserAgentProvider
 	): HttpClient {
-		return HttpClient {
+		return HttpClient(engineFactory = clientEngine) {
 			configureValidation()
 			configureDefaultRequest(userAgentProvider)
 			configureContentNegotiation()
