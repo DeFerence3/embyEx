@@ -79,6 +79,7 @@ androidx-datastore-preferences = { module = "androidx.datastore:datastore-prefer
 jmdns = { module = "org.jmdns:jmdns", version = "3.6.3" }
 
 material3-adaptive = { module = "org.jetbrains.compose.material3.adaptive:adaptive", version = "1.2.0" }
+material3-adaptive-navigation-suite = { module = "org.jetbrains.compose.material3:material3-adaptive-navigation-suite", version = "1.9.0" }
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 android-multiplatform-library = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }

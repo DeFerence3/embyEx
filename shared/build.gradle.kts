@@ -81,6 +81,7 @@ kotlin {
 			api(libs.androidx.datastore.preferences)
 			
 			implementation(libs.material3.adaptive)
+			implementation(libs.material3.adaptive.navigation.suite)
 		}
 		
 		commonTest {
