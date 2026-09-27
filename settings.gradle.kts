@@ -1,3 +1,7 @@
+import org.gradle.api.initialization.resolve.RepositoriesMode
+
+rootProject.name = "embyEx"
+
 pluginManagement {
 	repositories {
 		google {
@@ -22,6 +26,6 @@ dependencyResolutionManagement {
 	}
 }
 
-rootProject.name = "embyEx"
-include(":app")
- 
+include(":androidApp")
+include(":desktopApp")
+include(":shared")
