@@ -10,11 +10,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import app.deference.embycl.ui.screens.details.components.DetailsBackdrop
 import app.deference.embycl.ui.screens.details.components.DetailsContent
@@ -26,8 +26,7 @@ fun DesktopDetailsLayout(
 ) {
 	Box(
 		modifier = Modifier
-			.fillMaxSize()
-			.background(Color(0xFF0B0B0D)),
+			.fillMaxSize(),
 	) {
 		
 		DetailsBackdrop(
@@ -42,10 +41,10 @@ fun DesktopDetailsLayout(
 				.background(
 					Brush.horizontalGradient(
 						colorStops = arrayOf(
-							0f to Color.Black.copy(alpha = 0.94f),
-							0.30f to Color.Black.copy(alpha = 0.80f),
-							0.58f to Color.Black.copy(alpha = 0.35f),
-							0.80f to Color.Transparent,
+							0f to MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
+							0.30f to MaterialTheme.colorScheme.surface.copy(alpha = 0.80f),
+							0.58f to MaterialTheme.colorScheme.surface.copy(alpha = 0.35f),
+							0.80f to MaterialTheme.colorScheme.surface.copy(alpha = 0f),
 						)
 					)
 				)
@@ -58,9 +57,9 @@ fun DesktopDetailsLayout(
 				.background(
 					Brush.verticalGradient(
 						colorStops = arrayOf(
-							0f to Color.Black.copy(alpha = 0.10f),
-							0.55f to Color.Transparent,
-							1f to Color(0xFF0B0B0D)
+							0f to MaterialTheme.colorScheme.surface.copy(alpha = 0.10f),
+							0.55f to MaterialTheme.colorScheme.surface.copy(alpha = 0f),
+							1f to MaterialTheme.colorScheme.surface
 								.copy(alpha = 0.90f),
 						)
 					)

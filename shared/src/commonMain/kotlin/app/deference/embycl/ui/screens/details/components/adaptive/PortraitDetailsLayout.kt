@@ -10,11 +10,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import app.deference.embycl.ui.screens.details.components.DetailsBackdrop
@@ -52,11 +52,11 @@ fun PortraitDetailsLayout(
 					.background(
 						Brush.verticalGradient(
 							colorStops = arrayOf(
-								0f to Color.Black.copy(alpha = 0.18f),
-								0.55f to Color.Transparent,
-								0.82f to Color(0xFF0B0B0D)
+								0f to MaterialTheme.colorScheme.surface.copy(alpha = 0.18f),
+								0.55f to MaterialTheme.colorScheme.surface.copy(alpha = 0f),
+								0.82f to MaterialTheme.colorScheme.surface
 									.copy(alpha = 0.70f),
-								1f to Color(0xFF0B0B0D),
+								1f to MaterialTheme.colorScheme.surface,
 							)
 						)
 					)

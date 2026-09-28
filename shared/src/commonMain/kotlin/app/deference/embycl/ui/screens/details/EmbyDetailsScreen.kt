@@ -22,13 +22,13 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import app.deference.embycl.core.utils.asRuntime
@@ -205,8 +205,7 @@ private fun ItemDetailsContent(
 	
 	Box(
 		modifier = Modifier
-			.fillMaxSize()
-			.background(Color(0xFF0B0B0D)),
+			.fillMaxSize(),
 	) {
 		
 		AnimatedContent(
@@ -309,15 +308,14 @@ private fun DetailsBackButton(
 				}
 				.clip(CircleShape)
 				.background(
-					Color.Black.copy(
-						alpha = if (hovered) 0.68f else 0.46f,
+					MaterialTheme.colorScheme.surfaceContainerHigh.copy(
+						alpha = if (hovered) 0.98f else 0.92f,
 					),
 				),
 		) {
 			Icon(
 				imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-				contentDescription = "Back",
-				tint = Color.White,
+				contentDescription = "Back"
 			)
 		}
 	}

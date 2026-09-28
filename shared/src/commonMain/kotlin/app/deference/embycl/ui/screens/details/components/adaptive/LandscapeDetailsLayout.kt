@@ -9,10 +9,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import app.deference.embycl.ui.screens.details.components.DetailsBackdrop
 import app.deference.embycl.ui.screens.details.components.DetailsContent
@@ -25,8 +25,7 @@ fun LandscapeDetailsLayout(
 ) {
 	Row(
 		modifier = Modifier
-			.fillMaxSize()
-			.background(Color(0xFF0B0B0D)),
+			.fillMaxSize(),
 	) {
 		
 		Box(
@@ -49,9 +48,9 @@ fun LandscapeDetailsLayout(
 					.background(
 						Brush.horizontalGradient(
 							colorStops = arrayOf(
-								0f to Color.Transparent,
-								0.65f to Color.Transparent,
-								1f to Color(0xFF0B0B0D),
+								0f to MaterialTheme.colorScheme.surface.copy(alpha = 0f),
+								0.65f to MaterialTheme.colorScheme.surface.copy(alpha = 0f),
+								1f to MaterialTheme.colorScheme.surface,
 							)
 						)
 					)
@@ -63,9 +62,9 @@ fun LandscapeDetailsLayout(
 					.background(
 						Brush.verticalGradient(
 							listOf(
-								Color.Black.copy(alpha = 0.18f),
-								Color.Transparent,
-								Color.Black.copy(alpha = 0.20f),
+								MaterialTheme.colorScheme.surface.copy(alpha = 0.18f),
+								MaterialTheme.colorScheme.surface.copy(alpha = 0f),
+								MaterialTheme.colorScheme.surface.copy(alpha = 0.20f),
 							)
 						)
 					)

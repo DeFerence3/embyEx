@@ -41,7 +41,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -96,7 +95,6 @@ fun DetailsContent(
 					MaterialTheme.typography.headlineLarge
 				},
 				fontWeight = FontWeight.Bold,
-				color = Color.White,
 				maxLines = 2,
 				overflow = TextOverflow.Ellipsis,
 			)
@@ -140,8 +138,7 @@ fun DetailsContent(
 						MaterialTheme.typography.bodyLarge
 					},
 					lineHeight =
-						if (compact) 22.sp else 25.sp,
-					color = Color(0xFFE3E3E8),
+						if (compact) 22.sp else 25.sp
 				)
 			}
 		
@@ -196,10 +193,9 @@ private fun MetadataPill(
 ) {
 	Surface(
 		shape = RoundedCornerShape(50),
-		color = Color.White.copy(alpha = 0.10f),
 		border = BorderStroke(
 			width = 1.dp,
-			color = Color.White.copy(alpha = 0.10f),
+			color = MaterialTheme.colorScheme.outlineVariant,
 		),
 	) {
 		Text(
@@ -210,7 +206,6 @@ private fun MetadataPill(
 			),
 			style = MaterialTheme.typography.labelMedium,
 			fontWeight = FontWeight.Medium,
-			color = Color(0xFFE7E7EB),
 			maxLines = 1,
 		)
 	}
@@ -226,10 +221,9 @@ private fun MediaInformationCard(
 	Surface(
 		modifier = Modifier.fillMaxWidth(),
 		shape = RoundedCornerShape(18.dp),
-		color = Color.White.copy(alpha = 0.065f),
 		border = BorderStroke(
 			1.dp,
-			Color.White.copy(alpha = 0.075f),
+			MaterialTheme.colorScheme.outlineVariant,
 		),
 	) {
 		if (compact) {
@@ -296,7 +290,6 @@ private fun MediaValue(
 			text = label,
 			style = MaterialTheme.typography.labelSmall,
 			fontWeight = FontWeight.SemiBold,
-			color = Color(0xFF888890),
 			letterSpacing = 0.7.sp,
 		)
 		
@@ -304,7 +297,6 @@ private fun MediaValue(
 			text = value,
 			style = MaterialTheme.typography.bodyMedium,
 			fontWeight = FontWeight.Medium,
-			color = Color.White,
 			autoSize = TextAutoSize.StepBased(
 				minFontSize = 8.sp,
 				maxFontSize = 14.sp,
@@ -354,10 +346,6 @@ private fun PlayButton(
 			.height(54.dp)
 			.animateWithHover(interactionSource),
 		shape = RoundedCornerShape(50),
-		colors = ButtonDefaults.buttonColors(
-			containerColor = Color.White,
-			contentColor = Color.Black,
-		),
 		contentPadding = PaddingValues(
 			horizontal = 24.dp,
 		),
@@ -412,14 +400,12 @@ private fun ResumeProgress(
 					text = "Continue watching",
 					style = MaterialTheme.typography.labelMedium,
 					fontWeight = FontWeight.Medium,
-					color = Color(0xFFD0D0D6),
 				)
 				
 				if (remainingMinutes != null) {
 					Text(
 						text = "$remainingMinutes min remaining",
 						style = MaterialTheme.typography.labelMedium,
-						color = Color(0xFF9999A2),
 					)
 				}
 			}
@@ -430,8 +416,7 @@ private fun ResumeProgress(
 					.fillMaxWidth()
 					.height(5.dp)
 					.clip(RoundedCornerShape(50)),
-				color = Color(0xFF65D15C),
-				trackColor = Color.White.copy(alpha = 0.12f),
+				trackColor = MaterialTheme.colorScheme.secondaryContainer,
 			)
 		}
 	}
@@ -446,7 +431,6 @@ private fun CreditsSection(
 	Surface(
 		modifier = Modifier.fillMaxWidth(),
 		shape = RoundedCornerShape(18.dp),
-		color = Color.Black.copy(alpha = 0.20f),
 	) {
 		if (compact) {
 			Column(
@@ -520,7 +504,6 @@ private fun CreditValue(
 		Text(
 			text = label,
 			style = MaterialTheme.typography.labelSmall,
-			color = Color(0xFF85858E),
 			fontWeight = FontWeight.SemiBold,
 			letterSpacing = 0.7.sp,
 		)
@@ -528,7 +511,6 @@ private fun CreditValue(
 		Text(
 			text = value,
 			style = MaterialTheme.typography.bodyMedium,
-			color = Color(0xFFF0F0F3),
 			lineHeight = 20.sp,
 		)
 	}
