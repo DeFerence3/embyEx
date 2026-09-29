@@ -1,9 +1,13 @@
-import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import dev.nucleusframework.desktop.application.dsl.CompressionLevel
+import dev.nucleusframework.desktop.application.dsl.GraalvmDistribution
+import dev.nucleusframework.desktop.application.dsl.NativeImageOptimization
+import dev.nucleusframework.desktop.application.dsl.TargetFormat
 
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.compose.multiplatform)
     alias(libs.plugins.compose.compiler)
+	alias(libs.plugins.nucleus)
 }
 
 dependencies {
@@ -13,16 +17,41 @@ dependencies {
     implementation(libs.kotlinx.coroutinesSwing)
 
     implementation(libs.compose.uiToolingPreview)
+	
+	implementation(libs.bundles.nucleus)
 }
 
-compose.desktop {
-    application {
-        mainClass = "app.deference.embycl.MainKt"
-
-        nativeDistributions {
-            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "app.deference.embycl"
-            packageVersion = "1.0.0"
-        }
-    }
+nucleus.application {
+	mainClass = "app.deference.embycl.MainKt"
+	
+	graalvm{
+		isEnabled = true
+		imageName = "embyex"
+		optimization = NativeImageOptimization.LEVEL_3
+		advancedObfuscation = true
+		toolchain{
+			distribution = GraalvmDistribution.ORACLE
+		}
+	}
+	
+	nativeDistributions {
+		targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
+		packageName = "embyEx"
+		packageVersion = libs.versions.version.name.get()
+		vendor = "Abhishek Krishnan T R"
+		description = "A simple emby client, opens media in mpvEx in android and mpv in desktop."
+		homepage = "https://github.com/DeFerence3/embyEx"
+		compressionLevel = CompressionLevel.Ultra
+		cleanupNativeLibs = true
+		windows {
+			menuGroup = "embyEx"
+			msi {
+				oneClick = false
+				perMachine = false
+				createDesktopShortcut = true
+				createStartMenuShortcut = true
+				runAfterFinish = true
+			}
+		}
+	}
 }

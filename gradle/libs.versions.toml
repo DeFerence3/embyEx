@@ -1,5 +1,5 @@
 [versions]
-agp = "9.1.1"
+agp = "9.4.1"
 android-compileSdk = "37"
 android-minSdk = "24"
 android-targetSdk = "37"
@@ -7,11 +7,11 @@ version-name="1.1.2"
 version-code="1"
 androidx-activity = "1.13.0"
 androidx-appcompat = "1.8.0"
-androidx-core = "1.19.0"
+androidx-core = "1.19.1"
 androidx-espresso = "3.7.0"
 androidx-lifecycle = "2.11.0"
 androidx-testExt = "1.3.0"
-composeMultiplatform = "1.12.0"
+composeMultiplatform = "1.12.1"
 junit = "4.13.2"
 kotlin = "2.4.20"
 kotlinx-coroutines = "1.11.0"
@@ -23,9 +23,11 @@ koin = "4.2.2"
 
 ktor = "3.6.0"
 
-coil = "3.6.2"
+coil = "3.6.3"
 
 androidx-nav3 = "1.2.0-beta01"
+
+nucleus = "2.5.13"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -80,6 +82,11 @@ jmdns = { module = "org.jmdns:jmdns", version = "3.6.3" }
 
 material3-adaptive = { module = "org.jetbrains.compose.material3.adaptive:adaptive", version = "1.2.0" }
 material3-adaptive-navigation-suite = { module = "org.jetbrains.compose.material3:material3-adaptive-navigation-suite", version = "1.9.0" }
+
+nucleus-application = { module = "dev.nucleusframework:nucleus.nucleus-application", version.ref = "nucleus" }
+nucleus-darkmode-detector = { module = "dev.nucleusframework:nucleus.darkmode-detector", version.ref = "nucleus" }
+nucleus-decorated-window-tao = { module = "dev.nucleusframework:nucleus.decorated-window-tao", version.ref = "nucleus" }
+nucleus-decorated-window-material3 = { module = "dev.nucleusframework:nucleus.decorated-window-material3", version.ref = "nucleus" }
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 android-multiplatform-library = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
@@ -90,7 +97,8 @@ kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref 
 ksp = { id = "com.google.devtools.ksp", version = "2.3.9" }
 koin-compiler = { id = "io.insert-koin.compiler.plugin", version.ref = "koin-plugin" }
 kotlinx-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
-gmazzo-buildconfig = { id = "com.github.gmazzo.buildconfig", version = "6.1.0"}
+gmazzo-buildconfig = { id = "com.github.gmazzo.buildconfig", version = "6.1.1"}
+nucleus = { id = "dev.nucleusframework", version.ref = "nucleus" }
 
 [bundles]
 ktor = [
@@ -106,4 +114,10 @@ koin = [
     "koin-compose",
     "koin-annotations",
     "koin-compose-viewmodel"
+]
+nucleus = [
+    "nucleus-application",
+    "nucleus-darkmode-detector",
+    "nucleus-decorated-window-tao",
+    "nucleus-decorated-window-material3"
 ]

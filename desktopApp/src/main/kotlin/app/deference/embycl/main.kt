@@ -6,9 +6,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
-import androidx.compose.ui.window.Window
-import androidx.compose.ui.window.WindowPlacement
-import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import app.deference.embycl.core.di.initKoin
 import app.deference.embycl.core.session.Session
@@ -16,19 +13,24 @@ import app.deference.embycl.data.preference.EmbyPreference
 import app.deference.embycl.data.preference.createDataStore
 import app.deference.embycl.ui.core.ExitConfirmationDialog
 import app.deference.embycl.ui.theme.EmbympvTheme
+import dev.nucleusframework.application.nucleusApplication
+import dev.nucleusframework.darkmodedetector.isSystemInDarkMode
+import dev.nucleusframework.window.material.MaterialDecoratedWindow
 
 @OptIn(ExperimentalComposeUiApi::class)
-fun main() = application {
+fun main() = nucleusApplication {
 	initKoin()
 	val dataStore = createDataStore()
 	Session.init(EmbyPreference(dataStore))
-	val state = rememberWindowState(placement =  WindowPlacement.Maximized)
-	EmbympvTheme {
-		var isLogoutRequested by remember { mutableStateOf(false) }
-		Window(
-			onCloseRequest = { isLogoutRequested = true },
-			title = "embyEx",
-			state = state
+	val state = rememberWindowState()
+	var isLogoutRequested by remember { mutableStateOf(false) }
+	MaterialDecoratedWindow(
+		onCloseRequest = { isLogoutRequested = true },
+		title = "embyEx",
+		state = state
+	) {
+		EmbympvTheme(
+			darkTheme = isSystemInDarkMode()
 		) {
 			if (isLogoutRequested){
 				ExitConfirmationDialog(
@@ -37,8 +39,8 @@ fun main() = application {
 				)
 			}
 			val isLoggedIn by Session.isLoggedInState.collectAsState()
+			EmbyExTitleBar()
 			EmbyExApp(isLoggedIn)
 		}
 	}
-	
 }
