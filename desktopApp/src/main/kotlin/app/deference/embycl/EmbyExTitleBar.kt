@@ -78,6 +78,7 @@ import dev.nucleusframework.window.utils.linux.LinuxButtonLayout
 import dev.nucleusframework.window.utils.linux.LinuxTitleBarButton
 import dev.nucleusframework.window.utils.linux.linuxTitleBarIcons
 import dev.nucleusframework.window.utils.linux.rememberLinuxButtonLayout
+import dev.nucleusframework.window.windowDragArea
 
 private val WINDOWS_BUTTON_WIDTH = 46.dp
 private const val CLOSE_HOVER_ALPHA_EPSILON = 0.02f
@@ -112,7 +113,8 @@ fun DecoratedWindowScope.EmbyExTitleBar(
 		modifier = Modifier
 			.fillMaxWidth()
 			.height(35.dp)
-			.background(colors.surface),
+			.background(colors.surface)
+			.windowDragArea(taoWindow),
 		contentAlignment = Alignment.Center
 	) {
 		val textStyle = TextStyle(color = colors.onSurface)
