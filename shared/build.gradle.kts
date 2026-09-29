@@ -15,6 +15,10 @@ buildConfig {
 	buildConfigField("APP_STORE_ID", providers.gradleProperty("APP_STORE_ID").orElse("").get())
 }
 
+compose.resources {
+	publicResClass = true
+}
+
 kotlin {
 	
 	compilerOptions.freeCompilerArgs.add("-Xexpect-actual-classes")
@@ -59,7 +63,7 @@ kotlin {
 			implementation(libs.compose.foundation)
 			api(libs.compose.material3)
 			implementation(libs.compose.ui)
-			implementation(libs.compose.components.resources)
+			api(libs.compose.components.resources)
 			implementation(libs.androidx.lifecycle.viewmodelCompose)
 			implementation(libs.androidx.lifecycle.runtimeCompose)
 			

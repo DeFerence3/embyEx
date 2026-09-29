@@ -1,7 +1,9 @@
+
 import dev.nucleusframework.desktop.application.dsl.CompressionLevel
 import dev.nucleusframework.desktop.application.dsl.GraalvmDistribution
 import dev.nucleusframework.desktop.application.dsl.NativeImageOptimization
 import dev.nucleusframework.desktop.application.dsl.TargetFormat
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.kotlin.jvm)
@@ -45,12 +47,27 @@ nucleus.application {
 		cleanupNativeLibs = true
 		windows {
 			menuGroup = "embyEx"
+			iconFile.set(file("meta/images/icon.ico"))
 			msi {
 				oneClick = false
 				perMachine = false
 				createDesktopShortcut = true
 				createStartMenuShortcut = true
 				runAfterFinish = true
+			}
+			
+			val properties = Properties().apply {
+				val localPropertiesFile = rootProject.file("local.properties")
+				if (localPropertiesFile.exists()) {
+					localPropertiesFile.inputStream().use { load(it) }
+				}
+			}
+			
+			signing {
+				enabled = true
+				certificateFile.set(file(properties.getProperty("pfxCert")))
+				certificatePassword = properties.getProperty("pfxPassword")
+				timestampServer = "http://timestamp.digicert.com"
 			}
 		}
 	}
