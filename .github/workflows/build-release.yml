@@ -1,0 +1,162 @@
+name: Build and release Android and desktop
+
+env:
+  ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
+  STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+  KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+  KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "*"
+
+permissions:
+  contents: read
+
+# Do not cancel a run while its release assets are being uploaded.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  android:
+    name: Android APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: zulu
+          java-version: "21"
+
+      - uses: gradle/actions/setup-gradle@v6
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools platforms;android-37.0 build-tools;36.0.0
+
+      - name: Restore Android signing key
+        run: |
+          set -euo pipefail
+          for name in ANDROID_KEYSTORE STORE_PASSWORD KEY_PASSWORD KEY_ALIAS; do
+            if [[ -z "${!name}" ]]; then
+              echo "::error::Missing required GitHub secret: $name"
+              exit 1
+            fi
+          done
+          umask 077
+          printf '%s' "$ANDROID_KEYSTORE" | base64 --decode > "$RUNNER_TEMP/android-release.jks"
+
+      - name: Build signed APK
+        env:
+          ANDROID_KEYSTORE_FILE: ${{ runner.temp }}/android-release.jks
+        run: |
+          chmod +x gradlew
+          ./gradlew :androidApp:assembleRelease -PrequireAndroidSigning=true --no-daemon --no-configuration-cache --stacktrace
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-assets-android
+          path: androidApp/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+
+      - name: Remove Android signing key
+        if: always()
+        run: rm -f -- "$RUNNER_TEMP/android-release.jks"
+
+  desktop:
+    name: Desktop - Windows
+    runs-on: windows-latest
+    timeout-minutes: 90
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # Keep the action version aligned with the Nucleus Gradle plugin.
+      - name: Set up Nucleus and native build tools
+        uses: NucleusFramework/Nucleus/.github/actions/setup-nucleus@v2.5.13
+        with:
+          java-version: "21"
+          graalvm: "true"
+          graalvm-distribution: oracle
+          graalvm-version: "25i3"
+          setup-gradle: "false"
+
+      - uses: gradle/actions/setup-gradle@v6
+
+      - name: Restore Windows signing certificate
+        shell: pwsh
+        env:
+          WINDOWS_CERTIFICATE_BASE64: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 }}
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+        run: |
+          if (-not $env:WINDOWS_CERTIFICATE_BASE64) {
+            if ($env:WINDOWS_CERTIFICATE_PASSWORD) {
+              throw 'WINDOWS_CERTIFICATE_PASSWORD is set without WINDOWS_CERTIFICATE_BASE64.'
+            }
+            Write-Output 'No Windows certificate configured; building an unsigned MSI.'
+            exit 0
+          }
+          if (-not $env:WINDOWS_CERTIFICATE_PASSWORD) {
+            throw 'Windows CI signing requires WINDOWS_CERTIFICATE_PASSWORD.'
+          }
+          $certificatePath = Join-Path $env:RUNNER_TEMP 'windows-signing.pfx'
+          [IO.File]::WriteAllBytes($certificatePath, [Convert]::FromBase64String($env:WINDOWS_CERTIFICATE_BASE64))
+          "WINDOWS_CERTIFICATE_FILE=$certificatePath" >> $env:GITHUB_ENV
+
+      - name: Build Windows MSI
+        shell: pwsh
+        env:
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+          ANDROID_KEYSTORE_FILE: ${{ runner.temp }}/android-release.jks
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        run: ./gradlew.bat :desktopApp:packageGraalvmMsi --no-daemon --no-configuration-cache --stacktrace
+
+      - name: Upload desktop installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-assets-windows
+          path: desktopApp/build/compose/binaries/main/graalvm-msi/*.msi
+          if-no-files-found: error
+
+      - name: Remove Windows signing certificate
+        if: always()
+        shell: pwsh
+        run: |
+          $certificatePath = Join-Path $env:RUNNER_TEMP 'windows-signing.pfx'
+          if (Test-Path -LiteralPath $certificatePath) {
+            Remove-Item -LiteralPath $certificatePath -Force
+          }
+
+
+  release:
+    name: Publish GitHub Release
+    needs: [android, desktop]
+    # Only run if the workflow was triggered by a tag push
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all release assets
+        uses: actions/download-artifact@v8
+        with:
+          pattern: release-assets-*
+          path: release-assets
+          merge-multiple: true
+
+      - name: Publish Release
+        uses: softprops/action-gh-release@v3
+        with:
+          token: ${{ secrets.PAT }}
+          files: release-assets/*
+          generate_release_notes: true

@@ -1,0 +1,26 @@
+{
+  "reflection": [
+    {
+      "type": "kotlinx.coroutines.internal.MainDispatcherFactory"
+    },
+    {
+      "type": "androidx.datastore.preferences.protobuf.GeneratedMessageLite",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "androidx.datastore.preferences.PreferencesProto$PreferenceMap",
+      "allDeclaredFields": true,
+      "allDeclaredMethods": true
+    },
+    {
+      "type": "androidx.datastore.preferences.PreferencesProto$Value",
+      "allDeclaredFields": true,
+      "allDeclaredMethods": true
+    },
+    {
+      "type": "androidx.datastore.preferences.PreferencesProto$StringSet",
+      "allDeclaredFields": true,
+      "allDeclaredMethods": true
+    }
+  ]
+}

@@ -9,6 +9,21 @@ plugins {
 	alias(libs.plugins.ksp)
 }
 
+val signingProperties = Properties().apply {
+	val localPropertiesFile = rootProject.file("local.properties")
+	if (localPropertiesFile.exists()) {
+		localPropertiesFile.inputStream().use { load(it) }
+	}
+}
+fun signingValue(environmentName: String, propertyName: String): String? = (providers.environmentVariable(environmentName).orNull ?: signingProperties.getProperty(propertyName))?.takeIf { it.isNotBlank() }
+
+val releaseStoreFile = signingValue("ANDROID_KEYSTORE_FILE", "storeFile")
+val releaseStorePassword = signingValue("STORE_PASSWORD", "storePassword")
+val releaseKeyAlias = signingValue("KEY_ALIAS", "storeKeyAlias")
+val releaseKeyPassword = signingValue("KEY_PASSWORD", "storeKeyPassword")
+val signingValues = listOf(releaseStoreFile, releaseStorePassword, releaseKeyAlias, releaseKeyPassword)
+val hasReleaseSigning = signingValues.all { it != null }
+
 android {
 	namespace = "app.deference.embcl"
 	compileSdk {
@@ -16,17 +31,11 @@ android {
 	}
 	
 	signingConfigs {
-		val properties = Properties().apply {
-			val localPropertiesFile = rootProject.file("local.properties")
-			if (localPropertiesFile.exists()) {
-				localPropertiesFile.inputStream().use { load(it) }
-			}
-		}
-		create("all"){
-			storePassword = properties.getProperty("storePassword")
-			keyAlias = properties.getProperty("storeKeyAlias")
-			keyPassword = properties.getProperty("storeKeyPassword")
-			storeFile = file(properties.getProperty("storeFile"))
+		create("all") {
+			storePassword = releaseStorePassword
+			keyAlias = releaseKeyAlias
+			keyPassword = releaseKeyPassword
+			storeFile = file(requireNotNull(releaseStoreFile))
 		}
 	}
 	
@@ -38,7 +47,7 @@ android {
 		versionName = libs.versions.version.name.get()
 		
 		testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-		signingConfig = signingConfigs.getByName("all")
+		if (hasReleaseSigning) signingConfig = signingConfigs.getByName("all")
 	}
 	
 	buildTypes {
@@ -54,7 +63,7 @@ android {
 			)
 		}
 		debug {
-			signingConfig = signingConfigs.getByName("all")
+			if (hasReleaseSigning) signingConfig = signingConfigs.getByName("all")
 		}
 	}
 	compileOptions {

@@ -1,7 +1,6 @@
 
 import dev.nucleusframework.desktop.application.dsl.CompressionLevel
 import dev.nucleusframework.desktop.application.dsl.GraalvmDistribution
-import dev.nucleusframework.desktop.application.dsl.NativeImageOptimization
 import dev.nucleusframework.desktop.application.dsl.TargetFormat
 import java.util.Properties
 
@@ -16,7 +15,6 @@ dependencies {
     implementation(project(":shared"))
 
     implementation(compose.desktop.currentOs)
-    implementation(libs.kotlinx.coroutinesSwing)
 
     implementation(libs.compose.uiToolingPreview)
 	
@@ -29,8 +27,12 @@ nucleus.application {
 	graalvm{
 		isEnabled = true
 		imageName = "embyex"
-		optimization = NativeImageOptimization.LEVEL_3
-		advancedObfuscation = true
+		/** Enabling advancedObfuscation and optimization somehow breaks serialization
+		 * although nucleus docs states it works ootb */
+//		optimization = NativeImageOptimization.LEVEL_3
+//		advancedObfuscation = true
+		// Keep the per-build mapping for diagnosing obfuscated native crash logs.
+//		buildArgs.addAll("-H:AdvancedObfuscation=export-mapping","-H:+UnlockExperimentalVMOptions")
 		toolchain{
 			distribution = GraalvmDistribution.ORACLE
 		}
@@ -63,10 +65,15 @@ nucleus.application {
 				}
 			}
 			
+			val certificatePath = providers.environmentVariable("WINDOWS_CERTIFICATE_FILE").orNull ?: properties.getProperty("pfxCert")
+			val signingPassword = providers.environmentVariable("WINDOWS_CERTIFICATE_PASSWORD").orNull ?: properties.getProperty("pfxPassword")
+
 			signing {
-				enabled = true
-				certificateFile.set(file(properties.getProperty("pfxCert")))
-				certificatePassword = properties.getProperty("pfxPassword")
+				enabled = !certificatePath.isNullOrBlank()
+				if (!certificatePath.isNullOrBlank()) {
+					certificateFile.set(file(certificatePath))
+					certificatePassword = signingPassword
+				}
 				timestampServer = "http://timestamp.digicert.com"
 			}
 		}

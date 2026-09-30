@@ -3,7 +3,7 @@ agp = "9.4.1"
 android-compileSdk = "37"
 android-minSdk = "24"
 android-targetSdk = "37"
-version-name="1.1.3"
+version-name="1.1.4"
 version-code="1"
 androidx-activity = "1.13.0"
 androidx-appcompat = "1.8.0"
@@ -47,7 +47,6 @@ compose-material3 = { module = "org.jetbrains.compose.material3:material3", vers
 compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeMultiplatform" }
 compose-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "composeMultiplatform" }
 compose-uiToolingPreview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "composeMultiplatform" }
-kotlinx-coroutinesSwing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "kotlinx-coroutines" }
 
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
@@ -86,6 +85,7 @@ material3-adaptive-navigation-suite = { module = "org.jetbrains.compose.material
 nucleus-application = { module = "dev.nucleusframework:nucleus.nucleus-application", version.ref = "nucleus" }
 nucleus-darkmode-detector = { module = "dev.nucleusframework:nucleus.darkmode-detector", version.ref = "nucleus" }
 nucleus-decorated-window-tao = { module = "dev.nucleusframework:nucleus.decorated-window-tao", version.ref = "nucleus" }
+nucleus-graalvm = { module = "dev.nucleusframework:nucleus.graalvm-runtime", version.ref = "nucleus" }
 nucleus-decorated-window-material3 = { module = "dev.nucleusframework:nucleus.decorated-window-material3", version.ref = "nucleus" }
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
@@ -118,6 +118,7 @@ koin = [
 nucleus = [
     "nucleus-application",
     "nucleus-darkmode-detector",
+    "nucleus-graalvm",
     "nucleus-decorated-window-tao",
     "nucleus-decorated-window-material3"
 ]
