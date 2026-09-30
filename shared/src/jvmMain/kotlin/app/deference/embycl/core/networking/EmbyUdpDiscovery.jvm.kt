@@ -45,7 +45,7 @@ actual class EmbyUdpDiscovery {
 				try {
 					socket.receive(responsePacket)
 					val responseStr = String(responsePacket.data, 0, responsePacket.length, Charsets.UTF_8)
-					val parsed = runCatching { json.decodeFromString<EmbyServer>(responseStr) }.getOrNull()
+					val parsed = runCatching { json.decodeFromString(EmbyServer.serializer(),responseStr) }.getOrNull()
 					if (parsed != null && seenIds.add(parsed.id)) {
 						servers.add(parsed)
 					}

@@ -51,13 +51,13 @@ class ServerFinderRepoImpl(
 					)
 				}.body<PublicSystemInfo>()
 			}
-			val users = safeApiCall {
+			val users: List<EmbyUser> = safeApiCall {
 				httpClient.get("/Users/Public") {
 					dontIntercept(
 						host = serverUrl.host,
 						port = serverUrl.port
 					)
-				}.body<List<EmbyUser>>()
+				}.body()
 			}
 			val server = Server(
 				host = serverUrl.host,
