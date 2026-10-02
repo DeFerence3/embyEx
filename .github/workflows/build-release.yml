@@ -128,7 +128,7 @@ jobs:
           name: release-assets-windows
           path: |
             desktopApp/build/compose/binaries/main/graalvm-msi/*.msi
-            desktopApp/build/compose/binaries/main/graalvm-msi/release.yml
+            desktopApp/build/compose/binaries/main/graalvm-msi/latest.yml
           if-no-files-found: error
 
       - name: Remove Windows signing certificate
