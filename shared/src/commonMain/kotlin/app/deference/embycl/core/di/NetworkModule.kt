@@ -13,6 +13,7 @@ import app.deference.embycl.core.utils.Log
 import coil3.util.Logger
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.DefaultRequest
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.request.header
 import io.ktor.http.userAgent
 import org.koin.core.annotation.Module
@@ -42,7 +43,7 @@ class NetworkModule {
 	fun provideImageHttpClient(
 		userAgentProvider: UserAgentProvider
 	): HttpClient {
-		return HttpClient {
+		return HttpClient(engineFactory = clientEngine) {
 			// ONLY append the auth headers Emby needs to serve the image.
 			// Do NOT install ContentNegotiation, Auth, or your custom Loggin plugin.
 			// Do NOT set accept(ContentType.Application.Json).
@@ -52,6 +53,23 @@ class NetworkModule {
 			}
 		}.apply {
 			urlInterceptor() // Keep if this appends API keys to the URL
+		}
+	}
+	
+	@Single
+	@Named("download")
+	fun provideLightHttpClient(): HttpClient {
+		/**
+		 * A HttpClient configured specifically
+		 * for downloading assets (with higher timeout settings).
+		 */
+		return HttpClient(engineFactory = clientEngine) {
+			configureLogging()
+			install(HttpTimeout) {
+				connectTimeoutMillis = 10_000
+				socketTimeoutMillis = 30_000
+				// Downloads may legitimately take minutes; only stalled connections time out.
+			}
 		}
 	}
 	

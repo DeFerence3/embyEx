@@ -22,6 +22,7 @@ import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.accept
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
+import io.ktor.http.URLProtocol
 import io.ktor.http.contentType
 import io.ktor.http.userAgent
 import io.ktor.serialization.kotlinx.json.json
@@ -35,11 +36,17 @@ val DONT_INTERCEPT = AttributeKey<Boolean>("DONT_INTERCEPT")
  */
 fun HttpRequestBuilder.dontIntercept(
 	host: String,
-	port: Int,
+	port: Int?,
+	protocol: URLProtocol? = null
 ) {
 	url {
 		this.host = host
-		this.port = port
+		if (port != null) {
+			this.port = port
+		}
+		if (protocol != null) {
+			this.protocol = protocol
+		}
 	}
 	attributes[DONT_INTERCEPT] = true
 }
@@ -65,8 +72,8 @@ fun HttpClient.urlInterceptor() {
 
 fun HttpClientConfig<*>.configureLogging() {
 	install(Loggin) {
-		logRequest = true
-		logResponse = true
+		logRequest = false
+		logResponse = false
 		logOnError = true
 	}
 }

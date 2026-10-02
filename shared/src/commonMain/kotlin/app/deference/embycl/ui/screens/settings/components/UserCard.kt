@@ -9,7 +9,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Text
@@ -46,6 +49,18 @@ fun UserCard(
 				Text(account.username, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
 				Text(account.serverName, color = MaterialTheme.colorScheme.onSurfaceVariant)
 				Text("Signed in", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+			}
+			
+			IconButton(
+				modifier = Modifier
+					.align(Alignment.CenterVertically),
+				onClick = { }
+			){
+				Icon(
+					imageVector = Icons.AutoMirrored.Filled.Logout,
+					contentDescription = "Sign out",
+					tint = MaterialTheme.colorScheme.error
+				)
 			}
 		}
 	}

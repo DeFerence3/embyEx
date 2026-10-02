@@ -3,8 +3,9 @@ agp = "9.4.1"
 android-compileSdk = "37"
 android-minSdk = "24"
 android-targetSdk = "37"
-version-name="1.1.4"
-version-code="1"
+version-name="1.1.5"
+# Increase this for every Android release; in-app updates compare version codes.
+version-code="2"
 androidx-activity = "1.13.0"
 androidx-appcompat = "1.8.0"
 androidx-core = "1.19.1"
@@ -84,6 +85,7 @@ material3-adaptive-navigation-suite = { module = "org.jetbrains.compose.material
 
 nucleus-application = { module = "dev.nucleusframework:nucleus.nucleus-application", version.ref = "nucleus" }
 nucleus-darkmode-detector = { module = "dev.nucleusframework:nucleus.darkmode-detector", version.ref = "nucleus" }
+nucleus-updater = { module = "dev.nucleusframework:nucleus.updater-runtime", version.ref = "nucleus" }
 nucleus-decorated-window-tao = { module = "dev.nucleusframework:nucleus.decorated-window-tao", version.ref = "nucleus" }
 nucleus-graalvm = { module = "dev.nucleusframework:nucleus.graalvm-runtime", version.ref = "nucleus" }
 nucleus-decorated-window-material3 = { module = "dev.nucleusframework:nucleus.decorated-window-material3", version.ref = "nucleus" }
@@ -119,6 +121,7 @@ nucleus = [
     "nucleus-application",
     "nucleus-darkmode-detector",
     "nucleus-graalvm",
+    "nucleus-updater",
     "nucleus-decorated-window-tao",
     "nucleus-decorated-window-material3"
 ]

@@ -55,3 +55,36 @@ fun buildUrl(base: String, path: String, qParameters: Map<String, String?>): Url
 		}
 	}.build()
 }
+
+fun String.resolveLinks(): String {
+	var result = this
+	
+	// Format pull request URLs
+	val prRegex = Regex("""https://github\.com/[a-zA-Z0-9-]+/[a-zA-Z0-9_.-]+/pull/(\d+)""")
+	result = prRegex.replace(result) { match ->
+		"[#${match.groupValues[1]}](${match.value})"
+	}
+	
+	// Format compare URLs
+	val compareRegex = Regex("""https://github\.com/[a-zA-Z0-9-]+/[a-zA-Z0-9_.-]+/compare/([^\s]+)""")
+	result = compareRegex.replace(result) { match ->
+		"[${match.groupValues[1]}](${match.value})"
+	}
+	
+	// Format usernames
+	val userRegex = Regex("""(?<!\[)@([a-zA-Z0-9-]+)""")
+	result = userRegex.replace(result) { match ->
+		"[${match.value}](https://github.com/${match.groupValues[1]})"
+	}
+	
+	return result
+}
+
+fun String.normalizeReleaseBody(): String {
+	return this
+		.replace("\\r\\n", "\n\n")
+		.replace("\\n", "\n")
+		.replace("\\t", "\t")
+		.replace("\\##", "##")
+		.replace("\\*", "*")
+}
