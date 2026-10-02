@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.provider.Settings
 import androidx.core.content.FileProvider
+import androidx.core.content.pm.PackageInfoCompat
 import androidx.core.net.toUri
 import app.deference.embycl.domain.appupdate.UpdateInfo
 import app.deference.embycl.domain.model.update.AppUpdate
@@ -207,7 +208,7 @@ class AndroidUpdateController(
     private fun publish(update: AppUpdate, reveal: Boolean = false) =
         _state.update { it.copy(update = update, dialogVisible = it.dialogVisible || reveal) }
 
-    private fun installedCode(): Long = 0//PackageInfoCompat.getLongVersionCode(context.packageManager.getPackageInfo(context.packageName, 0))
+    private fun installedCode(): Long = PackageInfoCompat.getLongVersionCode(context.packageManager.getPackageInfo(context.packageName, 0))
 
     private fun restoreDownload(): Boolean {
         if (!pending.isFile || !apk.isFile) return false
