@@ -2,6 +2,7 @@ package app.deference.embycl.ui.screens.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.deference.embycl.domain.repository.AppRepo
 import app.deference.embycl.domain.repository.EmbyRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -11,13 +12,18 @@ import kotlinx.coroutines.launch
 import org.koin.core.annotation.KoinViewModel
 
 @KoinViewModel
-class SettingsViewModel(private val repository: EmbyRepository) : ViewModel() {
+class SettingsViewModel(
+	private val repository: EmbyRepository,
+	private val appRepo: AppRepo
+) : ViewModel() {
 	private val _state = MutableStateFlow(SettingsState())
 	val state = _state.asStateFlow()
 
-	init {
-		refreshServerInfo()
-	}
+	val updateState = appRepo.updateState
+
+	init { refreshServerInfo() }
+
+	fun checkForUpdates() = appRepo.checkForUpdates()
 
 	fun refreshServerInfo() {
 		if (_state.value.isLoading) return

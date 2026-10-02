@@ -17,10 +17,13 @@ import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDe
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import app.deference.embycl.ui.core.LocalKoasty
 import app.deference.embycl.ui.core.LocalNavigator
+import app.deference.embycl.ui.core.components.AppUpdateHost
 import app.deference.embycl.ui.core.nav.Navigator
 import app.deference.embycl.ui.screens.shell.EmbyShellScreen
 import app.deference.embycl.ui.screens.signin.EmbySignInScreen
+import com.deference.koasty.KoastyProvider
 
 @Composable
 fun EmbyExApp(isLoggedIn: Boolean) {
@@ -28,54 +31,58 @@ fun EmbyExApp(isLoggedIn: Boolean) {
 		val startDestination = if (isLoggedIn) EmbyShellScreen else EmbySignInScreen
 		Navigator(startDestination)
 	}
-	CompositionLocalProvider(LocalNavigator provides navigator) {
-		NavDisplay(
-			backStack = navigator.backStack,
-			entryDecorators = listOf(
-				rememberSaveableStateHolderNavEntryDecorator(),
-				rememberViewModelStoreNavEntryDecorator(),
-			),
-			onBack = { navigator.goBack() },
-			entryProvider = { key ->
-				NavEntry(key) {
-					key.Content()
-				}
-			},
-			popTransitionSpec = {
-				(
-						fadeIn(animationSpec = tween(220)) +
-								slideIn(animationSpec = tween(220)) { IntOffset(- it.width / 2, 0) }
-						) togetherWith (
-						fadeOut(animationSpec = tween(220)) +
-								slideOut(animationSpec = tween(220)) { IntOffset(it.width / 2, 0) }
-						)
-			},
-			transitionSpec = {
-				(
-						fadeIn(animationSpec = tween(220)) +
-								slideIn(animationSpec = tween(220)) { IntOffset(it.width / 2, 0) }
-						) togetherWith (
-						fadeOut(animationSpec = tween(220)) +
-								slideOut(animationSpec = tween(220)) { IntOffset(- it.width / 2, 0) }
-						)
-			},
-			predictivePopTransitionSpec = {
-				(
-						fadeIn(animationSpec = tween(220)) +
-								scaleIn(
-									animationSpec = tween(220, delayMillis = 30),
-									initialScale = .9f,
-									TransformOrigin(- 1f, .5f),
-								)
-						) togetherWith (
-						fadeOut(animationSpec = tween(220)) +
-								scaleOut(
-									animationSpec = tween(220, delayMillis = 30),
-									targetScale = .9f,
-									TransformOrigin(- 1f, .5f),
-								)
-						)
-			},
-		)
+	val koastManager = LocalKoasty.current
+	KoastyProvider(koastManager){
+		AppUpdateHost()
+		CompositionLocalProvider(LocalNavigator provides navigator) {
+			NavDisplay(
+				backStack = navigator.backStack,
+				entryDecorators = listOf(
+					rememberSaveableStateHolderNavEntryDecorator(),
+					rememberViewModelStoreNavEntryDecorator(),
+				),
+				onBack = { navigator.goBack() },
+				entryProvider = { key ->
+					NavEntry(key) {
+						key.Content()
+					}
+				},
+				popTransitionSpec = {
+					(
+							fadeIn(animationSpec = tween(220)) +
+									slideIn(animationSpec = tween(220)) { IntOffset(- it.width / 2, 0) }
+							) togetherWith (
+							fadeOut(animationSpec = tween(220)) +
+									slideOut(animationSpec = tween(220)) { IntOffset(it.width / 2, 0) }
+							)
+				},
+				transitionSpec = {
+					(
+							fadeIn(animationSpec = tween(220)) +
+									slideIn(animationSpec = tween(220)) { IntOffset(it.width / 2, 0) }
+							) togetherWith (
+							fadeOut(animationSpec = tween(220)) +
+									slideOut(animationSpec = tween(220)) { IntOffset(- it.width / 2, 0) }
+							)
+				},
+				predictivePopTransitionSpec = {
+					(
+							fadeIn(animationSpec = tween(220)) +
+									scaleIn(
+										animationSpec = tween(220, delayMillis = 30),
+										initialScale = .9f,
+										TransformOrigin(- 1f, .5f),
+									)
+							) togetherWith (
+							fadeOut(animationSpec = tween(220)) +
+									scaleOut(
+										animationSpec = tween(220, delayMillis = 30),
+										targetScale = .9f,
+										TransformOrigin(- 1f, .5f),
+									)
+							)
+				},
+			)
+		}
 	}
 }

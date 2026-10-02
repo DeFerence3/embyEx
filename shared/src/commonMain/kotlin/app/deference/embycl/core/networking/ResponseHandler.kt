@@ -101,8 +101,8 @@ object ResponseHandler {
 				errorsObject?.content ?: ""
 			} else if (json["title"] != null) {
 				json["title"] !!.jsonPrimitive.content
-			} else if (json["message"] != null) {
-				val message = json["message"] !!.jsonPrimitive.content
+			} else if (json["version"] != null) {
+				val message = json["version"] !!.jsonPrimitive.content
 				val statusDescription =
 					json["statusDescription"]
 						?.jsonPrimitive

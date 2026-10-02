@@ -86,6 +86,13 @@ kotlin {
 			
 			implementation(libs.material3.adaptive)
 			implementation(libs.material3.adaptive.navigation.suite)
+			
+			implementation("io.github.deference3:koasty:0.0.1")
+			
+			implementation("com.mikepenz:multiplatform-markdown-renderer:0.45.0")
+			implementation("com.mikepenz:multiplatform-markdown-renderer-m3:0.45.0")
+			implementation("com.mikepenz:multiplatform-markdown-renderer-code:0.45.0")
+			implementation("com.mikepenz:multiplatform-markdown-renderer-coil3:0.45.0")
 		}
 		
 		commonTest {
@@ -97,12 +104,18 @@ kotlin {
 		jvmMain.dependencies {
 			implementation(libs.jmdns)
 			implementation(libs.ktor.client.okhttp)
+			implementation(libs.nucleus.updater)
 		}
 		
 		androidMain {
 			dependencies {
 				implementation(libs.ktor.client.okhttp)
 			}
+		}
+
+		getByName("androidHostTest").dependencies {
+			implementation(libs.kotlin.testJunit)
+			implementation("io.ktor:ktor-client-mock:${libs.versions.ktor.get()}")
 		}
 		
 		appleMain.dependencies {

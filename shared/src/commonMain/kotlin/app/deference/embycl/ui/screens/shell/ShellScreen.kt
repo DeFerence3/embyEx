@@ -39,18 +39,25 @@ import androidx.compose.ui.unit.dp
 import app.deference.embycl.core.session.Session
 import app.deference.embycl.ui.Screen
 import app.deference.embycl.ui.core.LocalNavigator
+import app.deference.embycl.ui.core.components.ObserveEvent
 import app.deference.embycl.ui.core.components.SignOutConfirmationDialog
 import app.deference.embycl.ui.screens.home.HomeAction
 import app.deference.embycl.ui.screens.home.HomeContent
+import app.deference.embycl.ui.screens.home.HomeState
 import app.deference.embycl.ui.screens.home.HomeViewModel
+import app.deference.embycl.ui.screens.libraries.LibrariesAction
 import app.deference.embycl.ui.screens.libraries.LibrariesContent
+import app.deference.embycl.ui.screens.libraries.LibrariesState
 import app.deference.embycl.ui.screens.libraries.LibrariesViewModel
 import app.deference.embycl.ui.screens.library.EmbyLibraryScreen
 import app.deference.embycl.ui.screens.openItem
+import app.deference.embycl.ui.screens.search.SearchAction
 import app.deference.embycl.ui.screens.search.SearchContent
+import app.deference.embycl.ui.screens.search.SearchState
 import app.deference.embycl.ui.screens.search.SearchViewModel
 import app.deference.embycl.ui.screens.settings.EmbySettingsScreen
 import coil3.compose.AsyncImage
+import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -59,12 +66,13 @@ import org.koin.compose.viewmodel.koinViewModel
 fun EmbyShellContent(
 	state: ShellState,
 	onAction: (ShellAction) -> Unit,
-	homeState: app.deference.embycl.ui.screens.home.HomeState,
+	events: Flow<ShellEvent>,
+	homeState: HomeState,
 	onHomeAction: (HomeAction) -> Unit,
-	librariesState: app.deference.embycl.ui.screens.libraries.LibrariesState,
-	onLibrariesAction: (app.deference.embycl.ui.screens.libraries.LibrariesAction) -> Unit,
-	searchState: app.deference.embycl.ui.screens.search.SearchState,
-	onSearchAction: (app.deference.embycl.ui.screens.search.SearchAction) -> Unit,
+	librariesState: LibrariesState,
+	onLibrariesAction: (LibrariesAction) -> Unit,
+	searchState: SearchState,
+	onSearchAction: (SearchAction) -> Unit,
 ) {
 	val backStack = LocalNavigator.current
 	val tab = state.selectedTab
@@ -80,6 +88,10 @@ fun EmbyShellContent(
 			onDismiss = { showSignOutConfirmation = false },
 		)
 	}
+	
+    events.ObserveEvent {
+        when (it) { ShellEvent.SignedOut -> Unit }
+    }
 	
 	NavigationSuiteScaffold(
 		navigationSuiteItems = {
@@ -193,11 +205,13 @@ data object EmbyShellScreen : Screen {
 		val librariesViewModel = koinViewModel<LibrariesViewModel>()
 		val searchViewModel = koinViewModel<SearchViewModel>()
 		val shellState by shellViewModel.state.collectAsState()
+		val shellEvent = shellViewModel.events
 		val homeState by homeViewModel.state.collectAsState()
 		val librariesState by librariesViewModel.state.collectAsState()
 		val searchState by searchViewModel.state.collectAsState()
 		EmbyShellContent(
 			state = shellState,
+			events = shellEvent,
 			onAction = shellViewModel::onAction,
 			homeState = homeState,
 			onHomeAction = homeViewModel::onAction,

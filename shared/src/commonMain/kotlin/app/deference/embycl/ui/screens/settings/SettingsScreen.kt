@@ -11,8 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Logout
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material.icons.filled.Update
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -33,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import app.deference.embycl.BuildConfig
 import app.deference.embycl.core.session.Session
 import app.deference.embycl.domain.model.ServerInfo
+import app.deference.embycl.domain.model.update.AppUpdate
 import app.deference.embycl.ui.Screen
 import app.deference.embycl.ui.core.LocalNavigator
 import app.deference.embycl.ui.core.components.DetailTopBar
@@ -48,19 +48,22 @@ import org.koin.compose.viewmodel.koinViewModel
 
 @Serializable
 data object EmbySettingsScreen : Screen {
-	
+
 	@Composable
 	override fun Content() {
 		val navigator = LocalNavigator.current
 		val viewModel = koinViewModel<SettingsViewModel>()
 		val state by viewModel.state.collectAsState()
+		val updateState by viewModel.updateState.collectAsState()
 		val account = remember { SettingsAccount.getFromSession() }
 		SettingsContent(
 			state = state,
 			account = account,
 			onRefresh = viewModel::refreshServerInfo,
+			onCheckUpdates = viewModel::checkForUpdates,
 			onBack = navigator::goBack,
 			onSignOut = Session::logout,
+			update = updateState.update
 		)
 	}
 }
@@ -69,8 +72,10 @@ data object EmbySettingsScreen : Screen {
 @Composable
 fun SettingsContent(
 	state: SettingsState,
+	update: AppUpdate,
 	account: SettingsAccount,
 	onRefresh: () -> Unit,
+	onCheckUpdates: () -> Unit,
 	onBack: () -> Unit,
 	onSignOut: () -> Unit,
 ) {
@@ -85,7 +90,7 @@ fun SettingsContent(
 			onDismiss = { showSignOutConfirmation = false },
 		)
 	}
-	
+
 	Scaffold(topBar = { DetailTopBar("Settings", onBack = onBack) }) { padding ->
 		Box(
 			Modifier
@@ -102,11 +107,33 @@ fun SettingsContent(
 				item {
 					UserCard(account)
 				}
-				
+
+				item {
+					OutlinedButton(
+						onClick = { onCheckUpdates() },
+						modifier = Modifier
+							.fillMaxWidth()
+							.heightIn(min = 56.dp),
+						border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
+					) {
+						Icon(Icons.Default.Update, null, Modifier.padding(end = 12.dp))
+						Text(when (update) {
+							AppUpdate.Checking -> "Checking for updates…"
+							is AppUpdate.Downloading -> "View update download"
+							is AppUpdate.Available -> "View available update"
+							is AppUpdate.ReadyToInstall, is AppUpdate.AwaitingPermission, is AppUpdate.InstallerLaunched -> "Install downloaded update"
+							else -> "Check for updates"
+						}, fontWeight = FontWeight.SemiBold)
+					}
+				}
+				item {
+					Text("Current ${stringResource(Res.string.app_name)} ${BuildConfig.VERSION_NAME}", modifier = Modifier.fillMaxWidth(), style = MaterialTheme.typography.bodySmall, textAlign = androidx.compose.ui.text.style.TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant)
+				}
+
 				if (hasPlayerSettings) {
 					item { PlayerSettings() }
 				}
-				
+
 				item {
 					InfoSection(
 						"Server Information",
@@ -119,7 +146,7 @@ fun SettingsContent(
 					Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
 						InfoHeader("Server information")
 						if (state.isLoading && state.serverDetails == null) {
-							Text("Loading server information…", style = MaterialTheme.typography.bodyMedium)
+							Text("Loading server informationâ€¦", style = MaterialTheme.typography.bodyMedium)
 						}
 						state.error?.let { error ->
 							Text(error, color = MaterialTheme.colorScheme.error)
@@ -140,22 +167,6 @@ fun SettingsContent(
 						connectionDetails(state.serverDetails?.info),
 						state.error,
 					)
-				}
-				item {
-					OutlinedButton(
-						onClick = { showSignOutConfirmation = true },
-						modifier = Modifier
-							.fillMaxWidth()
-							.heightIn(min = 56.dp),
-						border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
-						colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
-					) {
-						Icon(Icons.AutoMirrored.Filled.Logout, null, Modifier.padding(end = 12.dp))
-						Text("Sign out", fontWeight = FontWeight.SemiBold)
-					}
-				}
-				item {
-					Text("${stringResource(Res.string.app_name)} ${BuildConfig.VERSION_NAME}", modifier = Modifier.fillMaxWidth(), style = MaterialTheme.typography.bodySmall, textAlign = androidx.compose.ui.text.style.TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant)
 				}
 			}
 		}

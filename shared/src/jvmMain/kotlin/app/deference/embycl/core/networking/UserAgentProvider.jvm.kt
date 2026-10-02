@@ -9,7 +9,7 @@ actual class UserAgentProvider {
 		val appName = "EmbyEx Desktop"
 		val versionName = BuildConfig.VERSION_NAME
 		val osName = System.getProperty("os.name") ?: "Unknown"
-		val osVersion = System.getProperty("os.version") ?: "Unknown"
+		val osVersion = System.getProperty("os.appUpdate") ?: "Unknown"
 		val osArch = System.getProperty("os.arch") ?: "Unknown"
 		return "$appName/$versionName ($osName $osVersion; $osArch)"
 	}
