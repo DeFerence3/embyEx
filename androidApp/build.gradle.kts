@@ -85,7 +85,10 @@ dependencies {
 	implementation(project(":shared"))
 	
 	implementation(libs.androidx.activity.compose)
+	implementation(libs.material)
+	
 	debugImplementation(libs.compose.uiToolingPreview)
+	
 	androidTestImplementation(libs.androidx.testExt.junit)
 	androidTestImplementation("androidx.test:runner:1.7.0")
 	androidTestImplementation("io.ktor:ktor-client-mock:${libs.versions.ktor.get()}")
