@@ -9,8 +9,7 @@ env:
 on:
   workflow_dispatch:
   push:
-    tags:
-      - "*"
+    tags: ['v*']
 
 permissions:
   contents: read
@@ -64,7 +63,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: release-assets-android
-          path: androidApp/build/outputs/apk/release/*.apk
+          path: |
+            androidApp/build/outputs/apk/release/*.apk
+            androidApp/build/outputs/apk/release/output-metadata.json
           if-no-files-found: error
 
       - name: Remove Android signing key
@@ -125,7 +126,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: release-assets-windows
-          path: desktopApp/build/compose/binaries/main/graalvm-msi/*.msi
+          path: |
+            desktopApp/build/compose/binaries/main/graalvm-msi/*.msi
+            desktopApp/build/compose/binaries/main/graalvm-msi/latest.yml
           if-no-files-found: error
 
       - name: Remove Windows signing certificate
