@@ -150,6 +150,43 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Generate Release Notes
+        shell: bash
+        run: |
+          CURRENT_TAG=$(git tag --sort=-v:refname | sed -n '1p')
+          PREVIOUS_TAG=$(git tag --sort=-v:refname | sed -n '2p')
+          BRANCH="master"
+
+          # 1. Get exact timestamps for the tag window
+          START_DATE=$(git log -1 --format=%cI "$PREVIOUS_TAG")
+          END_DATE=$(git log -1 --format=%cI "$CURRENT_TAG")
+          DATE_FILTER="merged:${START_DATE}..${END_DATE}"
+
+          # 2. Get the PR exclusion flags matching only this timeframe
+          EXCLUDE_FLAGS=$(gh pr list --state merged --base "$BRANCH" --search "$DATE_FILTER" --limit 100 --json mergeCommit --jq '.[].mergeCommit.oid' | sed 's/^/^/')
+
+          # 3. Print the PRs
+          echo "## 🚀What's Changed" > release_notes.md
+
+          ### Pull Requests
+          gh pr list --state merged --base "$BRANCH" --search "$DATE_FILTER" --limit 100 --json title,author,number,mergeCommit --jq '.[] | "* \(.title) by @\(.author.login) in #\(.number) (\(.mergeCommit.oid[0:7]))"' >> release_notes.md
+
+          # 4. Print the raw commits (excluding the PR merge commits)
+          ### Commits
+          git log "$PREVIOUS_TAG..$CURRENT_TAG" --pretty=format:'* %s by %an (%h)' $EXCLUDE_FLAGS >> release_notes.md
+
+          REPO="${{ github.repository }}"
+
+          echo "" >> release_notes.md
+          echo "" >> release_notes.md
+
+          # Append the Full Changelog Range Link
+          if [ -n "$PREVIOUS_TAG" ]; then
+          echo "**Full Changelog**: https://github.com/$REPO/compare/${PREVIOUS_TAG}...${CURRENT_TAG}" >> release_notes.md
+          else
+          echo "**Full Changelog**: https://github.com/$REPO/${CURRENT_TAG}" >> release_notes.md
+          fi
+
       - name: Download all release assets
         uses: actions/download-artifact@v8
         with:
@@ -162,4 +199,4 @@ jobs:
         with:
           token: ${{ secrets.PAT }}
           files: release-assets/*
-          generate_release_notes: true
+          body_path: release_notes.md

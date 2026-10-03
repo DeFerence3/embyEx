@@ -3,7 +3,12 @@ package app.deference.embycl.domain.model.update
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class UpdateRelease(val version: String, val versionCode: Long, val changeLogMarkDown: String)
+data class UpdateRelease(
+	val version: String,
+	val tag: String,
+	val versionCode: Long,
+	val changeLogMarkDown: String
+)
 
 sealed interface AppUpdate {
     data object Idle : AppUpdate

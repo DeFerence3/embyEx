@@ -52,9 +52,9 @@ fun UpdateAvailableDialog(
     val title = when (appUpdate) {
         AppUpdate.Idle, AppUpdate.Checking -> "Checking for updates"
         AppUpdate.NotAvailable -> "Yay!!"
-        is AppUpdate.Available -> "Update available · ${appUpdate.release.version}"
-        is AppUpdate.Downloading -> "Downloading ${appUpdate.release.version}"
-        is AppUpdate.ReadyToInstall -> "Ready to install ${appUpdate.release.version}"
+        is AppUpdate.Available -> "Update available · ${appUpdate.release.tag}"
+        is AppUpdate.Downloading -> "Downloading ${appUpdate.release.tag}"
+        is AppUpdate.ReadyToInstall -> "Ready to install ${appUpdate.release.tag}"
         is AppUpdate.AwaitingPermission -> "Allow app updates"
         is AppUpdate.InstallerLaunched -> "Installer opened"
         is AppUpdate.Failed -> when (appUpdate.stage) {

@@ -39,7 +39,7 @@ class GithubUpdateProvider(
 			val asset = release.assets.singleOrNull { it.name == element.outputFile && it.name.endsWith(".apk", true) } ?: error("The APK listed in the update metadata is missing.")
 			require(asset.size > 0) { "The update APK is empty." }
 			requireHttps(asset.browserDownloadUrl)
-			val updateRelease = UpdateRelease(element.versionName, element.versionCode.toLong(), release.body.orEmpty().normalizeReleaseBody().resolveLinks())
+			val updateRelease = UpdateRelease(element.versionName, release.tag,element.versionCode.toLong(), release.body.orEmpty().normalizeReleaseBody().resolveLinks())
 			UpdateInfo(
 				updateRelease,
 				asset.browserDownloadUrl, asset.digest, asset.size,
