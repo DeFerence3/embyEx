@@ -32,7 +32,9 @@ import kotlinx.serialization.json.Json
 import org.koin.core.annotation.Named
 import org.koin.core.annotation.Single
 import java.io.File
+import java.time.Duration
 import kotlin.time.Duration.Companion.seconds
+import java.net.http.HttpClient as JavaHttpClient
 
 @Single
 actual class AppUpdater(
@@ -49,10 +51,15 @@ actual class AppUpdater(
 	private val _state = MutableStateFlow(UpdateState())
 	private val gitHubProvider = GitHubProvider(owner = owner, repo = repo)
 	private var installer: File? = null
+	private val javaHttpClient = JavaHttpClient.newBuilder()
+		.connectTimeout(Duration.ofSeconds(20))
+		.followRedirects(JavaHttpClient.Redirect.NORMAL)
+		.build()
 	private val updater = NucleusUpdater {
 		provider = gitHubProvider
 		currentVersion = BuildConfig.VERSION_NAME
 		executableType = "msi"
+		httpClient = javaHttpClient
 	}
 	
 	val errorHandler = CoroutineExceptionHandler { context, exception ->
@@ -79,6 +86,7 @@ actual class AppUpdater(
 						UpdateRelease(
 							result.info.version,
 							versionCode = 0,
+							tag = "v${result.info.version}",
 							changeLogMarkDown = getChangeLog("v${result.info.version}")
 								.resolveLinks(),
 						).also {

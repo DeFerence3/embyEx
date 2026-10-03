@@ -9,7 +9,7 @@ env:
 on:
   workflow_dispatch:
   push:
-    tags: ['v*']
+    tags: [ 'v*' ]
 
 permissions:
   contents: read
@@ -139,11 +139,67 @@ jobs:
           if (Test-Path -LiteralPath $certificatePath) {
             Remove-Item -LiteralPath $certificatePath -Force
           }
+  generate-changelog:
+    name: Changelog
+    # Only run if the workflow was triggered by a tag push
+    # Which is the only time a release is published, hence changelog needed
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ secrets.PAT }}
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Get Changelog
+        shell: bash
+        run: |
+          CURRENT_TAG=$(git tag --sort=-v:refname | sed -n '1p')
+          PREVIOUS_TAG=$(git tag --sort=-v:refname | sed -n '2p')
+          BRANCH="master"
+
+          # 1. Get exact timestamps for the tag window
+          START_DATE=$(git log -1 --format=%cI "$PREVIOUS_TAG")
+          END_DATE=$(git log -1 --format=%cI "$CURRENT_TAG")
+          DATE_FILTER="merged:${START_DATE}..${END_DATE}"
+
+          # 2. Get the PR exclusion flags matching only this timeframe
+          EXCLUDE_FLAGS=$(gh pr list --state merged --base "$BRANCH" --search "$DATE_FILTER" --limit 100 --json mergeCommit --jq '.[].mergeCommit.oid' | sed 's/^/^/')
+
+          # 3. Print the PRs
+          echo "## 🚀What's Changed" > release_notes.md
+
+          ### Pull Requests
+          gh pr list --state merged --base "$BRANCH" --search "$DATE_FILTER" --limit 100 --json title,author,number,mergeCommit --jq '.[] | "* \(.title) by @\(.author.login) in #\(.number) (\(.mergeCommit.oid[0:7]))"' >> release_notes.md
+
+          # 4. Print the raw commits (excluding the PR merge commits)
+          ### Commits
+          git log "$PREVIOUS_TAG..$CURRENT_TAG" --pretty=format:'* %s by %an (%h)' $EXCLUDE_FLAGS >> release_notes.md
+
+          REPO="${{ github.repository }}"
+
+          echo "" >> release_notes.md
+          echo "" >> release_notes.md
+
+          # Append the Full Changelog Range Link
+          if [ -n "$PREVIOUS_TAG" ]; then
+          echo "**Full Changelog**: https://github.com/$REPO/compare/${PREVIOUS_TAG}...${CURRENT_TAG}" >> release_notes.md
+          else
+          echo "**Full Changelog**: https://github.com/$REPO/${CURRENT_TAG}" >> release_notes.md
+          fi
+      - name: Upload changelog
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-assets-changelog
+          path: release_notes.md
 
 
   release:
     name: Publish GitHub Release
-    needs: [android, desktop]
+    needs: [ android, desktop, generate-changelog ]
     # Only run if the workflow was triggered by a tag push
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
@@ -162,4 +218,4 @@ jobs:
         with:
           token: ${{ secrets.PAT }}
           files: release-assets/*
-          generate_release_notes: true
+          body_path: release-assets/release_notes.md
