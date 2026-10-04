@@ -2,7 +2,7 @@ package app.deference.embycl.data.repository
 
 import app.deference.embycl.BuildConfig
 import app.deference.embycl.core.networking.ResponseHandler.isSuccess
-import app.deference.embycl.core.utils.Log
+import app.deference.embycl.core.networking.UpdaterHttpClient
 import app.deference.embycl.core.utils.resolveLinks
 import app.deference.embycl.domain.ghrelease.GithubRelease
 import app.deference.embycl.domain.model.update.AppUpdate
@@ -32,9 +32,7 @@ import kotlinx.serialization.json.Json
 import org.koin.core.annotation.Named
 import org.koin.core.annotation.Single
 import java.io.File
-import java.time.Duration
 import kotlin.time.Duration.Companion.seconds
-import java.net.http.HttpClient as JavaHttpClient
 
 @Single
 actual class AppUpdater(
@@ -51,15 +49,12 @@ actual class AppUpdater(
 	private val _state = MutableStateFlow(UpdateState())
 	private val gitHubProvider = GitHubProvider(owner = owner, repo = repo)
 	private var installer: File? = null
-	private val javaHttpClient = JavaHttpClient.newBuilder()
-		.connectTimeout(Duration.ofSeconds(20))
-		.followRedirects(JavaHttpClient.Redirect.NORMAL)
-		.build()
+	private val updateHttpClient = UpdaterHttpClient()
 	private val updater = NucleusUpdater {
 		provider = gitHubProvider
 		currentVersion = BuildConfig.VERSION_NAME
 		executableType = "msi"
-		httpClient = javaHttpClient
+		httpClient = updateHttpClient
 	}
 	
 	val errorHandler = CoroutineExceptionHandler { context, exception ->
@@ -73,7 +68,6 @@ actual class AppUpdater(
 	
 	actual fun checkForUpdates(userInitiated: Boolean) {
 		if (userInitiated) _state.update { it.copy(dialogVisible = true) }
-		Log.i("AppUpdater.jvm"){ "Checkingforupdates---> $userInitiated" }
 		scope.launch {
 			val reveal = !userInitiated
 			if(_state.value.update !is AppUpdate.Downloading){
@@ -81,7 +75,6 @@ actual class AppUpdater(
 			}
 			when (val result = updater.checkForUpdates()) {
 				is UpdateResult.Available -> {
-					Log.i("AppUpdater.jvm"){ "UpdateAvailable---> $result" }
 					val update = AppUpdate.Available(
 						UpdateRelease(
 							result.info.version,
@@ -154,7 +147,6 @@ actual class AppUpdater(
 	}
 	
 	private fun publish(update: AppUpdate, reveal: Boolean = false) {
-		Log.i("AppUpdater.jvm"){ "Publishing---> $update - $reveal" }
 		_state.update { it.copy(update = update, dialogVisible = it.dialogVisible || reveal) }
 	}
 }

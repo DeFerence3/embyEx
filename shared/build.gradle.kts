@@ -106,6 +106,10 @@ kotlin {
 			implementation(libs.ktor.client.okhttp)
 			implementation(libs.nucleus.updater)
 		}
+
+		jvmTest.dependencies {
+			implementation(libs.kotlin.testJunit)
+		}
 		
 		androidMain {
 			dependencies {

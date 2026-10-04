@@ -3,7 +3,7 @@ agp = "9.4.1"
 android-compileSdk = "37"
 android-minSdk = "24"
 android-targetSdk = "37"
-version-name="1.1.6"
+version-name="1.1.7"
 # Increase this for every Android release; in-app updates compare version codes.
 version-code="4"
 androidx-activity = "1.13.0"
