@@ -30,6 +30,7 @@ import coil3.compose.AsyncImage
 @Composable
 fun UserCard(
 	account: SettingsAccount,
+	onSignout: () -> Unit,
 	modifier: Modifier = Modifier,
 ) {
 	OutlinedCard(modifier = modifier.fillMaxWidth(), shape = MaterialTheme.shapes.extraLarge) {
@@ -54,7 +55,7 @@ fun UserCard(
 			IconButton(
 				modifier = Modifier
 					.align(Alignment.CenterVertically),
-				onClick = { }
+				onClick = onSignout
 			){
 				Icon(
 					imageVector = Icons.AutoMirrored.Filled.Logout,
