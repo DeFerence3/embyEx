@@ -31,6 +31,9 @@ object NetworkUtils {
 	
 	fun handleException(e: Throwable): DataState.Error {
 		e.printStackTrace()
+		if (e is TimeoutCancellationException || (e is IOException && e.message?.contains("timeout", ignoreCase = true) == true)) {
+			app.deference.embycl.core.session.Session.setConnected(false)
+		}
 		return when (e) {
 			is IOException -> DataState.Error("Network request failed: ${e.message}")
 			is TimeoutCancellationException -> DataState.Error("Request timed out")

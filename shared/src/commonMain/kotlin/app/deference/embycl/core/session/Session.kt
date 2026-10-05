@@ -3,6 +3,7 @@ package app.deference.embycl.core.session
 import app.deference.embycl.data.preference.EmbyPreference
 import app.deference.embycl.domain.model.AuthenticationResult
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlin.uuid.Uuid
 
@@ -11,6 +12,7 @@ private const val KEY_LAST_SERVER_URL = "last_server_url"
 private const val USERNAME = "username"
 private const val ACCESS_TOKEN = "accessToken-key"
 private const val USER_ID = "user_id"
+private const val SERVER_ID = "server_id"
 private const val SERVER_URL = "server-url"
 private const val SERVER_NAME = "server-name"
 private const val THEME_MODE = "theme_mode"
@@ -20,6 +22,8 @@ object Session {
 	
 	lateinit var preferences: EmbyPreference
 	val isLoggedInState by lazy { MutableStateFlow(accessToken?.isNotEmpty() == true) }
+	private val _isConnected = MutableStateFlow(true)
+	val isConnected by lazy { _isConnected.asStateFlow() }
 	
 	fun init(preferences: EmbyPreference) {
 		this.preferences = preferences
@@ -39,6 +43,9 @@ object Session {
 	val serverName: String
 		get() = safeGet(SERVER_NAME)
 	
+	val serverId: String
+		get() = preferences.getString(SERVER_ID) ?: ""
+	
 	val userId: String
 		get() = safeGet(USER_ID)
 	
@@ -51,22 +58,38 @@ object Session {
 		userData: AuthenticationResult,
 		serverUrl: String,
 		serverName: String,
+		serverId: String = "",
 	) {
 		preferences.save(USERNAME, userData.user.name)
 		preferences.save(ACCESS_TOKEN, userData.accessToken)
 		preferences.save(USER_ID, userData.user.id)
 		
+		val effectiveServerId = userData.serverId.ifEmpty { serverId }
+		if (effectiveServerId.isNotEmpty()) {
+			preferences.save(SERVER_ID, effectiveServerId)
+		}
 		preferences.save(SERVER_URL, serverUrl)
 		preferences.save(KEY_LAST_SERVER_URL, serverUrl)
 		preferences.save(SERVER_NAME, serverName)
 		isLoggedInState.update { true }
 	}
 	
+	fun updateServerUrl(newServerUrl: String, newServerName: String? = null, newServerId: String? = null) {
+		preferences.save(SERVER_URL, newServerUrl)
+		preferences.save(KEY_LAST_SERVER_URL, newServerUrl)
+		if (!newServerName.isNullOrEmpty()) {
+			preferences.save(SERVER_NAME, newServerName)
+		}
+		if (!newServerId.isNullOrEmpty() && serverId.isEmpty()) {
+			preferences.save(SERVER_ID, newServerId)
+		}
+	}
+	
 	fun logout() {
 		preferences.remove(USERNAME)
 		preferences.remove(ACCESS_TOKEN)
 		preferences.remove(USER_ID)
-		
+		preferences.remove(SERVER_ID)
 		preferences.remove(SERVER_URL)
 		preferences.remove(SERVER_NAME)
 		isLoggedInState.update { false }
@@ -77,5 +100,9 @@ object Session {
 	private fun safeGet(key: String, default: String = "", run: () -> Unit = ::logout): String = preferences.getString(key) ?: run {
 		run()
 		default
+	}
+	
+	fun setConnected(bool: Boolean) {
+		_isConnected.update { bool }
 	}
 }

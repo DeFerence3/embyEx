@@ -7,8 +7,11 @@ import app.deference.embycl.core.utils.JsonUtils
 import app.deference.embycl.core.utils.toHttpUrl
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
+import io.ktor.client.network.sockets.ConnectTimeoutException
+import io.ktor.client.network.sockets.SocketTimeoutException
 import io.ktor.client.plugins.DefaultRequest
 import io.ktor.client.plugins.HttpResponseValidator
+import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.plugins.HttpSend
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.auth.Auth
@@ -27,6 +30,8 @@ import io.ktor.http.contentType
 import io.ktor.http.userAgent
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.util.AttributeKey
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.io.IOException
 
 val DONT_INTERCEPT = AttributeKey<Boolean>("DONT_INTERCEPT")
 
@@ -106,6 +111,30 @@ fun HttpClientConfig<*>.configureDefaultRequest(userAgent: UserAgentProvider) {
 	
 	install(HttpTimeout) {
 		socketTimeoutMillis = 50000
+	}
+	
+	HttpResponseValidator {
+		handleResponseExceptionWithRequest { cause, request ->
+			when (cause) {
+				is ConnectTimeoutException,
+				is SocketTimeoutException,
+				is HttpRequestTimeoutException,
+				is TimeoutCancellationException -> {
+					Session.setConnected(false)
+					throw cause
+				}
+				
+				is IOException -> {
+					if (cause.message?.contains("timeout", ignoreCase = true) == true ||
+						cause.message?.contains("timed out", ignoreCase = true) == true) {
+						Session.setConnected(false)
+					}
+					throw cause
+				}
+				
+				else -> throw cause
+			}
+		}
 	}
 }
 

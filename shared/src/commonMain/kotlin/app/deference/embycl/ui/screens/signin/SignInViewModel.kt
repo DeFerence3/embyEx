@@ -116,7 +116,7 @@ class SignInViewModel(
 			authRepo.authenticate(discovery, _state.value.username, _state.value.password)
 				.onSuccess { result ->
 					val server = discovery.server
-					Session.login(result, server.host.toUrl(server.port, server.scheme), discovery.serverInfo.serverName)
+					Session.login(result, server.host.toUrl(server.port, server.scheme), discovery.serverInfo.serverName, discovery.serverInfo.id)
 					update { it.copy(isBusy = false) }
 				}
 				.onFailure { fail(it) }
@@ -131,7 +131,7 @@ class SignInViewModel(
 			authRepo.authenticate(discovery, user, password)
 				.onSuccess { result ->
 					val server = discovery.server
-					Session.login(result, server.host.toUrl(server.port, server.scheme), discovery.serverInfo.serverName)
+					Session.login(result, server.host.toUrl(server.port, server.scheme), discovery.serverInfo.serverName, discovery.serverInfo.id)
 					update { it.copy(isBusy = false) }
 				}
 				.onFailure { fail(it) }
