@@ -30,8 +30,8 @@ internal actual val hasPlayerSettings = true
 @Composable
 internal actual fun PlayerSettings() {
 	val preferences = remember { DesktopPlayerPreferences(Session.preferences) }
-	var path by remember { mutableStateOf(preferences.path) }
 	var activePath by remember { mutableStateOf(findMpvExecutable(preferences.path)?.absolutePath) }
+	var path by remember { mutableStateOf(activePath ?: preferences.path) }
 	var error by remember { mutableStateOf<String?>(null) }
 	
 	fun save(value: String) {
@@ -72,10 +72,21 @@ internal actual fun PlayerSettings() {
 					}
 				}) { Text("Browse…") }
 				Button(onClick = { save(path) }) { Text("Save") }
-				TextButton(onClick = { save("") }) { Text("Use automatic") }
+				TextButton(
+					onClick = {
+						val mpvInstalled = findMpvExecutable(preferences.path)?.absolutePath
+						if (mpvInstalled != null) {
+							activePath = mpvInstalled
+							error = null
+							save(mpvInstalled)
+						}else{
+							error = "mpv was not found in env variables or path, please choose manually."
+						}
+					}
+				) { Text("Use automatic") }
 			}
-			Text(
-				activePath?.let { "Using: $it" } ?: "mpv was not found. Select its folder or executable above.",
+			if(activePath == null) Text(
+				"mpv was not found. Select its folder or executable above.",
 				style = MaterialTheme.typography.bodySmall,
 			)
 		}
