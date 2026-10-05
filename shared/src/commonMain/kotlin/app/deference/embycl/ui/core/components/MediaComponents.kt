@@ -103,14 +103,15 @@ fun LibraryRow(
 @Composable
 fun MediaCard(
 	item: EmbyItem,
+	modifier: Modifier = Modifier,
 	onClick: () -> Unit,
 ) {
 	if (item.type == "Episode") {
-		EpisodeListItem(item, onClick)
+		EpisodeListItem(item, onClick,modifier)
 	} else {
 		val interactionSource = remember { MutableInteractionSource() }
 		Column(
-			modifier = Modifier
+			modifier = modifier
 				.fillMaxWidth()
 				.clickable(onClick = onClick,interactionSource = interactionSource)
 				.animateWithHover(interactionSource),
