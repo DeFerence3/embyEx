@@ -254,6 +254,9 @@ class AndroidUpdateController(
         val flags = if (Build.VERSION.SDK_INT >= 28) PackageManager.GET_SIGNING_CERTIFICATES else PackageManager.GET_SIGNATURES
         val candidate = pm.getPackageArchiveInfo(file.absolutePath, flags) ?: error("The downloaded file is not a valid APK.")
         val installed = pm.getPackageInfo(context.packageName, flags)
+		val installedVersionCode = PackageInfoCompat.getLongVersionCode(installed)
+		val candidateVersionCode = PackageInfoCompat.getLongVersionCode(candidate)
+        check(candidateVersionCode > installedVersionCode) { "The update is not newer than the currently installed version." }
         check(candidate.packageName == context.packageName) { "The APK belongs to a different application." }
 		check((candidate.applicationInfo?.minSdkVersion ?: 0) <= Build.VERSION.SDK_INT) { "This update requires a newer Android version." }
 		val trusted = if (Build.VERSION.SDK_INT >= 28) {

@@ -5,7 +5,7 @@ android-minSdk = "24"
 android-targetSdk = "37"
 version-name="1.1.9"
 # Increase this for every Android release; in-app updates compare version codes.
-version-code="6"
+version-code="7"
 androidx-activity = "1.13.0"
 androidx-appcompat = "1.8.0"
 androidx-core = "1.19.1"
