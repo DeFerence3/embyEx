@@ -1,30 +1,23 @@
 package app.deference.embycl.ui.screens.shell
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Logout
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -32,9 +25,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.rememberVectorPainter
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.dp
 import app.deference.embycl.core.session.Session
 import app.deference.embycl.ui.Screen
@@ -56,7 +47,8 @@ import app.deference.embycl.ui.screens.search.SearchContent
 import app.deference.embycl.ui.screens.search.SearchState
 import app.deference.embycl.ui.screens.search.SearchViewModel
 import app.deference.embycl.ui.screens.settings.EmbySettingsScreen
-import coil3.compose.AsyncImage
+import app.deference.embycl.ui.screens.shell.components.EmbyExBottomBar
+import app.deference.embycl.ui.screens.shell.components.TopAppBar
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
 import org.koin.compose.viewmodel.koinViewModel
@@ -89,110 +81,135 @@ fun EmbyShellContent(
 		)
 	}
 	
-    events.ObserveEvent {
-        when (it) { ShellEvent.SignedOut -> Unit }
-    }
+	events.ObserveEvent {
+		when (it) { ShellEvent.SignedOut -> Unit }
+	}
 	
-	NavigationSuiteScaffold(
+	Scaffold(
+		contentWindowInsets = WindowInsets.navigationBars,
+		topBar = {
+			TopAppBar(
+				currentTab = tab,
+				onRefresh = { onHomeAction(HomeAction.Refresh) },
+				onLogout = { showSignOutConfirmation = true },
+				onSettings = { backStack.goTo(EmbySettingsScreen) }
+			)
+		},
+		bottomBar = {
+			EmbyExBottomBar(
+				currentTab = tab,
+				onAction = { destination ->
+					onAction(ShellAction.SelectTab(destination))
+				}
+			)
+		}
+	) { paddingValues ->
+		val layoutDirection = LocalLayoutDirection.current
+		val padding = PaddingValues(
+			top = paddingValues.calculateTopPadding(),
+			bottom = 0.dp,
+			start = paddingValues.calculateStartPadding(layoutDirection),
+			end = paddingValues.calculateEndPadding(layoutDirection),
+		)
+		AnimatedContent(
+			targetState = tab,
+			transitionSpec = {
+				val isForward = targetState.ordinal > initialState.ordinal
+				if (isForward) {
+					(slideInHorizontally(
+						animationSpec = spring(
+							stiffness = Spring.StiffnessMediumLow,
+							dampingRatio = Spring.DampingRatioNoBouncy
+						),
+						initialOffsetX = { width -> width / 3 }
+					) + fadeIn() + scaleIn(initialScale = 0.96f)).togetherWith(
+						slideOutHorizontally(
+							animationSpec = spring(
+								stiffness = Spring.StiffnessMediumLow,
+								dampingRatio = Spring.DampingRatioNoBouncy
+							),
+							targetOffsetX = { width -> -width / 3 }
+						) + fadeOut() + scaleOut(targetScale = 0.96f)
+					)
+				} else {
+					(slideInHorizontally(
+						animationSpec = spring(
+							stiffness = Spring.StiffnessMediumLow,
+							dampingRatio = Spring.DampingRatioNoBouncy
+						),
+						initialOffsetX = { width -> -width / 3 }
+					) + fadeIn() + scaleIn(initialScale = 0.96f)).togetherWith(
+						slideOutHorizontally(
+							animationSpec = spring(
+								stiffness = Spring.StiffnessMediumLow,
+								dampingRatio = Spring.DampingRatioNoBouncy
+							),
+							targetOffsetX = { width -> width / 3 }
+						) + fadeOut() + scaleOut(targetScale = 0.96f)
+					)
+				}
+			},
+			label = "emby_tab_expressive"
+		) { selected ->
+			when (selected) {
+				EmbyTab.Home -> HomeContent(
+					state = homeState,
+					onAction = onHomeAction,
+					modifier = Modifier.padding(padding),
+					onItemClick = { item -> openItem(item, backStack) },
+				) { lib -> backStack.goTo(EmbyLibraryScreen(lib.id, lib.name)) }
+				
+				EmbyTab.Libraries -> LibrariesContent(
+					state = librariesState,
+					onAction = onLibrariesAction,
+					modifier = Modifier.padding(padding),
+				) { lib -> backStack.goTo(EmbyLibraryScreen(lib.id, lib.name)) }
+				
+				EmbyTab.Search -> SearchContent(
+					state = searchState,
+					onAction = onSearchAction,
+					modifier = Modifier.padding(padding),
+				) { item -> openItem(item, backStack) }
+			}
+		}
+	}
+	
+	
+	/*NavigationSuiteScaffold(
 		navigationSuiteItems = {
 			EmbyTab.entries.forEach { destination ->
+				val isSelected = destination == tab
 				item(
-					icon = { Icon(destination.icon, contentDescription = destination.label) },
-					label = { Text(destination.label) },
-					selected = destination == tab,
+					icon = {
+						val iconScale by animateFloatAsState(
+							targetValue = if (isSelected) 1.15f else 1.0f,
+							animationSpec = spring(
+								dampingRatio = Spring.DampingRatioMediumBouncy,
+								stiffness = Spring.StiffnessMediumLow
+							),
+							label = "icon_scale_${destination.name}"
+						)
+						Icon(
+							imageVector = if (isSelected) destination.selectedIcon else destination.unselectedIcon,
+							contentDescription = destination.label,
+							modifier = Modifier.scale(iconScale)
+						)
+					},
+					label = {
+						Text(
+							text = destination.label,
+							style = MaterialTheme.typography.labelMedium,
+							fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium
+						)
+					},
+					selected = isSelected,
 					onClick = { onAction(ShellAction.SelectTab(destination)) },
 					alwaysShowLabel = false
 				)
 			}
 		}
-	){
-		Scaffold(
-			contentWindowInsets = WindowInsets.navigationBars,
-			topBar = {
-				TopAppBar(
-					title = {
-						Column {
-							Text(if (tab == EmbyTab.Home) Session.serverName else tab.name)
-							if (tab == EmbyTab.Home) {
-								Text(
-									Session.user.name,
-									style = MaterialTheme.typography.labelMedium,
-									color = MaterialTheme.colorScheme.onSurfaceVariant,
-								)
-							}
-						}
-					},
-					actions = {
-						if (tab == EmbyTab.Home) {
-							IconButton(onClick = { onHomeAction(HomeAction.Refresh) }) {
-								Icon(Icons.Filled.Refresh, contentDescription = "Refresh")
-							}
-						}
-						Box {
-							IconButton(onClick = { onAction(ShellAction.SetAccountMenuOpen(true)) }) {
-								AsyncImage(
-									model = Session.user.primaryImageUrl,
-									contentDescription = "Account",
-									modifier = Modifier
-										.background(MaterialTheme.colorScheme.secondaryContainer)
-										.padding(4.dp)
-										.clip(CircleShape)
-										.size(36.dp)
-									,
-									contentScale = ContentScale.Crop,
-									error = rememberVectorPainter(Icons.Default.Person),
-									placeholder = rememberVectorPainter(Icons.Default.Person)
-								)
-							}
-							DropdownMenu(expanded = state.isAccountMenuOpen, onDismissRequest = { onAction(ShellAction.SetAccountMenuOpen(false)) }) {
-								DropdownMenuItem(
-									text = { Text("Settings") },
-									leadingIcon = { Icon(Icons.Filled.Settings, null) },
-									onClick = {
-										onAction(ShellAction.SetAccountMenuOpen(false))
-										backStack.goTo(EmbySettingsScreen)
-									},
-								)
-								DropdownMenuItem(
-									text = { Text("Sign out") },
-									leadingIcon = { Icon(Icons.AutoMirrored.Filled.Logout, null) },
-									onClick = {
-										onAction(ShellAction.SetAccountMenuOpen(false))
-										showSignOutConfirmation = !showSignOutConfirmation
-									},
-								)
-							}
-						}
-					},
-					colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
-				)
-			},
-		) { padding ->
-			AnimatedContent(targetState = tab, label = "emby_tab") { selected ->
-				when (selected) {
-					EmbyTab.Home -> HomeContent(
-						state = homeState,
-						onAction = onHomeAction,
-						modifier = Modifier.padding(padding),
-						onItemClick = { item -> openItem(item, backStack) },
-					) { lib -> backStack.goTo(EmbyLibraryScreen(lib.id, lib.name)) }
-					
-					EmbyTab.Libraries -> LibrariesContent(
-						state = librariesState,
-						onAction = onLibrariesAction,
-						modifier = Modifier.padding(padding),
-					) { lib -> backStack.goTo(EmbyLibraryScreen(lib.id, lib.name)) }
-					
-					EmbyTab.Search -> SearchContent(
-						state = searchState,
-						onAction = onSearchAction,
-						modifier = Modifier.padding(padding),
-					) { item -> openItem(item, backStack) }
-				}
-			}
-		}
-	}
-	
+	) {
+	}*/
 }
 
 @Serializable

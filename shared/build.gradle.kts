@@ -87,6 +87,8 @@ kotlin {
 			implementation(libs.material3.adaptive)
 			implementation(libs.material3.adaptive.navigation.suite)
 			
+			implementation(libs.compose.uiToolingPreview)
+			
 			implementation("io.github.deference3:koasty:0.0.1")
 			
 			implementation("com.mikepenz:multiplatform-markdown-renderer:0.45.0")
