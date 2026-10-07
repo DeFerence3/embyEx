@@ -16,6 +16,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -36,9 +38,11 @@ import androidx.compose.ui.unit.dp
 import app.deference.embycl.core.session.Session
 import app.deference.embycl.domain.model.EmbyServer
 import app.deference.embycl.domain.repository.ServerFinderRepo
+import app.deference.embycl.ui.core.LocalKoasty
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun NotConnected(
 	serverFinderRepo: ServerFinderRepo = koinInject()
@@ -49,6 +53,7 @@ fun NotConnected(
 	var isSearchingLocal by remember { mutableStateOf(false) }
 	var discoveredServers by remember { mutableStateOf<List<EmbyServer>>(emptyList()) }
 	var errorMessage by remember { mutableStateOf<String?>(null) }
+	val koasty = LocalKoasty.current
 
 	fun rediscoverAndReconnect(targetUrl: String) {
 		if (isReconnecting || targetUrl.isBlank()) return
@@ -78,10 +83,14 @@ fun NotConnected(
 
 	fun scanLocalServers() {
 		if (isSearchingLocal) return
+		koasty.show("Searching local servers...")
 		isSearchingLocal = true
 		coroutineScope.launch {
 			val local = runCatching { serverFinderRepo.searchForLocallyRunningServers() }.getOrDefault(emptyList())
 			discoveredServers = local
+			if(local.isEmpty()){
+				koasty.show("No local servers found.")
+			}
 			isSearchingLocal = false
 		}
 	}
@@ -131,7 +140,12 @@ fun NotConnected(
 					modifier = Modifier.fillMaxWidth(),
 					enabled = !isReconnecting
 				)
-				
+				if (isSearchingLocal){
+					LoadingIndicator(
+						modifier = Modifier
+							.align(Alignment.CenterHorizontally)
+					)
+				}
 				if (discoveredServers.isNotEmpty()) {
 					Text(
 						text = "Discovered Local Servers",
@@ -165,7 +179,15 @@ fun NotConnected(
 						}
 					}
 				}
-				
+				OutlinedButton(
+					onClick = {
+						scanLocalServers()
+					},
+					modifier = Modifier.fillMaxWidth(),
+					enabled = !isSearchingLocal
+				) {
+					Text("Re scan")
+				}
 				Row(
 					modifier = Modifier.fillMaxWidth(),
 					horizontalArrangement = Arrangement.spacedBy(12.dp)

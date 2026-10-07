@@ -72,6 +72,7 @@ object Session {
 		preferences.save(KEY_LAST_SERVER_URL, serverUrl)
 		preferences.save(SERVER_NAME, serverName)
 		isLoggedInState.update { true }
+		_isConnected.update { true }
 	}
 	
 	fun updateServerUrl(newServerUrl: String, newServerName: String? = null, newServerId: String? = null) {

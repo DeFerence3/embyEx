@@ -10,8 +10,8 @@ import io.ktor.client.HttpClientConfig
 import io.ktor.client.network.sockets.ConnectTimeoutException
 import io.ktor.client.network.sockets.SocketTimeoutException
 import io.ktor.client.plugins.DefaultRequest
-import io.ktor.client.plugins.HttpResponseValidator
 import io.ktor.client.plugins.HttpRequestTimeoutException
+import io.ktor.client.plugins.HttpResponseValidator
 import io.ktor.client.plugins.HttpSend
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.auth.Auth
@@ -110,7 +110,9 @@ fun HttpClientConfig<*>.configureDefaultRequest(userAgent: UserAgentProvider) {
 	}
 	
 	install(HttpTimeout) {
-		socketTimeoutMillis = 50000
+		socketTimeoutMillis = 10000
+		requestTimeoutMillis = 10000
+		connectTimeoutMillis = 10000
 	}
 	
 	HttpResponseValidator {

@@ -24,7 +24,7 @@ import org.koin.core.annotation.Single
 class NetworkModule {
 
 	@Single
-	fun provideHttpClient(
+	fun āprovideHttpClient(
 		userAgentProvider: UserAgentProvider
 	): HttpClient {
 		return HttpClient(engineFactory = clientEngine) {
