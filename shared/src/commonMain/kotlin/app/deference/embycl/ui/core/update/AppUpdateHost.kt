@@ -1,4 +1,4 @@
-package app.deference.embycl.ui.core.components
+package app.deference.embycl.ui.core.update
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect

@@ -25,14 +25,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import org.koin.core.annotation.Named
 import org.koin.core.annotation.Single
 import java.io.File
-import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Duration.Companion.milliseconds
 
 @Single
 actual class AppUpdater(
@@ -57,7 +57,7 @@ actual class AppUpdater(
 		httpClient = updateHttpClient
 	}
 	
-	val errorHandler = CoroutineExceptionHandler { context, exception ->
+	val errorHandler = CoroutineExceptionHandler { _, exception ->
 		val appUpdate = AppUpdate.Failed(exception.message ?: "Could not check for updates. Check your connection and try again.", UpdateStage.Check)
 		publish(appUpdate)
 	}
@@ -109,7 +109,7 @@ actual class AppUpdater(
 				updateRelease?.let { release ->
 					publish(AppUpdate.Downloading(release, 0, 0))
 					updater.downloadUpdate(res.info)
-						.debounce(1.seconds)
+						.sample(500.milliseconds)
 						.catch {
 							publish(AppUpdate.Failed(it.message ?: "Could not download update. Check your connection and try again.", UpdateStage.Download))
 							it.printStackTrace()

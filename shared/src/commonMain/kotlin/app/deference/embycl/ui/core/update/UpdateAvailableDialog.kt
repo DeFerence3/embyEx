@@ -1,4 +1,4 @@
-package app.deference.embycl.ui.core.components
+package app.deference.embycl.ui.core.update
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -25,11 +25,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -37,8 +33,7 @@ import androidx.compose.ui.window.Dialog
 import app.deference.embycl.domain.model.update.AppUpdate
 import app.deference.embycl.domain.model.update.UpdateStage
 import app.deference.embycl.ui.core.markdown.MarkDownPage
-import kotlinx.coroutines.delay
-import kotlin.time.Duration.Companion.seconds
+import kotlin.math.round
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -164,25 +159,44 @@ fun UpdateAvailableDialog(
 
 @Composable
 private fun DebouncedProgressBar(appUpdate: AppUpdate.Downloading) {
-	val targetFraction = appUpdate.fraction ?: 0f
-	var debouncedFraction by remember { mutableStateOf(targetFraction) }
-	var downloaded by remember { mutableStateOf(appUpdate.downloaded) }
-	var total by remember { mutableStateOf(appUpdate.total) }
-	
-	LaunchedEffect(appUpdate) {
-		delay(2.seconds) // few seconds delay ensures we don't choke the Windows Skia thread
-		debouncedFraction = targetFraction
-		downloaded = appUpdate.downloaded
-		total = appUpdate.total
-	}
-	
-	val animatedFraction by animateFloatAsState(targetValue = debouncedFraction)
-	
-	if (appUpdate.fraction == null) {
-		LinearWavyProgressIndicator()
-		Text("Downloading…")
+	val fraction = appUpdate.fraction
+	val downloadedBytes = appUpdate.downloaded
+	if (fraction == null) {
+		LinearWavyProgressIndicator(
+			modifier = Modifier
+				.fillMaxWidth()
+		)
+		Text("Downloading… $downloadedBytes MB")
 	} else {
-		LinearWavyProgressIndicator(progress = { animatedFraction })
-		Text("${(debouncedFraction * 100).toInt()}% · ${downloaded / 1024 / 1024} / ${total / 1024 / 1024} MB")
+		val animatedFraction by animateFloatAsState(targetValue = fraction)
+		LinearWavyProgressIndicator(
+			progress = { animatedFraction },
+			modifier = Modifier
+				.fillMaxWidth()
+		)
+		Text("${(fraction * 100).formatToDecimal()}% · ${downloadedBytes.bytesToMB.formatToDecimal()} / ${appUpdate.total.bytesToMB.formatToDecimal()} MB")
 	}
 }
+
+private fun Float.formatToDecimal(): String{
+	val decimals = 2
+	var multiplier = 1L
+	repeat(decimals) { multiplier *= 10 }
+	val rounded = round(this * multiplier).toLong()
+	val whole = rounded / multiplier
+	val fraction = (rounded % multiplier).toString().padStart(decimals, '0')
+	return "$whole.$fraction"
+}
+
+private fun Double.formatToDecimal(): String{
+	val decimals = 2
+	var multiplier = 1L
+	repeat(decimals) { multiplier *= 10 }
+	val rounded = round(this * multiplier).toLong()
+	val whole = rounded / multiplier
+	val fraction = (rounded % multiplier).toString().padStart(decimals, '0')
+	return "$whole.$fraction"
+}
+
+val Long.bytesToMB: Double
+	get() = this / (1024.0 * 1024.0)

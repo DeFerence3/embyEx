@@ -110,7 +110,7 @@ class AndroidUpdateController(
                         var downloaded = 0L
                         var lastReport = 0L
                         while (true) {
-                            coroutineContext.ensureActive()
+                            this@launch.coroutineContext.ensureActive()
                             val count = channel.readAvailable(buffer)
                             if (count == -1) break
                             if (count == 0) continue
@@ -248,7 +248,8 @@ class AndroidUpdateController(
             check(actual.equals(parts[1], ignoreCase = true)) { "The APK checksum does not match. Download the update again." }
         }
     }
-
+	
+	@Suppress("DEPRECATION")
     private fun verifyPackage(file: File, info: UpdateInfo) {
         val pm = context.packageManager
         val flags = if (Build.VERSION.SDK_INT >= 28) PackageManager.GET_SIGNING_CERTIFICATES else PackageManager.GET_SIGNATURES

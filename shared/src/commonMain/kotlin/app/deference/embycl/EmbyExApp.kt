@@ -8,7 +8,7 @@ import app.deference.embycl.core.session.Session
 import app.deference.embycl.ui.EmbyExNav
 import app.deference.embycl.ui.NotConnected
 import app.deference.embycl.ui.core.LocalKoasty
-import app.deference.embycl.ui.core.components.AppUpdateHost
+import app.deference.embycl.ui.core.update.AppUpdateHost
 import app.deference.embycl.ui.core.nav.Navigator
 import app.deference.embycl.ui.screens.shell.EmbyShellScreen
 import app.deference.embycl.ui.screens.signin.EmbySignInScreen

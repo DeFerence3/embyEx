@@ -10,7 +10,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import app.deference.embycl.domain.model.update.AppUpdate
 import app.deference.embycl.domain.model.update.UpdateRelease
 import app.deference.embycl.domain.model.update.UpdateStage
-import app.deference.embycl.ui.core.components.UpdateAvailableDialog
+import app.deference.embycl.ui.core.update.UpdateAvailableDialog
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
