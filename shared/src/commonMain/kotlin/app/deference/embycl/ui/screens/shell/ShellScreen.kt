@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -53,7 +52,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
 import org.koin.compose.viewmodel.koinViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EmbyShellContent(
 	state: ShellState,
@@ -111,6 +109,7 @@ fun EmbyShellContent(
 			start = paddingValues.calculateStartPadding(layoutDirection),
 			end = paddingValues.calculateEndPadding(layoutDirection),
 		)
+		val bottomSpacing = paddingValues.calculateBottomPadding()
 		AnimatedContent(
 			targetState = tab,
 			transitionSpec = {
@@ -157,18 +156,21 @@ fun EmbyShellContent(
 					onAction = onHomeAction,
 					modifier = Modifier.padding(padding),
 					onItemClick = { item -> openItem(item, backStack) },
+					bottomSpacing = bottomSpacing
 				) { lib -> backStack.goTo(EmbyLibraryScreen(lib.id, lib.name)) }
 				
 				EmbyTab.Libraries -> LibrariesContent(
 					state = librariesState,
 					onAction = onLibrariesAction,
 					modifier = Modifier.padding(padding),
+					bottomSpacing = bottomSpacing
 				) { lib -> backStack.goTo(EmbyLibraryScreen(lib.id, lib.name)) }
 				
 				EmbyTab.Search -> SearchContent(
 					state = searchState,
 					onAction = onSearchAction,
 					modifier = Modifier.padding(padding),
+					bottomSpacing = bottomSpacing
 				) { item -> openItem(item, backStack) }
 			}
 		}

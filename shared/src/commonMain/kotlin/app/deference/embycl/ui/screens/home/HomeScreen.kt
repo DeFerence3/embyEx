@@ -2,10 +2,13 @@ package app.deference.embycl.ui.screens.home
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import app.deference.embycl.domain.model.EmbyItem
 import app.deference.embycl.ui.core.components.EmptyState
@@ -18,6 +21,7 @@ fun HomeContent(
 	state: HomeState,
 	onAction: (HomeAction) -> Unit,
 	modifier: Modifier = Modifier,
+	bottomSpacing: Dp = 0.dp,
 	onItemClick: (EmbyItem) -> Unit,
 	onLibraryClick: (EmbyItem) -> Unit,
 ) {
@@ -58,6 +62,9 @@ fun HomeContent(
 				item {
 					EmptyState("Your Emby home is empty", "Add media libraries on your Emby server, then refresh.")
 				}
+			}
+			item {
+				Spacer(modifier = Modifier.height(bottomSpacing))
 			}
 		}
 	}
