@@ -97,7 +97,7 @@ fun SignInContent(
 				}
 				val currentDiscovery = state.discovery
 				if (currentDiscovery == null) {
-					Text("Welcome to mpvEx", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+					Text("Welcome to embyEx", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
 					Text(
 						"Connect to your Emby server to choose an account.",
 						color = MaterialTheme.colorScheme.onSurfaceVariant,
