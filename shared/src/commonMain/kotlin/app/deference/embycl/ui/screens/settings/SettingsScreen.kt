@@ -1,6 +1,5 @@
 package app.deference.embycl.ui.screens.settings
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -14,7 +13,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Update
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.FilledTonalButton
+import app.deference.embycl.ui.core.components.PageIntro
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -102,17 +102,18 @@ fun SettingsContent(
 				contentPadding = PaddingValues(20.dp),
 				verticalArrangement = Arrangement.spacedBy(20.dp),
 			) {
+                item { PageIntro("PREFERENCES & CONNECTION", "Your space, connected.", "Manage your account, player, and server.", accent = true) }
 				item {
 					UserCard(account, onSignout = { showSignOutConfirmation = showSignOutConfirmation.not() })
 				}
 
 				item {
-					OutlinedButton(
+					FilledTonalButton(
 						onClick = { onCheckUpdates() },
 						modifier = Modifier
 							.fillMaxWidth()
 							.heightIn(min = 56.dp),
-						border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
+						enabled = update != AppUpdate.Checking
 					) {
 						Icon(Icons.Default.Update, null, Modifier.padding(end = 12.dp))
 						Text(when (update) {
@@ -125,7 +126,7 @@ fun SettingsContent(
 					}
 				}
 				item {
-					Text("Current ${stringResource(Res.string.app_name)} ${BuildConfig.VERSION_NAME}", modifier = Modifier.fillMaxWidth(), style = MaterialTheme.typography.bodySmall, textAlign = androidx.compose.ui.text.style.TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant)
+					Text("${stringResource(Res.string.app_name)} · ${BuildConfig.VERSION_NAME}", modifier = Modifier.fillMaxWidth(), style = MaterialTheme.typography.bodySmall, textAlign = androidx.compose.ui.text.style.TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant)
 				}
 
 				if (hasPlayerSettings) {
@@ -134,28 +135,13 @@ fun SettingsContent(
 
 				item {
 					InfoSection(
-						"Server Information",
+						"Server information",
 						state.isLoading,
 						onRefresh,
 						serverDetails(state.serverDetails?.info),
 						state.error,
 					)
-/*
-					Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-						InfoHeader("Server information")
-						if (state.isLoading && state.serverDetails == null) {
-							Text("Loading server informationâ€¦", style = MaterialTheme.typography.bodyMedium)
-						}
-						state.error?.let { error ->
-							Text(error, color = MaterialTheme.colorScheme.error)
-							TextButton(onClick = onRefresh, enabled = ! state.isLoading) { Text("Retry") }
-						}
-						if (state.serverDetails?.isLimited == true) {
-							Text("This account can only view public server information.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-						}
-						InfoCard()
-					}
-*/
+
 				}
 				item {
 					InfoSection(

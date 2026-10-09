@@ -10,11 +10,13 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.Surface
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -44,7 +46,7 @@ fun InfoSection(
 		extra()
 		InfoCard(details)
 	}
-	
+
 }
 
 @Composable
@@ -55,7 +57,7 @@ fun InfoHeader(
 	onRefresh: () -> Unit
 ) {
 	Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-		Text(title, Modifier.weight(1f), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+		Text(title, Modifier.weight(1f).semantics { heading() }, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
 		if (isLoading) {
 			CircularProgressIndicator(
 				Modifier
@@ -63,28 +65,32 @@ fun InfoHeader(
 					.size(24.dp), strokeWidth = 2.dp
 			)
 		} else {
-			IconButton(onClick = onRefresh) { Icon(Icons.Outlined.Refresh, title) }
+			IconButton(onClick = onRefresh) { Icon(Icons.Outlined.Refresh, "Refresh $title") }
 		}
 	}
 }
 
 @Composable
 fun InfoCard(details: List<Pair<String, String>>) {
-	OutlinedCard(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.extraLarge) {
-		SelectionContainer {
-			Column(Modifier.padding(horizontal = 16.dp)) {
-				details.forEachIndexed { index, (label, value) ->
-					if (index > 0) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-					Column(
-						Modifier
-							.fillMaxWidth()
-							.padding(vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)
-					) {
-						Text(label, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-						Text(value, style = MaterialTheme.typography.bodyLarge)
-					}
-				}
-			}
-		}
-	}
+    SelectionContainer {
+        Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            details.forEachIndexed { index, (label, value) ->
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.surfaceContainerLow,
+                    shape = RoundedCornerShape(
+                        topStart = if (index == 0) 24.dp else 4.dp,
+                        topEnd = if (index == 0) 24.dp else 4.dp,
+                        bottomStart = if (index == details.lastIndex) 24.dp else 4.dp,
+                        bottomEnd = if (index == details.lastIndex) 24.dp else 4.dp,
+                    ),
+                ) {
+                    Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                        Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(value, style = MaterialTheme.typography.bodyLarge)
+                    }
+                }
+            }
+        }
+    }
 }

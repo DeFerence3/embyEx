@@ -31,7 +31,7 @@ fun PortraitDetailsLayout(
 			.fillMaxSize()
 			.verticalScroll(rememberScrollState()),
 	) {
-		
+
 		Box(
 			modifier = Modifier
 				.fillMaxWidth()
@@ -40,12 +40,12 @@ fun PortraitDetailsLayout(
 					else 16f / 10f
 				),
 		) {
-			
+
 			DetailsBackdrop(
 				backdrop = data.backdrop,
 				modifier = Modifier.fillMaxSize(),
 			)
-			
+
 			Box(
 				modifier = Modifier
 					.fillMaxSize()
@@ -62,22 +62,22 @@ fun PortraitDetailsLayout(
 					)
 			)
 		}
-		
+
 		Box(
 			modifier = Modifier.fillMaxWidth(),
 			contentAlignment = Alignment.TopCenter,
 		) {
-			
+
 			DetailsContent(
 				data = data,
 				compact = !tablet,
 				fillPlayButton = !tablet,
 				modifier = Modifier
-					.fillMaxWidth()
 					.widthIn(
 						max = if (tablet) 760.dp
 						else Dp.Infinity
 					)
+                    .fillMaxWidth()
 					.padding(
 						horizontal = if (tablet) 32.dp else 20.dp,
 						vertical = 16.dp,

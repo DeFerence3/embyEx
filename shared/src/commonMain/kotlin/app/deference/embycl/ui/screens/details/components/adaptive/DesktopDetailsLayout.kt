@@ -7,11 +7,11 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -28,12 +28,12 @@ fun DesktopDetailsLayout(
 		modifier = Modifier
 			.fillMaxSize(),
 	) {
-		
+
 		DetailsBackdrop(
 			backdrop = data.backdrop,
 			modifier = Modifier.fillMaxSize(),
 		)
-		
+
 		// Left-side readability.
 		Box(
 			modifier = Modifier
@@ -49,7 +49,7 @@ fun DesktopDetailsLayout(
 					)
 				)
 		)
-		
+
 		// Bottom cinematic fade.
 		Box(
 			modifier = Modifier
@@ -65,24 +65,25 @@ fun DesktopDetailsLayout(
 					)
 				)
 		)
-		
+
 		Column(
 			modifier = Modifier
 				.align(Alignment.CenterStart)
 				.fillMaxHeight()
 				.fillMaxWidth(0.62f)
-				.widthIn(max = 720.dp)
 				.verticalScroll(rememberScrollState())
 				.padding(
-					start = 72.dp,
+					start = 40.dp,
 					end = 24.dp,
-					top = 120.dp,
+					top = 88.dp,
 					bottom = 64.dp,
 				),
 		) {
-			
+
 			DetailsContent(
 				data = data,
+                modifier = Modifier.clip(MaterialTheme.shapes.extraLarge)
+                    .background(MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = 0.97f)).padding(28.dp),
 				compact = false,
 				fillPlayButton = false,
 				onPlay = onPlay,

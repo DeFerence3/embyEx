@@ -10,10 +10,12 @@ fun <T> LoadingScaffold(
 	state: Result<T>?,
 	modifier: Modifier = Modifier,
 	onRetry: () -> Unit,
+    topBar: @Composable () -> Unit = {},
 	content: @Composable (T) -> Unit,
 ) {
 	Scaffold(
-		modifier = modifier
+		modifier = modifier,
+        topBar = topBar,
 	) { padding ->
 		LoadState(state, Modifier.padding(padding), onRetry = onRetry) { item ->
 			content(item)

@@ -8,11 +8,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -20,11 +18,14 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Movie
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -33,10 +34,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.deference.embycl.core.utils.asRuntime
@@ -45,100 +45,75 @@ import app.deference.embycl.ui.core.animateWithHover
 import coil3.compose.AsyncImage
 
 @Composable
-fun MediaRow(
-	title: String,
-	media: List<EmbyItem>,
-	wide: Boolean = false,
-	onItemClick: (EmbyItem) -> Unit,
-) {
-	Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-		Text(
-			title,
-			style = MaterialTheme.typography.titleLarge,
-			fontWeight = FontWeight.SemiBold,
-			modifier = Modifier.padding(horizontal = 16.dp),
-		)
-		LazyRow(
-			contentPadding = PaddingValues(horizontal = 16.dp),
-			horizontalArrangement = Arrangement.spacedBy(12.dp),
-		) {
+fun MediaRow(title: String, media: List<EmbyItem>, wide: Boolean = false, onItemClick: (EmbyItem) -> Unit) {
+	Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+		SectionHeading(title, Modifier.padding(horizontal = 20.dp))
+		LazyRow(contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
 			items(media, key = { it.id }) { item ->
-				if (wide) {
-					WideMediaCard(item) { onItemClick(item) }
-				} else {
-					Box(Modifier.width(132.dp)) {
-						MediaCard(item) { onItemClick(item) }
-					}
-				}
+				if (wide || item.isEpisode()) WideMediaCard(item) { onItemClick(item) }
+				else Box(Modifier.width(144.dp * LocalDensity.current.fontScale.coerceIn(1f, 1.5f))) { MediaCard(item) { onItemClick(item) } }
 			}
 		}
 	}
 }
 
 @Composable
-fun LibraryRow(
-	libraries: List<EmbyItem>,
-	onLibraryClick: (EmbyItem) -> Unit,
-) {
-	Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-		Text(
-			"Your libraries",
-			style = MaterialTheme.typography.titleLarge,
-			fontWeight = FontWeight.SemiBold,
-			modifier = Modifier.padding(horizontal = 16.dp),
+fun LibraryRow(libraries: List<EmbyItem>, onLibraryClick: (EmbyItem) -> Unit) {
+	Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+		SectionHeading(
+			title = "Your libraries",
+			modifier = Modifier
+				.padding(horizontal = 20.dp)
 		)
 		LazyRow(
-			contentPadding = PaddingValues(horizontal = 16.dp),
-			horizontalArrangement = Arrangement.spacedBy(12.dp),
+			contentPadding = PaddingValues(horizontal = 20.dp),
+			horizontalArrangement = Arrangement.spacedBy(16.dp)
 		) {
 			items(libraries, key = { it.id }) { library ->
-				Box(Modifier.width(190.dp)) {
-					LibraryCard(library) { onLibraryClick(library) }
-				}
+				Box(Modifier.width(208.dp)) { LibraryCard(library) { onLibraryClick(library) } }
 			}
 		}
 	}
 }
 
 @Composable
-fun MediaCard(
-	item: EmbyItem,
-	modifier: Modifier = Modifier,
-	onClick: () -> Unit,
-) {
-	if (item.type == "Episode") {
-		EpisodeListItem(item, onClick,modifier)
-	} else {
-		val interactionSource = remember { MutableInteractionSource() }
-		Column(
-			modifier = modifier
+fun MediaCard(item: EmbyItem, modifier: Modifier = Modifier, onClick: () -> Unit) = if (item.isEpisode()) {
+	EpisodeListItem(item, onClick, modifier)
+} else {
+	val interaction = remember { MutableInteractionSource() }
+	Column(
+		modifier = modifier
+			.fillMaxWidth()
+			.clip(MaterialTheme.shapes.medium)
+			.clickable(onClick = onClick, role = Role.Button, onClickLabel = "Open ${item.name}", interactionSource = interaction)
+			.animateWithHover(interaction),
+		verticalArrangement = Arrangement.spacedBy(8.dp),
+	) {
+		Box(
+			modifier = Modifier
 				.fillMaxWidth()
-				.clickable(onClick = onClick,interactionSource = interactionSource)
-				.animateWithHover(interactionSource),
-			verticalArrangement = Arrangement.spacedBy(7.dp),
+				.aspectRatio(2f / 3f)
+				.clip(MaterialTheme.shapes.medium)
 		) {
-			Card(
-				shape = RoundedCornerShape(14.dp),
+			Poster(item)
+			if (item.userData?.played == true) Surface(
 				modifier = Modifier
-					.fillMaxWidth()
-					.aspectRatio(2f / 3f),
-			) {
-				Poster(item)
-			}
-			Text(
-				item.name,
-				maxLines = 2,
-				overflow = TextOverflow.Ellipsis,
-				style = MaterialTheme.typography.bodyMedium,
-				fontWeight = FontWeight.Medium,
-			)
+					.align(Alignment.TopEnd)
+					.padding(8.dp),
+				color = MaterialTheme.colorScheme.primaryContainer,
+				shape = MaterialTheme.shapes.small,
+			) { Icon(
+				imageVector = Icons.Default.Check,
+				contentDescription = "Watched",
+				modifier = Modifier.padding(5.dp).size(18.dp)
+			) }
+		}
+		Column(Modifier.padding(start = 4.dp, end = 4.dp, bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+			Text(item.name, maxLines = 2, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.titleSmall)
 			item.subtitle()?.let {
 				Text(
-					it,
-					maxLines = 1,
-					overflow = TextOverflow.Ellipsis,
-					style = MaterialTheme.typography.labelMedium,
-					color = MaterialTheme.colorScheme.onSurfaceVariant,
+					it, maxLines = 1, overflow = TextOverflow.Ellipsis,
+					style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant
 				)
 			}
 		}
@@ -146,212 +121,165 @@ fun MediaCard(
 }
 
 @Composable
-fun EpisodeListItem(
-	item: EmbyItem,
-	onClick: () -> Unit,
-	modifier: Modifier = Modifier,
-) {
-	val interactionSource = remember { MutableInteractionSource() }
-	Row(
-		modifier = modifier
-			.fillMaxWidth()
-			.clickable(onClick = onClick, interactionSource = interactionSource)
-			.animateWithHover(interactionSource),
-		verticalAlignment = Alignment.CenterVertically,
+fun EpisodeListItem(item: EmbyItem, onClick: () -> Unit, modifier: Modifier = Modifier) {
+	Card(
+		onClick = onClick, modifier = modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium,
+		colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
 	) {
-		// Episode thumbnail
-		Box {
-			Poster(
-				item = item,
+		Row(
+			modifier = Modifier.padding(12.dp),
+			verticalAlignment = Alignment.CenterVertically,
+			horizontalArrangement = Arrangement.spacedBy(14.dp)
+		) {
+			Box(
 				modifier = Modifier
-					.width(112.dp)
+					.width(if (LocalDensity.current.fontScale > 1.3f) 72.dp else 104.dp)
 					.aspectRatio(16f / 9f)
-					.clip(MaterialTheme.shapes.small),
-			)
-			val runTime = item.runTimeTicks?.asRuntime()
-			runTime?.let {
-				Surface(
-					modifier = Modifier
-						.align(Alignment.BottomStart)
-						.padding(4.dp),
-					color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
-					shape = MaterialTheme.shapes.extraSmall,
-				) {
-					Text(
-						text = it,
-						modifier = Modifier.padding(
-							horizontal = 6.dp,
-							vertical = 2.dp,
-						),
-						style = MaterialTheme.typography.labelSmall,
-						fontWeight = FontWeight.Bold,
-					)
-				}
+					.clip(MaterialTheme.shapes.small)
+			) { Poster(item) }
+			
+			Column(
+				modifier = Modifier.weight(1f),
+				verticalArrangement = Arrangement.spacedBy(4.dp)
+			) {
+				Text(
+					text = item.name,
+					maxLines = 2,
+					overflow = TextOverflow.Ellipsis,
+					style = MaterialTheme.typography.titleSmall
+				)
+				item.subtitle()?.let { Text(
+					text = it,
+					maxLines = 2,
+					overflow = TextOverflow.Ellipsis,
+					style = MaterialTheme.typography.bodySmall,
+					color = MaterialTheme.colorScheme.onSurfaceVariant
+				) }
+				item.runTimeTicks?.asRuntime()?.let { Text(
+					text = it,
+					style = MaterialTheme.typography.labelSmall,
+					color = MaterialTheme.colorScheme.primary
+				) }
 			}
+			Icon(
+				imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+				contentDescription = null,
+				modifier = Modifier.size(20.dp),
+				tint = MaterialTheme.colorScheme.primary
+			)
 		}
-		
-		Spacer(Modifier.width(12.dp))
-		
+	}
+}
+
+@Composable
+fun WideMediaCard(item: EmbyItem, onClick: () -> Unit) {
+	val interaction = remember { MutableInteractionSource() }
+	Card(
+		onClick = onClick,
+		interactionSource = interaction,
+		modifier = Modifier.width(272.dp).animateWithHover(interaction),
+		shape = MaterialTheme.shapes.large,
+		colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+	) {
+		Box(
+			modifier = Modifier
+				.fillMaxWidth()
+				.aspectRatio(16f / 9f)
+		) { Poster(item, backdrop = true) }
 		Column(
-			modifier = Modifier.weight(1f),
+			modifier = Modifier.padding(16.dp),
+			verticalArrangement = Arrangement.spacedBy(6.dp)
 		) {
 			Text(
 				text = item.name,
 				maxLines = 2,
 				overflow = TextOverflow.Ellipsis,
-				style = MaterialTheme.typography.bodyMedium,
-				fontWeight = FontWeight.SemiBold,
+				style = MaterialTheme.typography.titleMedium
 			)
-			
-			item.subtitle()?.let { subtitle ->
-				Spacer(Modifier.height(3.dp))
+			item.subtitle()?.let { Text(
+				text = it,
+				maxLines = 1,
+				overflow = TextOverflow.Ellipsis,
+				style = MaterialTheme.typography.bodySmall,
+				color = MaterialTheme.colorScheme.onSurfaceVariant
+			) }
+			item.userData?.playedPercentage?.takeIf { it in 0.1..99.9 }?.let { progress ->
+				LinearProgressIndicator(
+					progress = { (progress.toFloat() / 100f).coerceIn(0f, 1f) },
+					modifier = Modifier.fillMaxWidth().padding(top = 6.dp)
+				)
 				Text(
-					text = subtitle,
-					maxLines = 1,
-					overflow = TextOverflow.Ellipsis,
-					style = MaterialTheme.typography.bodySmall,
-					color = MaterialTheme.colorScheme.onSurfaceVariant,
+					text = "${progress.toInt()}% watched",
+					style = MaterialTheme.typography.labelSmall,
+					color = MaterialTheme.colorScheme.primary
 				)
 			}
 		}
-		
-		Spacer(Modifier.width(8.dp))
-		
+	}
+}
+
+@Composable
+fun LibraryCard(item: EmbyItem, onClick: () -> Unit) {
+	val interaction = remember { MutableInteractionSource() }
+	Card(
+		onClick = onClick,
+		interactionSource = interaction,
+		modifier = Modifier.fillMaxWidth().animateWithHover(interaction),
+		shape = RoundedCornerShape(topStart = 12.dp, topEnd = 28.dp, bottomEnd = 12.dp, bottomStart = 28.dp),
+		colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+	) {
+		Box(
+			modifier = Modifier
+				.fillMaxWidth()
+				.aspectRatio(16f / 9f)
+		) {
+			Poster(
+				item = item,
+				backdrop = true
+			)
+		}
+		Row(
+			modifier = Modifier.fillMaxWidth().padding(16.dp),
+			verticalAlignment = Alignment.CenterVertically,
+			horizontalArrangement = Arrangement.spacedBy(8.dp)
+		) {
+			Text(
+				text = item.name,
+				modifier = Modifier.weight(1f),
+				maxLines = 2,
+				overflow = TextOverflow.Ellipsis,
+				style = MaterialTheme.typography.titleMedium,
+				color = MaterialTheme.colorScheme.onSecondaryContainer
+			)
+			Icon(
+				imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+				contentDescription = null,
+				modifier = Modifier.size(20.dp)
+			)
+		}
+	}
+}
+
+@Composable
+fun Poster(item: EmbyItem, modifier: Modifier = Modifier, backdrop: Boolean = false) {
+	val url = item.imageUrl(if (backdrop) "Backdrop" else "Primary") ?: item.imageUrl("Primary")
+	Box(
+		modifier = modifier
+			.fillMaxSize()
+			.background(MaterialTheme.colorScheme.surfaceContainerHigh),
+		contentAlignment = Alignment.Center
+	) {
 		Icon(
-			imageVector = Icons.Default.PlayArrow,
-			contentDescription = "Play episode",
-			tint = MaterialTheme.colorScheme.primary,
+			imageVector = if (item.isFolder) Icons.Default.VideoLibrary else Icons.Default.Movie,
+			contentDescription = null,
+			modifier = Modifier.size(38.dp),
+			tint = MaterialTheme.colorScheme.onSurfaceVariant
 		)
-	}
-}
-
-@Composable
-fun WideMediaCard(
-	item: EmbyItem,
-	onClick: () -> Unit,
-) {
-	val interactionSource = remember { MutableInteractionSource() }
-	Card(
-		modifier = Modifier
-			.width(250.dp)
-			.animateWithHover(interactionSource),
-		shape = RoundedCornerShape(16.dp),
-		onClick = onClick,
-		interactionSource = interactionSource
-	) {
-		Column {
-			Box(
-				Modifier
-					.fillMaxWidth()
-					.aspectRatio(16f / 9f),
-			) {
-				Poster(item, backdrop = true)
-				item.userData?.playedPercentage?.takeIf { it in 0.1..99.9 }?.let { progress ->
-					Box(
-						Modifier
-							.fillMaxWidth(progress.toFloat() / 100f)
-							.height(4.dp)
-							.align(Alignment.BottomStart)
-							.background(MaterialTheme.colorScheme.primary),
-					)
-				}
-			}
-			Column(Modifier.padding(12.dp)) {
-				Text(item.name, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold)
-				item.subtitle()?.let {
-					Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-				}
-			}
-		}
-	}
-}
-
-@Composable
-fun LibraryCard(
-	item: EmbyItem,
-	onClick: () -> Unit,
-) {
-	val interactionSource = remember { MutableInteractionSource() }
-	Card(
-		modifier = Modifier
-			.fillMaxWidth()
-			.aspectRatio(16f / 10f)
-			.animateWithHover(interactionSource),
-		shape = RoundedCornerShape(18.dp),
-		onClick = onClick,
-		interactionSource = interactionSource
-	) {
-		Box(Modifier.fillMaxSize()) {
-			Poster(item, backdrop = true)
-			Box(
-				Modifier
-					.fillMaxSize()
-					.background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = .78f)))),
-			)
-			Column(
-				Modifier
-					.align(Alignment.BottomStart)
-					.padding(14.dp),
-			) {
-				Text(item.name, color = Color.White, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-				item.subtitle()?.let {
-					Text(it, color = Color.White.copy(alpha = .8f), style = MaterialTheme.typography.labelMedium)
-				}
-			}
-		}
-	}
-}
-
-@Composable
-fun Poster(
-	item: EmbyItem,
-	modifier: Modifier = Modifier,
-	backdrop: Boolean = false,
-) {
-	val url = item.imageUrl(if (backdrop) "Backdrop" else "Primary")
-	if (item.isEpisode()) {
-		Box(
-			modifier
-				.aspectRatio(1.7777778f)
-				.background(MaterialTheme.colorScheme.surfaceVariant),
-			contentAlignment = Alignment.Center,
-		) {
-			Icon(
-				if (item.isFolder) Icons.Filled.VideoLibrary else Icons.Filled.Movie,
-				contentDescription = null,
-				modifier = Modifier.size(38.dp),
-				tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = .5f),
-			)
-			if (url != null) {
-				AsyncImage(
-					model = url,
-					contentDescription = item.name,
-					modifier = Modifier.fillMaxSize(),
-					contentScale = ContentScale.Crop,
-				)
-			}
-		}
-	} else {
-		Box(
-			modifier
-				.fillMaxSize()
-				.background(MaterialTheme.colorScheme.surfaceVariant),
-			contentAlignment = Alignment.Center,
-		) {
-			Icon(
-				if (item.isFolder) Icons.Filled.VideoLibrary else Icons.Filled.Movie,
-				contentDescription = null,
-				modifier = Modifier.size(38.dp),
-				tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = .5f),
-			)
-			if (url != null) {
-				AsyncImage(
-					model = url,
-					contentDescription = item.name,
-					modifier = Modifier.fillMaxSize(),
-					contentScale = ContentScale.Crop,
-				)
-			}
-		}
+		if (url != null) AsyncImage(
+			model = url,
+			contentDescription = null,
+			modifier = Modifier.fillMaxSize(),
+			contentScale = ContentScale.Crop
+		)
 	}
 }

@@ -1,17 +1,11 @@
 package app.deference.embycl.ui.screens.shell.components
 
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Person
@@ -34,144 +28,52 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.deference.embycl.core.session.Session
 import app.deference.embycl.ui.screens.shell.EmbyTab
 import coil3.compose.AsyncImage
 
 @Composable
-fun TopAppBar(
-	currentTab: EmbyTab,
-	onRefresh: () -> Unit,
-	onLogout: () -> Unit,
-	onSettings: () -> Unit
-) {
-	var isAccountMenuOpen by rememberSaveable { mutableStateOf(false) }
+fun TopAppBar(currentTab: EmbyTab, onRefresh: () -> Unit, onLogout: () -> Unit, onSettings: () -> Unit) {
+	var accountMenuOpen by rememberSaveable { mutableStateOf(false) }
 	TopAppBar(
 		title = {
-			Row(
-				verticalAlignment = Alignment.CenterVertically,
-				horizontalArrangement = Arrangement.spacedBy(10.dp)
-			) {
-				Column {
+			Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+				Text(
+					if (currentTab == EmbyTab.Home) "EmbyEx" else currentTab.label,
+					style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis
+				)
+				if (currentTab == EmbyTab.Home) Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = MaterialTheme.shapes.small) {
 					Text(
-						text = if (currentTab == EmbyTab.Home) Session.serverName else currentTab.name,
-						style = MaterialTheme.typography.titleLarge,
-						fontWeight = FontWeight.Bold,
-						color = MaterialTheme.colorScheme.onSurface
+						Session.serverName, Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+						style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis
 					)
-					if (currentTab == EmbyTab.Home) {
-						Surface(
-							color = MaterialTheme.colorScheme.secondaryContainer,
-							shape = RoundedCornerShape(8.dp),
-							modifier = Modifier.padding(top = 2.dp)
-						) {
-							Text(
-								text = Session.user.name,
-								style = MaterialTheme.typography.labelSmall,
-								fontWeight = FontWeight.SemiBold,
-								color = MaterialTheme.colorScheme.onSecondaryContainer,
-								modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-							)
-						}
-					}
 				}
 			}
 		},
 		actions = {
-			if (currentTab == EmbyTab.Home) {
-				FilledTonalIconButton(
-					onClick = onRefresh,//{ onHomeAction(HomeAction.Refresh) },
-					shape = CircleShape
-				) {
-					Icon(
-						imageVector = Icons.Filled.Refresh,
-						contentDescription = "Refresh"
-					)
-				}
-				Spacer(modifier = Modifier.width(6.dp))
-			}
+			if (currentTab == EmbyTab.Home) FilledTonalIconButton(onClick = onRefresh) { Icon(Icons.Default.Refresh, "Refresh home") }
 			Box {
-				IconButton(
-					onClick = { isAccountMenuOpen = true }//{ onAction(ShellAction.SetAccountMenuOpen(true)) }
-				) {
-					Surface(
-						shape = CircleShape,
-						color = MaterialTheme.colorScheme.primaryContainer,
-						modifier = Modifier
-							.size(40.dp)
-							.border(
-								width = 1.5.dp,
-								color = MaterialTheme.colorScheme.outlineVariant,
-								shape = CircleShape
-							)
-					) {
-						AsyncImage(
-							model = Session.user.primaryImageUrl,
-							contentDescription = "Account",
-							modifier = Modifier
-								.fillMaxSize()
-								.clip(CircleShape),
-							contentScale = ContentScale.Crop,
-							error = rememberVectorPainter(Icons.Default.Person),
-							placeholder = rememberVectorPainter(Icons.Default.Person)
-						)
+				IconButton(onClick = { accountMenuOpen = true }) {
+					Surface(shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.size(40.dp)) {
+						Box(contentAlignment = Alignment.Center) {
+							Icon(Icons.Default.Person, "Account", tint = MaterialTheme.colorScheme.onPrimaryContainer)
+							AsyncImage(Session.user.primaryImageUrl, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+						}
 					}
 				}
-				DropdownMenu(
-					expanded = isAccountMenuOpen,//state.isAccountMenuOpen,
-					onDismissRequest = { isAccountMenuOpen = false },//{ onAction(ShellAction.SetAccountMenuOpen(false)) },
-					shape = MaterialTheme.shapes.extraLarge
-				) {
+				DropdownMenu(expanded = accountMenuOpen, onDismissRequest = { accountMenuOpen = false }, shape = MaterialTheme.shapes.large) {
 					DropdownMenuItem(
-						text = {
-							Text(
-								"Settings",
-								style = MaterialTheme.typography.bodyMedium,
-								fontWeight = FontWeight.Medium
-							)
-						},
-						leadingIcon = {
-							Icon(
-								Icons.Filled.Settings,
-								contentDescription = null,
-								tint = MaterialTheme.colorScheme.primary
-							)
-						},
-						onClick = {
-							isAccountMenuOpen = false //onAction(ShellAction.SetAccountMenuOpen(false))
-							onSettings() //backStack.goTo(EmbySettingsScreen)
-						}
-					)
+						text = { Text("Settings") }, leadingIcon = { Icon(Icons.Default.Settings, null) },
+						onClick = { accountMenuOpen = false; onSettings() })
 					DropdownMenuItem(
-						text = {
-							Text(
-								"Sign out",
-								style = MaterialTheme.typography.bodyMedium,
-								fontWeight = FontWeight.Medium
-							)
-						},
-						leadingIcon = {
-							Icon(
-								Icons.AutoMirrored.Filled.Logout,
-								contentDescription = null,
-								tint = MaterialTheme.colorScheme.error
-							)
-						},
-						onClick = {
-							isAccountMenuOpen = false //onAction(ShellAction.SetAccountMenuOpen(false))
-							onLogout() //showSignOutConfirmation = true
-						}
-					)
+						text = { Text("Sign out") }, leadingIcon = { Icon(Icons.AutoMirrored.Default.Logout, null, tint = MaterialTheme.colorScheme.error) },
+						onClick = { accountMenuOpen = false; onLogout() })
 				}
 			}
 		},
-		colors = TopAppBarDefaults.topAppBarColors(
-			containerColor = MaterialTheme.colorScheme.surfaceContainer
-		)
+		colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
 	)
 }

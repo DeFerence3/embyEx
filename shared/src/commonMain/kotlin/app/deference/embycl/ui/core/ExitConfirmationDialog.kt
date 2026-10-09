@@ -17,8 +17,8 @@ fun ExitConfirmationDialog(
 	AlertDialog(
 		onDismissRequest = onDismiss,
 		icon = { Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null) },
-		title = { Text("Exit out?") },
-		text = { Text("Exit out of embyEx? You don't need to sign in again to access your library.") },
+		title = { Text("Close EmbyEx?") },
+		text = { Text("You’ll stay signed in and can pick up where you left off.") },
 		confirmButton = {
 			TextButton(onClick = onConfirm) {
 				Text("Exit", color = MaterialTheme.colorScheme.error)

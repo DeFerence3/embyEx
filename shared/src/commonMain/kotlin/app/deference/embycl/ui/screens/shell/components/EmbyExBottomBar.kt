@@ -32,7 +32,6 @@ fun EmbyExBottomBar(
 			.fillMaxWidth(),
 		contentAlignment = Alignment.Center
 	) {
-//		PrimaryTabRow()
 		val selectedTabIndex = currentTab.ordinal
 		EmbyTab(
 			modifier = Modifier

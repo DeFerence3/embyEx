@@ -2,34 +2,28 @@ package app.deference.embycl.ui.screens.details.components
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsHoveredAsState
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -42,8 +36,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.deference.embycl.ui.core.animateWithHover
@@ -64,7 +58,6 @@ fun DetailsContent(
 			if (compact) 18.dp else 22.dp
 		),
 	) {
-		
 		if (!data.logo.isNullOrBlank()) {
 			AsyncImage(
 				model = data.logo,
@@ -82,54 +75,48 @@ fun DetailsContent(
 				alignment = Alignment.CenterStart,
 			)
 		}
-		
+
 		Column(
 			verticalArrangement = Arrangement.spacedBy(10.dp),
 		) {
-			
 			Text(
 				text = data.title,
-				style = if (compact) {
-					MaterialTheme.typography.headlineSmall
+				style = if (LocalDensity.current.fontScale > 1.3f) {
+                    MaterialTheme.typography.titleLarge
+                } else if (compact) {
+					MaterialTheme.typography.headlineMedium
 				} else {
-					MaterialTheme.typography.headlineLarge
+					MaterialTheme.typography.displaySmall
 				},
 				fontWeight = FontWeight.Bold,
-				maxLines = 2,
-				overflow = TextOverflow.Ellipsis,
+
 			)
-			
+
 			MetadataPills(
 				airDate = data.airDate,
 				runtime = data.runtime,
 				resolution = data.resolution,
 			)
 		}
-		
-		MediaInformationCard(
-			compact = compact,
-			videoResolution = data.resolution,
-			audioTitle = data.audio,
-			subtitles = data.subtitles,
-		)
-		
+
 		PlayButton(
 			compact = fillPlayButton,
 			isResume = data.isResume,
 			onClick = onPlay,
 		)
-		
+
 		ResumeProgress(
 			visible = data.isResume &&
 					data.progress > 0f,
 			progress = data.progress,
 			remainingMinutes = data.remainingMinutes,
 		)
-		
+
 		data.overview
 			?.takeIf(String::isNotBlank)
 			?.let { overview ->
-				
+
+                Text("The story", style = MaterialTheme.typography.titleLarge)
 				Text(
 					text = overview,
 					style = if (compact) {
@@ -141,7 +128,14 @@ fun DetailsContent(
 						if (compact) 22.sp else 25.sp
 				)
 			}
-		
+
+		MediaInformationCard(
+			compact = compact,
+			videoResolution = data.resolution,
+			audioTitle = data.audio,
+			subtitles = data.subtitles,
+		)
+
 		if (
 			data.directors.isNotEmpty() ||
 			data.writers.isNotEmpty()
@@ -161,28 +155,24 @@ private fun MetadataPills(
 	runtime: String?,
 	resolution: String,
 ) {
-	/*
-	 * Horizontal scrolling protects small phones from metadata wrapping
-	 * into awkward three/four-line layouts.
-	 */
-	Row(
+	FlowRow(
 		modifier = Modifier
-			.fillMaxWidth()
-			.horizontalScroll(rememberScrollState()),
+			.fillMaxWidth(),
 		horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
 	) {
 		airDate
 			?.takeIf { it.isNotBlank() }
 			?.let {
 				MetadataPill(it)
 			}
-		
+
 		runtime
 			?.takeIf { it.isNotBlank() }
 			?.let {
 				MetadataPill(it)
 			}
-		
+
 		MetadataPill(resolution)
 	}
 }
@@ -193,10 +183,7 @@ private fun MetadataPill(
 ) {
 	Surface(
 		shape = RoundedCornerShape(50),
-		border = BorderStroke(
-			width = 1.dp,
-			color = MaterialTheme.colorScheme.outlineVariant,
-		),
+		color = MaterialTheme.colorScheme.secondaryContainer,
 	) {
 		Text(
 			text = text,
@@ -220,11 +207,8 @@ private fun MediaInformationCard(
 ) {
 	Surface(
 		modifier = Modifier.fillMaxWidth(),
-		shape = RoundedCornerShape(18.dp),
-		border = BorderStroke(
-			1.dp,
-			MaterialTheme.colorScheme.outlineVariant,
-		),
+		shape = MaterialTheme.shapes.large,
+		color = MaterialTheme.colorScheme.surfaceContainerHigh,
 	) {
 		if (compact) {
 			Column(
@@ -235,12 +219,12 @@ private fun MediaInformationCard(
 					label = "VIDEO",
 					value = videoResolution,
 				)
-				
+
 				MediaValue(
 					label = "AUDIO",
 					value = audioTitle,
 				)
-				
+
 				MediaValue(
 					label = "SUBTITLES",
 					value = subtitles,
@@ -259,13 +243,13 @@ private fun MediaInformationCard(
 					label = "VIDEO",
 					value = videoResolution,
 				)
-				
+
 				MediaValue(
 					modifier = Modifier.weight(1.2f),
 					label = "AUDIO",
 					value = audioTitle,
 				)
-				
+
 				MediaValue(
 					modifier = Modifier.weight(1.2f),
 					label = "SUBTITLES",
@@ -292,16 +276,12 @@ private fun MediaValue(
 			fontWeight = FontWeight.SemiBold,
 			letterSpacing = 0.7.sp,
 		)
-		
+
 		Text(
 			text = value,
 			style = MaterialTheme.typography.bodyMedium,
 			fontWeight = FontWeight.Medium,
-			autoSize = TextAutoSize.StepBased(
-				minFontSize = 8.sp,
-				maxFontSize = 14.sp,
-				stepSize = 3.sp
-			),
+
 		)
 	}
 }
@@ -315,20 +295,7 @@ private fun PlayButton(
 	val interactionSource = remember {
 		MutableInteractionSource()
 	}
-	
-	val hovered by interactionSource.collectIsHoveredAsState()
-	val pressed by interactionSource.collectIsPressedAsState()
-	
-	val scale by animateFloatAsState(
-		targetValue = when {
-			pressed -> 0.97f
-			hovered -> 1.025f
-			else -> 1f
-		},
-		animationSpec = tween(120),
-		label = "playButtonScale",
-	)
-	
+
 	Button(
 		onClick = onClick,
 		interactionSource = interactionSource,
@@ -343,11 +310,11 @@ private fun PlayButton(
 					)
 				},
 			)
-			.height(54.dp)
+			.heightIn(min = 64.dp)
 			.animateWithHover(interactionSource),
-		shape = RoundedCornerShape(50),
+		shape = MaterialTheme.shapes.large,
 		contentPadding = PaddingValues(
-			horizontal = 24.dp,
+			horizontal = 24.dp, vertical = 16.dp,
 		),
 	) {
 		Icon(
@@ -355,9 +322,9 @@ private fun PlayButton(
 			contentDescription = null,
 			modifier = Modifier.size(24.dp),
 		)
-		
+
 		Spacer(Modifier.width(8.dp))
-		
+
 		Text(
 			text = if (isResume) {
 				"Resume"
@@ -377,11 +344,11 @@ private fun ResumeProgress(
 	remainingMinutes: Long?,
 ) {
 	val animatedProgress by animateFloatAsState(
-		targetValue = progress,
-		animationSpec = tween(durationMillis = 650),
+		targetValue = progress.coerceIn(0f, 1f),
+		animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
 		label = "resumeProgress",
 	)
-	
+
 	AnimatedVisibility(
 		visible = visible,
 		enter = fadeIn() + expandVertically(),
@@ -391,9 +358,9 @@ private fun ResumeProgress(
 			modifier = Modifier.fillMaxWidth(),
 			verticalArrangement = Arrangement.spacedBy(8.dp),
 		) {
-			Row(
+			FlowRow(
 				modifier = Modifier.fillMaxWidth(),
-				verticalAlignment = Alignment.CenterVertically,
+                verticalArrangement = Arrangement.spacedBy(4.dp),
 				horizontalArrangement = Arrangement.SpaceBetween,
 			) {
 				Text(
@@ -401,7 +368,7 @@ private fun ResumeProgress(
 					style = MaterialTheme.typography.labelMedium,
 					fontWeight = FontWeight.Medium,
 				)
-				
+
 				if (remainingMinutes != null) {
 					Text(
 						text = "$remainingMinutes min remaining",
@@ -409,7 +376,7 @@ private fun ResumeProgress(
 					)
 				}
 			}
-			
+
 			LinearProgressIndicator(
 				progress = { animatedProgress },
 				modifier = Modifier
@@ -430,7 +397,7 @@ private fun CreditsSection(
 ) {
 	Surface(
 		modifier = Modifier.fillMaxWidth(),
-		shape = RoundedCornerShape(18.dp),
+		shape = MaterialTheme.shapes.large,
 	) {
 		if (compact) {
 			Column(
@@ -447,7 +414,7 @@ private fun CreditsSection(
 						value = directors.joinToString(", "),
 					)
 				}
-				
+
 				if (writers.isNotEmpty()) {
 					CreditValue(
 						label = if (writers.size == 1) {
@@ -475,7 +442,7 @@ private fun CreditsSection(
 						value = directors.joinToString(", "),
 					)
 				}
-				
+
 				if (writers.isNotEmpty()) {
 					CreditValue(
 						modifier = Modifier.weight(1f),
@@ -507,7 +474,7 @@ private fun CreditValue(
 			fontWeight = FontWeight.SemiBold,
 			letterSpacing = 0.7.sp,
 		)
-		
+
 		Text(
 			text = value,
 			style = MaterialTheme.typography.bodyMedium,

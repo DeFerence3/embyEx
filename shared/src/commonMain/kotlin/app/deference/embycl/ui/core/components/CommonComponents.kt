@@ -7,14 +7,19 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.VideoLibrary
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -55,7 +60,7 @@ fun <T> LoadState(
 ) {
 	Box(modifier.fillMaxSize()) {
 		when {
-			state == null -> CircularProgressIndicator(Modifier.align(Alignment.Center))
+			state == null -> ExpressiveLoading(Modifier.align(Alignment.Center))
 			state.isFailure -> ErrorState(state.exceptionOrNull()?.message ?: "Something went wrong.", onRetry)
 			else -> content(state.getOrThrow())
 		}
@@ -67,14 +72,17 @@ fun ErrorState(message: String, onRetry: () -> Unit) {
 	Column(
 		modifier = Modifier
 			.fillMaxSize()
-			.padding(32.dp),
+			.verticalScroll(rememberScrollState())
+			.padding(24.dp),
 		horizontalAlignment = Alignment.CenterHorizontally,
 		verticalArrangement = Arrangement.Center,
 	) {
-		Text("Couldn’t load Emby", style = MaterialTheme.typography.titleLarge)
+		ExpressiveEmblem(Icons.Default.CloudOff)
+		Spacer(Modifier.height(20.dp))
+		Text("A little interruption", style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
 		Spacer(Modifier.height(8.dp))
 		SelectionContainer{
-			Text(message, color = MaterialTheme.colorScheme.onSurfaceVariant)
+			Text(message, Modifier.widthIn(max = 480.dp), color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
 		}
 		Spacer(Modifier.height(16.dp))
 		FilledTonalButton(onClick = onRetry) {
@@ -90,15 +98,16 @@ fun EmptyState(title: String, message: String) {
 	Column(
 		modifier = Modifier
 			.fillMaxSize()
-			.padding(32.dp),
+			.verticalScroll(rememberScrollState())
+			.padding(24.dp),
 		horizontalAlignment = Alignment.CenterHorizontally,
 		verticalArrangement = Arrangement.Center,
 	) {
-		Icon(Icons.Filled.VideoLibrary, null, modifier = Modifier.size(52.dp), tint = MaterialTheme.colorScheme.primary)
+		ExpressiveEmblem(Icons.Filled.VideoLibrary)
 		Spacer(Modifier.height(14.dp))
-		Text(title, style = MaterialTheme.typography.titleLarge)
+		Text(title, style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center, modifier = Modifier.semantics { heading() })
 		Spacer(Modifier.height(6.dp))
-		Text(message, color = MaterialTheme.colorScheme.onSurfaceVariant)
+		Text(message, Modifier.widthIn(max = 480.dp), color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
 	}
 }
 

@@ -2,13 +2,14 @@ package app.deference.embycl.ui.screens.settings
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -33,7 +34,7 @@ internal actual fun PlayerSettings() {
 	var activePath by remember { mutableStateOf(findMpvExecutable(preferences.path)?.absolutePath) }
 	var path by remember { mutableStateOf(activePath ?: preferences.path) }
 	var error by remember { mutableStateOf<String?>(null) }
-	
+
 	fun save(value: String) {
 		try {
 			preferences.save(value)
@@ -44,13 +45,14 @@ internal actual fun PlayerSettings() {
 			error = e.message
 		}
 	}
-	
-	OutlinedCard(Modifier.fillMaxWidth()) {
+
+	Card(Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
 		Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
 			Text("Desktop player", style = MaterialTheme.typography.titleLarge)
 			Text("Choose the mpv folder or executable. Leave blank to use EMBYEX_MPV or PATH.")
 			OutlinedTextField(
 				value = path,
+                shape = MaterialTheme.shapes.medium,
 				onValueChange = { path = it; error = null },
 				label = { Text("mpv folder or executable") },
 				singleLine = true,
@@ -58,7 +60,7 @@ internal actual fun PlayerSettings() {
 				modifier = Modifier.fillMaxWidth(),
 			)
 			error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-			Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+			FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
 				OutlinedButton(onClick = {
 					val chooser = JFileChooser().apply {
 						dialogTitle = "Choose mpv folder or executable"
