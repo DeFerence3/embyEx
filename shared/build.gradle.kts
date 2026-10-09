@@ -111,6 +111,7 @@ kotlin {
 
 		jvmTest.dependencies {
 			implementation(libs.kotlin.testJunit)
+			implementation("io.ktor:ktor-client-mock:${libs.versions.ktor.get()}")
 		}
 		
 		androidMain {

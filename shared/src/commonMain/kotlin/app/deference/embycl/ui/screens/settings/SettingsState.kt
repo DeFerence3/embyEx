@@ -6,4 +6,6 @@ data class SettingsState(
 	val isLoading: Boolean = false,
 	val serverDetails: ServerDetails? = null,
 	val error: String? = null,
+	val changelog: Result<String>? = null,
+	val isChangelogLoading: Boolean = false,
 )

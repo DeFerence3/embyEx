@@ -4,6 +4,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.UriHandler
+import app.deference.embycl.ui.screens.settings.components.CurrentBuildChangelogDialog
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.toAwtImage
 import androidx.compose.ui.test.*
@@ -264,6 +267,44 @@ class ExpressiveUiTest {
             assertTrue(back)
             assertTrue(retry)
         }
+    }
+
+    @Test fun settingsCurrentBuildReleaseActions() {
+        var openedUrl = ""
+        var loads = 0
+        checkScreen("07-settings-release-actions", 1280, 900, content = {
+            CompositionLocalProvider(LocalUriHandler provides object : UriHandler {
+                override fun openUri(uri: String) { openedUrl = uri }
+            }) {
+                SettingsContent(SettingsState(changelog = Result.success("## This build\nPlayback improvements.")),
+                    AppUpdate.Idle, SettingsAccount("Alex", "preview", "Home cinema", "http://127.0.0.1:1"),
+                    {}, {}, {}, {}, onLoadChangelog = { loads++ })
+            }
+        }) {
+            onNodeWithText("View release page").performClick()
+            assertEquals(CurrentBuildRelease.pageUrl, openedUrl)
+            onNodeWithText("Current build changelog").performClick()
+            onNodeWithText("Changelog · ${CurrentBuildRelease.tag}").assertIsDisplayed()
+            assertEquals(1, loads)
+            onNodeWithText("Close").performClick()
+            onNodeWithText("Changelog · ${CurrentBuildRelease.tag}").assertDoesNotExist()
+        }
+    }
+
+    @Test fun currentBuildChangelogStates() {
+        checkScreen("07-changelog-content", content = {
+            CurrentBuildChangelogDialog(SettingsState(changelog = Result.success("## This build\n\nPlayback improvements.")), {}, {}, {})
+        }) { onNodeWithText("Playback improvements.", substring = true).assertExists() }
+        var retries = 0
+        checkScreen("07-changelog-error", content = {
+            CurrentBuildChangelogDialog(SettingsState(changelog = Result.failure(IllegalStateException("Release notes unavailable"))), { retries++ }, {}, {})
+        }) {
+            onNodeWithText("Try again").performClick()
+            assertEquals(1, retries)
+        }
+        checkScreen("07-changelog-empty", content = {
+            CurrentBuildChangelogDialog(SettingsState(changelog = Result.success("")), {}, {}, {})
+        }) { onNodeWithText("No changelog was provided for this build.").assertIsDisplayed() }
     }
 
 }

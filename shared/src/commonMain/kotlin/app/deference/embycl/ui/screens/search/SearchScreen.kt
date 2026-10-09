@@ -42,7 +42,6 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import app.deference.embycl.core.utils.Log
 import app.deference.embycl.domain.model.EmbyItem
 import app.deference.embycl.ui.core.adaptive.DeviceConfiguration
 import app.deference.embycl.ui.core.adaptive.DeviceConfiguration.DESKTOP
@@ -178,9 +177,7 @@ fun SearchResultItem(
 				TABLET_LANDSCAPE -> 3
 				DESKTOP -> 3
 			}
-			
-			Log.i("SearchScreen"){ "ColumnConfig---> $configuration --- $columns" }
-			
+
 			Grid(
 				modifier = Modifier.fillMaxWidth(),
 				config = {
