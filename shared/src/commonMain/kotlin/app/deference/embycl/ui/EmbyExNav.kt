@@ -1,6 +1,5 @@
 package app.deference.embycl.ui
 
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -8,6 +7,7 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideIn
 import androidx.compose.animation.slideOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.TransformOrigin
@@ -21,6 +21,8 @@ import app.deference.embycl.ui.core.nav.Navigator
 
 @Composable
 fun EmbyExNav(navigator: Navigator) {
+	val spatial = MaterialTheme.motionScheme.defaultSpatialSpec<IntOffset>()
+	val effects = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
 	CompositionLocalProvider(LocalNavigator provides navigator) {
 		NavDisplay(
 			backStack = navigator.backStack,
@@ -36,34 +38,34 @@ fun EmbyExNav(navigator: Navigator) {
 			},
 			popTransitionSpec = {
 				(
-						fadeIn(animationSpec = tween(220)) +
-								slideIn(animationSpec = tween(220)) { IntOffset(- it.width / 2, 0) }
+						fadeIn(animationSpec = effects) +
+								slideIn(animationSpec = spatial) { IntOffset(- it.width / 12, 0) }
 						) togetherWith (
-						fadeOut(animationSpec = tween(220)) +
-								slideOut(animationSpec = tween(220)) { IntOffset(it.width / 2, 0) }
+						fadeOut(animationSpec = effects) +
+								slideOut(animationSpec = spatial) { IntOffset(it.width / 12, 0) }
 						)
 			},
 			transitionSpec = {
 				(
-						fadeIn(animationSpec = tween(220)) +
-								slideIn(animationSpec = tween(220)) { IntOffset(it.width / 2, 0) }
+						fadeIn(animationSpec = effects) +
+								slideIn(animationSpec = spatial) { IntOffset(it.width / 12, 0) }
 						) togetherWith (
-						fadeOut(animationSpec = tween(220)) +
-								slideOut(animationSpec = tween(220)) { IntOffset(- it.width / 2, 0) }
+						fadeOut(animationSpec = effects) +
+								slideOut(animationSpec = spatial) { IntOffset(- it.width / 12, 0) }
 						)
 			},
 			predictivePopTransitionSpec = {
 				(
-						fadeIn(animationSpec = tween(220)) +
+						fadeIn(animationSpec = effects) +
 								scaleIn(
-									animationSpec = tween(220, delayMillis = 30),
+									animationSpec = effects,
 									initialScale = .9f,
 									TransformOrigin(- 1f, .5f),
 								)
 						) togetherWith (
-						fadeOut(animationSpec = tween(220)) +
+						fadeOut(animationSpec = effects) +
 								scaleOut(
-									animationSpec = tween(220, delayMillis = 30),
+									animationSpec = effects,
 									targetScale = .9f,
 									TransformOrigin(- 1f, .5f),
 								)
@@ -71,5 +73,4 @@ fun EmbyExNav(navigator: Navigator) {
 			},
 		)
 	}
-
 }

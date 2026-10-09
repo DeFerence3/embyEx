@@ -15,8 +15,16 @@ dependencies {
     implementation(project(":shared"))
 
     implementation(compose.desktop.currentOs)
+
+    testImplementation(libs.kotlin.testJunit)
+    testImplementation(libs.compose.uiTest)
 	
 	implementation(libs.bundles.nucleus)
+}
+
+tasks.test {
+    // Register renders so a clean checkout or cache restore also recreates the gallery images.
+    outputs.dir(rootProject.file("build/ui-verification/screenshots"))
 }
 
 nucleus.application {

@@ -38,6 +38,7 @@ import app.deference.embycl.ui.Screen
 import app.deference.embycl.ui.core.LocalNavigator
 import app.deference.embycl.ui.core.adaptive.DeviceConfiguration
 import app.deference.embycl.ui.core.components.LoadingScaffold
+import app.deference.embycl.ui.core.components.DetailTopBar
 import app.deference.embycl.ui.screens.details.components.PlaybackEffect
 import app.deference.embycl.ui.screens.details.components.adaptive.DesktopDetailsLayout
 import app.deference.embycl.ui.screens.details.components.adaptive.ItemDetailsData
@@ -49,7 +50,7 @@ import org.koin.core.parameter.parametersOf
 
 @Serializable
 data class EmbyDetailsScreen(val id: String) : Screen {
-	
+
 	@Composable
 	override fun Content() {
 		val backStack = LocalNavigator.current
@@ -58,10 +59,11 @@ data class EmbyDetailsScreen(val id: String) : Screen {
 		val events = viewModel.events
 		val onAction = viewModel::onAction
 		val onBack = { backStack.goBack() }
-		
+
 		PlaybackEffect(events, onAction)
 		LoadingScaffold(
 			state = state.content,
+            topBar = { if (state.content?.isSuccess != true) DetailTopBar("Details", onBack) },
 			onRetry = { onAction(EmbyDetailsAction.Retry) },
 			modifier = Modifier.fillMaxSize(),
 			content = { item ->
@@ -83,10 +85,10 @@ private fun ItemDetails(
 ) {
 	val windowSizeClass =
 		currentWindowAdaptiveInfo().windowSizeClass
-	
+
 	val configuration =
 		DeviceConfiguration.fromWindowSizeClass(windowSizeClass)
-	
+
 	ItemDetailsContent(
 		item = item,
 		configuration = configuration,
@@ -105,19 +107,19 @@ private fun ItemDetailsContent(
 	val backdrop =
 		item.imageUrl(type = "Backdrop", maxWidth = 1920)
 			?: item.imageUrl(type = "Primary", maxWidth = 1280)
-	
+
 	val logoUrl =
 		item.imageUrl(type = "Logo", maxWidth = 800)
-	
+
 	val videoStream =
 		item.mediaStreams.firstOrNull { it.type == "Video" }
-	
+
 	val videoResolution =
 		videoStream?.displayTitle
 			?.takeIf { it.isNotBlank() }
 			?: item.container?.uppercase()
 			?: "HD"
-	
+
 	val audioTitle =
 		item.mediaStreams
 			.filter { it.type == "Audio" }
@@ -128,7 +130,7 @@ private fun ItemDetailsContent(
 			.distinct()
 			.joinToString(" • ")
 			.ifBlank { "Unknown" }
-	
+
 	val subtitleStreams =
 		item.mediaStreams
 			.filter { it.type == "Subtitle" }
@@ -139,23 +141,23 @@ private fun ItemDetailsContent(
 			.distinct()
 			.joinToString(" • ")
 			.ifBlank { "None" }
-	
+
 	val airDate =
 		item.premiereDate?.formatToString()
 			?: item.productionYear?.toString()
-	
+
 	val runtime =
 		item.runTimeTicks?.asRuntime()
-	
+
 	val position =
 		item.userData?.playbackPositionTicks ?: 0L
-	
+
 	val duration =
 		item.runTimeTicks ?: 0L
-	
+
 	val isResume =
 		position > 0L
-	
+
 	val progress =
 		if (duration > 0L && position > 0L) {
 			(position.toFloat() / duration.toFloat())
@@ -163,7 +165,7 @@ private fun ItemDetailsContent(
 		} else {
 			0f
 		}
-	
+
 	val remainingMinutes =
 		if (duration > position && isResume) {
 			((duration - position) /
@@ -173,19 +175,19 @@ private fun ItemDetailsContent(
 		} else {
 			null
 		}
-	
+
 	val directors =
 		item.people
 			.filter { it.type == "Director" }
 			.mapNotNull { it.name }
 			.distinct()
-	
+
 	val writers =
 		item.people
 			.filter { it.type == "Writer" }
 			.mapNotNull { it.name }
 			.distinct()
-	
+
 	val data = ItemDetailsData(
 		title = item.name,
 		backdrop = backdrop,
@@ -202,12 +204,12 @@ private fun ItemDetailsContent(
 		progress = progress,
 		remainingMinutes = remainingMinutes,
 	)
-	
+
 	Box(
 		modifier = Modifier
 			.fillMaxSize(),
 	) {
-		
+
 		AnimatedContent(
 			targetState = configuration,
 			transitionSpec = {
@@ -219,9 +221,9 @@ private fun ItemDetailsContent(
 			},
 			label = "ItemDetailsAdaptiveLayout",
 		) { currentConfiguration ->
-			
+
 			when (currentConfiguration) {
-				
+
 				DeviceConfiguration.MOBILE_PORTRAIT -> {
 					PortraitDetailsLayout(
 						data = data,
@@ -229,7 +231,7 @@ private fun ItemDetailsContent(
 						onPlay = onPlay,
 					)
 				}
-				
+
 				DeviceConfiguration.MOBILE_LANDSCAPE -> {
 					LandscapeDetailsLayout(
 						data = data,
@@ -237,7 +239,7 @@ private fun ItemDetailsContent(
 						onPlay = onPlay,
 					)
 				}
-				
+
 				DeviceConfiguration.TABLET_PORTRAIT -> {
 					PortraitDetailsLayout(
 						data = data,
@@ -245,7 +247,7 @@ private fun ItemDetailsContent(
 						onPlay = onPlay,
 					)
 				}
-				
+
 				DeviceConfiguration.TABLET_LANDSCAPE -> {
 					LandscapeDetailsLayout(
 						data = data,
@@ -253,7 +255,7 @@ private fun ItemDetailsContent(
 						onPlay = onPlay,
 					)
 				}
-				
+
 				DeviceConfiguration.DESKTOP -> {
 					DesktopDetailsLayout(
 						data = data,
@@ -262,7 +264,7 @@ private fun ItemDetailsContent(
 				}
 			}
 		}
-		
+
 		DetailsBackButton(
 			onClick = onBack,
 			compact = configuration == DeviceConfiguration.MOBILE_PORTRAIT ||
@@ -279,15 +281,15 @@ private fun DetailsBackButton(
 	val interactionSource = remember {
 		MutableInteractionSource()
 	}
-	
+
 	val hovered by interactionSource.collectIsHoveredAsState()
-	
+
 	val scale by animateFloatAsState(
 		targetValue = if (hovered) 1.08f else 1f,
-		animationSpec = tween(120),
+		animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
 		label = "backButtonScale",
 	)
-	
+
 	Row(
 		modifier = Modifier
 			.fillMaxWidth()
@@ -301,7 +303,7 @@ private fun DetailsBackButton(
 			onClick = onClick,
 			interactionSource = interactionSource,
 			modifier = Modifier
-				.size(if (compact) 42.dp else 46.dp)
+				.size(48.dp)
 				.graphicsLayer {
 					scaleX = scale
 					scaleY = scale

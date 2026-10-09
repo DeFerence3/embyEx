@@ -1,48 +1,30 @@
 package app.deference.embycl.ui
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.LoadingIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import app.deference.embycl.core.session.Session
 import app.deference.embycl.domain.model.EmbyServer
 import app.deference.embycl.domain.repository.ServerFinderRepo
 import app.deference.embycl.ui.core.LocalKoasty
+import app.deference.embycl.ui.core.components.*
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun NotConnected(
 	serverFinderRepo: ServerFinderRepo = koinInject()
@@ -99,127 +81,81 @@ fun NotConnected(
 		scanLocalServers()
 	}
 
-	Surface {
-		Box(
-			modifier = Modifier.fillMaxSize().padding(24.dp),
-			contentAlignment = Alignment.Center
-		) {
-			Column(
-				modifier = Modifier.widthIn(max = 480.dp).fillMaxWidth(),
-				horizontalAlignment = Alignment.CenterHorizontally,
-				verticalArrangement = Arrangement.spacedBy(16.dp)
-			) {
-				Text(
-					text = "Server Connection Timed Out",
-					style = MaterialTheme.typography.headlineMedium,
-					fontWeight = FontWeight.Bold,
-					textAlign = TextAlign.Center
-				)
-				
-				Text(
-					text = "Unable to connect to Emby server. Reconnect or update server address.",
-					style = MaterialTheme.typography.bodyMedium,
-					color = MaterialTheme.colorScheme.onSurfaceVariant,
-					textAlign = TextAlign.Center
-				)
-				
-				if (errorMessage != null) {
-					Text(
-						text = errorMessage!!,
-						color = MaterialTheme.colorScheme.error,
-						style = MaterialTheme.typography.bodySmall,
-						textAlign = TextAlign.Center
-					)
-				}
-				
-				OutlinedTextField(
-					value = serverAddress,
-					onValueChange = { serverAddress = it },
-					label = { Text("Server URL") },
-					singleLine = true,
-					modifier = Modifier.fillMaxWidth(),
-					enabled = !isReconnecting
-				)
-				if (isSearchingLocal){
-					LoadingIndicator(
-						modifier = Modifier
-							.align(Alignment.CenterHorizontally)
-					)
-				}
-				if (discoveredServers.isNotEmpty()) {
-					Text(
-						text = "Discovered Local Servers",
-						style = MaterialTheme.typography.labelLarge,
-						color = MaterialTheme.colorScheme.primary,
-						modifier = Modifier.align(Alignment.Start)
-					)
-					LazyColumn(
-						modifier = Modifier.fillMaxWidth().heightIn(max = 150.dp),
-						verticalArrangement = Arrangement.spacedBy(8.dp)
-					) {
-						items(discoveredServers) { server ->
-							Card(
-								modifier = Modifier.fillMaxWidth().clickable(enabled = !isReconnecting) {
-									serverAddress = server.address
-									rediscoverAndReconnect(server.address)
-								}
-							) {
-								Row(
-									modifier = Modifier.fillMaxWidth().padding(12.dp),
-									horizontalArrangement = Arrangement.SpaceBetween,
-									verticalAlignment = Alignment.CenterVertically
-								) {
-									Column {
-										Text(server.name, fontWeight = FontWeight.Bold)
-										Text(server.address, style = MaterialTheme.typography.bodySmall)
-									}
-									Text("Select", color = MaterialTheme.colorScheme.primary)
-								}
-							}
-						}
-					}
-				}
-				OutlinedButton(
-					onClick = {
-						scanLocalServers()
-					},
-					modifier = Modifier.fillMaxWidth(),
-					enabled = !isSearchingLocal
-				) {
-					Text("Re scan")
-				}
-				Row(
-					modifier = Modifier.fillMaxWidth(),
-					horizontalArrangement = Arrangement.spacedBy(12.dp)
-				) {
-					OutlinedButton(
-						onClick = {
-							Session.logout()
-							Session.setConnected(true)
-						},
-						modifier = Modifier.weight(1f),
-						enabled = !isReconnecting
-					) {
-						Text("Sign Out")
-					}
-					
-					Button(
-						onClick = { rediscoverAndReconnect(serverAddress) },
-						modifier = Modifier.weight(1f),
-						enabled = !isReconnecting && serverAddress.isNotBlank()
-					) {
-						if (isReconnecting) {
-							CircularProgressIndicator(
-								modifier = Modifier.size(18.dp),
-								strokeWidth = 2.dp,
-								color = MaterialTheme.colorScheme.onPrimary
-							)
-						} else {
-							Text("Reconnect")
-						}
-					}
-				}
-			}
-		}
-	}
+    var confirmSignOut by rememberSaveable { mutableStateOf(false) }
+    if (confirmSignOut) SignOutConfirmationDialog(Session.serverName,
+        onConfirm = { confirmSignOut = false; Session.logout(); Session.setConnected(true) },
+        onDismiss = { confirmSignOut = false })
+    ConnectionRecoveryContent(
+        serverAddress, { serverAddress = it }, isReconnecting, isSearchingLocal,
+        discoveredServers, errorMessage,
+        onReconnect = { rediscoverAndReconnect(serverAddress) },
+        onScan = ::scanLocalServers,
+        onSelectServer = { serverAddress = it.address; rediscoverAndReconnect(it.address) },
+        onSignOut = { confirmSignOut = true },
+    )
+}
+
+@Composable
+fun ConnectionRecoveryContent(
+    serverAddress: String,
+    onAddressChange: (String) -> Unit,
+    isReconnecting: Boolean,
+    isSearchingLocal: Boolean,
+    discoveredServers: List<EmbyServer>,
+    errorMessage: String?,
+    onReconnect: () -> Unit,
+    onScan: () -> Unit,
+    onSelectServer: (EmbyServer) -> Unit,
+    onSignOut: () -> Unit,
+) {
+    Surface(Modifier.fillMaxSize()) {
+        Box(Modifier.fillMaxSize().safeDrawingPadding().imePadding(), contentAlignment = Alignment.Center) {
+            LazyColumn(
+                modifier = Modifier.widthIn(max = 560.dp).fillMaxWidth(),
+                contentPadding = PaddingValues(24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                item { ExpressiveEmblem(Icons.Default.CloudOff) }
+                item { PageIntro("LET’S GET YOU BACK", "Reconnect to your stories.", "Your server is taking a moment. Check its address or find it on your network.") }
+                item {
+                    OutlinedTextField(
+                        value = serverAddress, onValueChange = onAddressChange,
+                        label = { Text("Server address") }, singleLine = true,
+                        modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium,
+                        enabled = !isReconnecting, isError = errorMessage != null,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, autoCorrectEnabled = false, imeAction = ImeAction.Go),
+                        keyboardActions = KeyboardActions(onGo = { if (!isReconnecting && serverAddress.isNotBlank()) onReconnect() }),
+                    )
+                }
+                errorMessage?.let { item { SignInError(it) } }
+                item { SignInButton("Reconnect", isReconnecting, serverAddress.isNotBlank(), onReconnect) }
+                item {
+                    FilledTonalButton(onClick = onScan, enabled = !isSearchingLocal && !isReconnecting,
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
+                        if (isSearchingLocal) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                        else Icon(Icons.Default.Refresh, null)
+                        Spacer(Modifier.width(8.dp))
+                        Text(if (isSearchingLocal) "Searching your network…" else "Scan for servers")
+                    }
+                }
+                if (discoveredServers.isNotEmpty()) {
+                    item { SectionHeading("Nearby servers") }
+                    items(discoveredServers, key = { it.address }) { server ->
+                        Card(onClick = { onSelectServer(server) }, enabled = !isReconnecting, modifier = Modifier.fillMaxWidth()) {
+                            Row(Modifier.padding(18.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Column(Modifier.weight(1f)) {
+                                    Text(server.name, style = MaterialTheme.typography.titleMedium)
+                                    Text(server.address, style = MaterialTheme.typography.bodySmall)
+                                }
+                                Icon(Icons.AutoMirrored.Default.ArrowForward, null)
+                            }
+                        }
+                    }
+                }
+                item {
+                    TextButton(onClick = onSignOut, enabled = !isReconnecting, modifier = Modifier.fillMaxWidth()) { Text("Sign out of this server") }
+                }
+            }
+        }
+    }
 }

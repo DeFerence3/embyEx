@@ -8,12 +8,16 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.material3.Surface
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -59,9 +63,10 @@ fun PublicUserCard(
 	Card(
 		modifier = Modifier
 			.fillMaxWidth()
+			.semantics { selected = isSelected }
 			.then(if (enabled) Modifier.clickable(onClick = onClick) else Modifier),
-		shape = RoundedCornerShape(18.dp),
-		colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+		shape = MaterialTheme.shapes.medium,
+		colors = CardDefaults.cardColors(containerColor = if (isSelected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh),
 	) {
 		Row(
 			modifier = Modifier
@@ -126,9 +131,12 @@ fun PasswordField(
 	visible: Boolean,
 	onVisibilityChange: () -> Unit,
 	onDone: () -> Unit,
+    enabled: Boolean = true,
 ) {
 	OutlinedTextField(
 		value = password,
+        enabled = enabled,
+        shape = MaterialTheme.shapes.medium,
 		onValueChange = onPasswordChange,
 		modifier = Modifier
 			.fillMaxWidth()
@@ -137,7 +145,7 @@ fun PasswordField(
 			},
 		label = { Text("Password") },
 		leadingIcon = { Icon(Icons.Filled.Lock, null) },
-		trailingIcon = { IconButton(onClick = onVisibilityChange) { Icon(Icons.Default.RemoveRedEye, null) } },
+		trailingIcon = { IconButton(onClick = onVisibilityChange, enabled = enabled) { Icon(Icons.Default.RemoveRedEye, if (visible) "Hide password" else "Show password") } },
 		singleLine = true,
 		visualTransformation = if (visible) VisualTransformation.None else PasswordVisualTransformation(),
 		keyboardOptions = KeyboardOptions(
@@ -160,15 +168,22 @@ fun SignInButton(
 		onClick = onClick,
 		modifier = Modifier
 			.fillMaxWidth()
-			.height(52.dp),
+			.heightIn(min = 56.dp)
+            .semantics { if (busy) stateDescription = "In progress" },
 		enabled = ! busy && enabled,
 	) {
-		if (busy) CircularProgressIndicator(modifier = Modifier.size(22.dp), strokeWidth = 2.dp)
-		else Text(text)
+		if (busy) {
+            CircularProgressIndicator(modifier = Modifier.size(22.dp), strokeWidth = 2.dp)
+            Spacer(Modifier.width(8.dp))
+        }
+        Text(text, style = MaterialTheme.typography.titleMedium)
 	}
 }
 
 @Composable
 fun SignInError(message: String) {
-	Text(message, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
+	Surface(color = MaterialTheme.colorScheme.errorContainer, contentColor = MaterialTheme.colorScheme.onErrorContainer,
+        shape = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Polite }) {
+        Text(message, Modifier.padding(16.dp), style = MaterialTheme.typography.bodyMedium)
+    }
 }

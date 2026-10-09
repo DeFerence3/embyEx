@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import app.deference.embycl.ui.core.components.PageIntro
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -29,9 +31,14 @@ fun HomeContent(
 		LazyColumn(
 			modifier = Modifier.fillMaxSize(),
 			contentPadding = PaddingValues(vertical = 12.dp),
-			verticalArrangement = Arrangement.spacedBy(22.dp),
+			verticalArrangement = Arrangement.spacedBy(28.dp),
 		) {
-			if (home.resume.isNotEmpty()) {
+			item(key = "intro") {
+                PageIntro("YOUR COLLECTION, YOUR TIME", "Find your next great watch.",
+                    "Pick up where you left off, or discover something new.",
+                    Modifier.padding(horizontal = 20.dp), accent = true)
+            }
+            if (home.resume.isNotEmpty()) {
 				item {
 					MediaRow(
 						title = "Continue watching",
@@ -60,7 +67,9 @@ fun HomeContent(
 			}
 			if (home.resume.isEmpty() && home.latest.isEmpty() && home.views.isEmpty()) {
 				item {
-					EmptyState("Your Emby home is empty", "Add media libraries on your Emby server, then refresh.")
+					androidx.compose.foundation.layout.Box(Modifier.height(320.dp)) {
+                        EmptyState("Your Emby home is empty", "Add media libraries on your Emby server, then refresh.")
+                    }
 				}
 			}
 			item {

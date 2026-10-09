@@ -7,13 +7,16 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.safeDrawingPadding
+import app.deference.embycl.ui.core.components.ExpressiveEmblem
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -33,16 +36,15 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.autofill.ContentType
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.semantics.contentType
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -62,44 +64,41 @@ fun SignInContent(
 	state: SignInState,
 	onAction: (SignInAction) -> Unit
 ) {
+    val largeText = LocalDensity.current.fontScale > 1.3f
 	Column(
 		modifier = Modifier
 			.fillMaxSize()
-			.background(
-				Brush.verticalGradient(
-					listOf(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.surface),
-				),
-			)
+            .background(MaterialTheme.colorScheme.surface)
+            .safeDrawingPadding()
+            .imePadding()
 			.verticalScroll(rememberScrollState())
-			.padding(horizontal = 24.dp, vertical = 48.dp),
+			.padding(horizontal = 20.dp, vertical = 28.dp),
 		horizontalAlignment = Alignment.CenterHorizontally,
 		verticalArrangement = Arrangement.Center,
 	) {
 		ElevatedCard(
-			modifier = Modifier.widthIn(max = 550.dp),
-			shape = RoundedCornerShape(28.dp),
+			modifier = Modifier.widthIn(max = 520.dp).fillMaxWidth(),
+			shape = MaterialTheme.shapes.extraLarge,
+            colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
 		) {
 			Column(
 				modifier = Modifier.padding(24.dp),
 				verticalArrangement = Arrangement.spacedBy(16.dp),
 			) {
-				Surface(
-					modifier = Modifier.size(64.dp),
-					shape = RoundedCornerShape(20.dp),
-					color = MaterialTheme.colorScheme.primary,
-				) {
-					Icon(
-						Icons.Filled.LiveTv,
-						contentDescription = null,
-						tint = MaterialTheme.colorScheme.onPrimary,
-						modifier = Modifier.padding(16.dp),
-					)
-				}
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    ExpressiveEmblem(Icons.Default.LiveTv)
+                    Column(Modifier.weight(1f)) {
+                        Text("EmbyEx", style = if (largeText) MaterialTheme.typography.titleMedium else MaterialTheme.typography.headlineSmall)
+                        if (!largeText) Text("YOUR PERSONAL CINEMA", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                    }
+                }
+                Text(if (state.discovery == null) "01 / CONNECT YOUR SERVER" else "02 / CHOOSE YOUR ACCOUNT",
+                    style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
 				val currentDiscovery = state.discovery
 				if (currentDiscovery == null) {
-					Text("Welcome to embyEx", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+					Text(if (largeText) "Connect your server" else "Great stories.\nYour own space.", style = if (largeText) MaterialTheme.typography.titleLarge else MaterialTheme.typography.displaySmall)
 					Text(
-						"Connect to your Emby server to choose an account.",
+						"Connect your Emby server and make yourself at home.",
 						color = MaterialTheme.colorScheme.onSurfaceVariant,
 					)
 					if (state.isSearchingLocal) {
@@ -118,13 +117,13 @@ fun SignInContent(
 							modifier = Modifier.fillMaxWidth(),
 							verticalArrangement = Arrangement.spacedBy(8.dp),
 						) {
-							Text("Discovered Servers", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+							Text("Nearby servers", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
 							state.discoveredServers.forEach { srv ->
 								ElevatedCard(
 									onClick = { onAction(SignInAction.SelectServer(srv.address)) },
 									modifier = Modifier.fillMaxWidth(),
 									colors = CardDefaults.elevatedCardColors(
-										containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+										containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
 									),
 								) {
 									Row(
@@ -144,9 +143,12 @@ fun SignInContent(
 							}
 						}
 					}
-					
+
 					OutlinedTextField(
 						value = state.server,
+                        shape = MaterialTheme.shapes.medium,
+                        enabled = !state.isBusy,
+                        isError = state.error != null,
 						onValueChange = { onAction(SignInAction.ServerChanged(it)) },
 						modifier = Modifier.fillMaxWidth(),
 						label = { Text("Server address") },
@@ -158,8 +160,8 @@ fun SignInContent(
 							}
 						},
 						singleLine = true,
-						keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-						keyboardActions = KeyboardActions(onDone = { onAction(SignInAction.DiscoverServer) }),
+						keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, autoCorrectEnabled = false, imeAction = ImeAction.Done),
+						keyboardActions = KeyboardActions(onDone = { if (!state.isBusy && state.server.isNotBlank()) onAction(SignInAction.DiscoverServer) }),
 					)
 					state.error?.let { SignInError(it) }
 					SignInButton(
@@ -182,7 +184,7 @@ fun SignInContent(
 							Text("Choose an account", color = MaterialTheme.colorScheme.onSurfaceVariant)
 						}
 					}
-					
+
 					when {
 						state.selectedUser != null -> {
 							val user = state.selectedUser
@@ -192,7 +194,8 @@ fun SignInContent(
 								onPasswordChange = { onAction(SignInAction.PasswordChanged(it)) },
 								visible = state.isPasswordVisible,
 								onVisibilityChange = { onAction(SignInAction.TogglePasswordVisibility) },
-								onDone = { onAction(SignInAction.SignInSelectedUser) },
+								enabled = !state.isBusy,
+                                onDone = { if (!state.isBusy) onAction(SignInAction.SignInSelectedUser) },
 							)
 							state.error?.let { SignInError(it) }
 							SignInButton("Sign in", state.isBusy, enabled = true) { onAction(SignInAction.SignInSelectedUser) }
@@ -201,11 +204,13 @@ fun SignInContent(
 								modifier = Modifier.align(Alignment.CenterHorizontally),
 							) { Text("Choose another user") }
 						}
-						
+
 						state.isManualSignIn -> {
 							Text("Manual sign in", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
 							OutlinedTextField(
 								value = state.username,
+                                shape = MaterialTheme.shapes.medium,
+                                enabled = !state.isBusy,
 								onValueChange = { onAction(SignInAction.UsernameChanged(it)) },
 								modifier = Modifier
 									.fillMaxWidth()
@@ -220,7 +225,8 @@ fun SignInContent(
 								onPasswordChange = { onAction(SignInAction.PasswordChanged(it)) },
 								visible = state.isPasswordVisible,
 								onVisibilityChange = { onAction(SignInAction.TogglePasswordVisibility) },
-								onDone = { onAction(SignInAction.SignInManually) },
+								enabled = !state.isBusy,
+                                onDone = { if (!state.isBusy && state.username.isNotBlank()) onAction(SignInAction.SignInManually) },
 							)
 							state.error?.let { SignInError(it) }
 							SignInButton("Sign in", state.isBusy, enabled = state.username.isNotBlank(), onClick = { onAction(SignInAction.SignInManually) })
@@ -229,7 +235,7 @@ fun SignInContent(
 								modifier = Modifier.align(Alignment.CenterHorizontally),
 							) { Text("Choose a listed user") }
 						}
-						
+
 						else -> {
 							if (currentDiscovery.users.isEmpty()) {
 								Text(
@@ -248,7 +254,7 @@ fun SignInContent(
 								onClick = { onAction(SignInAction.ShowManualSignIn) },
 								modifier = Modifier
 									.fillMaxWidth()
-									.height(52.dp),
+									.heightIn(min = 56.dp),
 								enabled = ! state.isBusy,
 							) {
 								Icon(Icons.Filled.AccountCircle, null)
@@ -273,7 +279,7 @@ fun SignInContent(
 
 @Serializable
 data object EmbySignInScreen : Screen {
-	
+
 	@Composable
 	override fun Content() {
 		val viewModel = koinViewModel<SignInViewModel>()

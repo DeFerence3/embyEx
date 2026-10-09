@@ -1,7 +1,8 @@
 package app.deference.embycl.ui.core
 
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -14,15 +15,16 @@ import androidx.compose.ui.graphics.graphicsLayer
 @Composable
 fun Modifier.animateWithHover(interactionSource: MutableInteractionSource,label: String = "AnimationWithHover") = composed {
 	val hovered by interactionSource.collectIsHoveredAsState()
+	val focused by interactionSource.collectIsFocusedAsState()
 	val pressed by interactionSource.collectIsPressedAsState()
-	
+
 	val scale by animateFloatAsState(
 		targetValue = when {
 			pressed -> 0.97f
-			hovered -> 1.025f
+			hovered || focused -> 1.015f
 			else -> 1f
 		},
-		animationSpec = tween(120),
+		animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
 		label = label,
 	)
 	graphicsLayer {

@@ -51,22 +51,22 @@ fun MarkDownPage(
     SelectionContainer(
 		modifier = modifier
 			.clip(RoundedCornerShape(16.dp))
-			.background(MaterialTheme.colorScheme.surfaceVariant),
+			.background(MaterialTheme.colorScheme.surfaceContainerLow),
 	) {
         Markdown(
             markdownState = rememberMarkdownState(markdown) { markdown },
 			typography = markdownTypography(
 				h1 = MaterialTheme.typography.headlineMedium,
 				h2 = MaterialTheme.typography.titleLarge,
-				list = MaterialTheme.typography.labelMedium,
+				list = MaterialTheme.typography.bodyMedium,
 				bullet = MaterialTheme.typography.labelMedium,
-				text = MaterialTheme.typography.labelLarge,
+				text = MaterialTheme.typography.bodyMedium,
 				textLink = TextLinkStyles(
 					style = MaterialTheme.typography.labelLarge.copy(
 						fontWeight = FontWeight.Bold, textDecoration = TextDecoration.Underline
 					).toSpanStyle()
 				),
-				paragraph = MaterialTheme.typography.labelMedium
+				paragraph = MaterialTheme.typography.bodyMedium
 			),
             components = markdownComponents(
                 codeBlock = {
@@ -107,7 +107,7 @@ fun MarkDownPage(
 					LoadingIndicator()
                 }
             },
-            modifier = modifier
+            modifier = Modifier
                 .verticalScroll(rememberScrollState())
 				.padding(8.dp)
         )

@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -66,7 +67,6 @@ fun EmbyShellContent(
 ) {
 	val backStack = LocalNavigator.current
 	val tab = state.selectedTab
-	
 	var showSignOutConfirmation by rememberSaveable { mutableStateOf(false) }
 	if (showSignOutConfirmation) {
 		SignOutConfirmationDialog(
@@ -78,9 +78,10 @@ fun EmbyShellContent(
 			onDismiss = { showSignOutConfirmation = false },
 		)
 	}
-	
 	events.ObserveEvent {
-		when (it) { ShellEvent.SignedOut -> Unit }
+		when (it) {
+			ShellEvent.SignedOut -> Unit
+		}
 	}
 	
 	Scaffold(
@@ -100,7 +101,7 @@ fun EmbyShellContent(
 					onAction(ShellAction.SelectTab(destination))
 				}
 			)
-		}
+		},
 	) { paddingValues ->
 		val layoutDirection = LocalLayoutDirection.current
 		val padding = PaddingValues(
@@ -112,6 +113,9 @@ fun EmbyShellContent(
 		val bottomSpacing = paddingValues.calculateBottomPadding()
 		AnimatedContent(
 			targetState = tab,
+			modifier = Modifier
+				.padding(padding)
+				.consumeWindowInsets(padding),
 			transitionSpec = {
 				val isForward = targetState.ordinal > initialState.ordinal
 				if (isForward) {
@@ -148,30 +152,30 @@ fun EmbyShellContent(
 					)
 				}
 			},
-			label = "emby_tab_expressive"
+			label = "navigation",
 		) { selected ->
 			when (selected) {
 				EmbyTab.Home -> HomeContent(
 					state = homeState,
 					onAction = onHomeAction,
-					modifier = Modifier.padding(padding),
-					onItemClick = { item -> openItem(item, backStack) },
-					bottomSpacing = bottomSpacing
-				) { lib -> backStack.goTo(EmbyLibraryScreen(lib.id, lib.name)) }
+					bottomSpacing = bottomSpacing,
+					onItemClick = { openItem(it, backStack) },
+					onLibraryClick = { backStack.goTo(EmbyLibraryScreen(it.id, it.name)) }
+				)
 				
 				EmbyTab.Libraries -> LibrariesContent(
 					state = librariesState,
 					onAction = onLibrariesAction,
-					modifier = Modifier.padding(padding),
-					bottomSpacing = bottomSpacing
-				) { lib -> backStack.goTo(EmbyLibraryScreen(lib.id, lib.name)) }
+					bottomSpacing = bottomSpacing,
+					onLibraryClick = { backStack.goTo(EmbyLibraryScreen(it.id, it.name)) }
+				)
 				
 				EmbyTab.Search -> SearchContent(
 					state = searchState,
 					onAction = onSearchAction,
-					modifier = Modifier.padding(padding),
-					bottomSpacing = bottomSpacing
-				) { item -> openItem(item, backStack) }
+					bottomSpacing = bottomSpacing,
+					onItemClick = { openItem(it, backStack) }
+				)
 			}
 		}
 	}
