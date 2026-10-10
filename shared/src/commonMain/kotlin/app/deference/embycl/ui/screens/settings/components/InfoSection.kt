@@ -6,24 +6,27 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import app.deference.embycl.ui.core.LocalKoasty
 
 @Composable
 fun InfoSection(
@@ -85,10 +88,31 @@ fun InfoCard(details: List<Pair<String, String>>) {
                         bottomEnd = if (index == details.lastIndex) 24.dp else 4.dp,
                     ),
                 ) {
-                    Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                        Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text(value, style = MaterialTheme.typography.bodyLarge)
-                    }
+                    Row(
+						verticalAlignment = Alignment.CenterVertically,
+						horizontalArrangement = Arrangement.SpaceBetween
+					){
+						Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+							Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+							Text(value, style = MaterialTheme.typography.bodyLarge)
+						}
+						val uriHandler = LocalUriHandler.current
+						val koasty = LocalKoasty.current
+						val openLink: () -> Unit = {
+							try {
+								uriHandler.openUri(value)
+							} catch (_: Exception) {
+								koasty.show("Could not open $value. Check that a browser is available.")
+							}
+						}
+						if (value.startsWith("http")) IconButton(
+							onClick = {
+								openLink()
+							}
+						){
+							Icon(Icons.AutoMirrored.Filled.OpenInNew, "Open in browser")
+						}
+					}
                 }
             }
         }
