@@ -45,12 +45,15 @@ import app.deference.embycl.domain.model.update.CurrentBuildRelease
 import app.deference.embycl.ui.Screen
 import app.deference.embycl.ui.core.LocalKoasty
 import app.deference.embycl.ui.core.LocalNavigator
+import app.deference.embycl.ui.core.SettingsPreferences
 import app.deference.embycl.ui.core.components.DetailTopBar
 import app.deference.embycl.ui.core.components.PageIntro
 import app.deference.embycl.ui.core.components.SignOutConfirmationDialog
 import app.deference.embycl.ui.screens.settings.components.CurrentBuildChangelogDialog
 import app.deference.embycl.ui.screens.settings.components.InfoSection
 import app.deference.embycl.ui.screens.settings.components.SettingsAccount
+import app.deference.embycl.ui.screens.settings.components.SettingsAction
+import app.deference.embycl.ui.screens.settings.components.SettingsSection
 import app.deference.embycl.ui.screens.settings.components.UserCard
 import embyex.shared.generated.resources.Res
 import embyex.shared.generated.resources.app_name
@@ -133,10 +136,40 @@ fun SettingsContent(
 				contentPadding = PaddingValues(20.dp),
 				verticalArrangement = Arrangement.spacedBy(20.dp),
 			) {
-                item { PageIntro("PREFERENCES & CONNECTION", "Your space, connected.", "Manage your account, player, and server.", accent = true) }
+                item {
+					PageIntro(
+						eyebrow = "PREFERENCES & CONNECTION",
+						title = "Your space, connected.",
+						description = "Manage your account, player, and server.",
+						accent = true
+					)
+				}
 				item {
 					UserCard(account, onSignout = { showSignOutConfirmation = showSignOutConfirmation.not() })
 				}
+
+/*
+				item {
+					Row(
+						modifier = Modifier.fillMaxWidth(),
+						verticalAlignment = Alignment.CenterVertically,
+						horizontalArrangement = Arrangement.SpaceBetween,
+					) {
+						Column(Modifier.weight(1f)) {
+							Text("Show banners", style = MaterialTheme.typography.titleMedium)
+							Text(
+								"Intro banners on Home, Libraries and Settings.",
+								style = MaterialTheme.typography.bodySmall,
+								color = MaterialTheme.colorScheme.onSurfaceVariant,
+							)
+						}
+						Switch(
+							checked = SettingsPreferences.bannerEnabled,
+							onCheckedChange = SettingsPreferences::setBanner,
+						)
+					}
+				}
+*/
 
 				item {
 					Row(
@@ -227,6 +260,22 @@ fun SettingsContent(
 				if (hasPlayerSettings) {
 					item { PlayerSettings() }
 				}
+				
+				item {
+					val settings = listOf(
+						SettingsAction(
+							header = "Show Banners",
+							description = "Intro banners on Home, Libraries and Settings.",
+							value = SettingsPreferences.bannerEnabled,
+							onAction = SettingsPreferences::setBanner
+						)
+					)
+					
+					SettingsSection(
+						title = "Ui Elements",
+						settings = settings
+					)
+				}
 
 				item {
 					InfoSection(
@@ -236,7 +285,15 @@ fun SettingsContent(
 						serverDetails(state.serverDetails?.info),
 						state.error,
 					)
-
+				}
+				item {
+					InfoSection(
+						"Server information",
+						state.isLoading,
+						onRefresh,
+						serverDetails(state.serverDetails?.info),
+						state.error,
+					)
 				}
 				item {
 					InfoSection(
