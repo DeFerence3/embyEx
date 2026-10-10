@@ -1,12 +1,28 @@
 package app.deference.embycl.ui.core.update
 
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.SystemUpdateAlt
-import androidx.compose.material3.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearWavyProgressIndicator
+import androidx.compose.material3.LoadingIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -110,7 +126,15 @@ private fun DebouncedProgressBar(appUpdate: AppUpdate.Downloading) {
 			modifier = Modifier
 				.fillMaxWidth()
 		)
-		Text("${(fraction * 100).formatToDecimal()}% · ${downloadedBytes.bytesToMB.formatToDecimal()} / ${appUpdate.total.bytesToMB.formatToDecimal()} MB")
+		Row(
+			modifier = Modifier
+				.fillMaxWidth(),
+			horizontalArrangement = Arrangement.SpaceBetween,
+			verticalAlignment = Alignment.CenterVertically
+		) {
+			Text("${downloadedBytes.bytesToMB.formatToDecimal()} / ${appUpdate.total.bytesToMB.formatToDecimal()} MB")
+			Text("${(fraction * 100).formatToDecimal()}%")
+		}
 	}
 }
 

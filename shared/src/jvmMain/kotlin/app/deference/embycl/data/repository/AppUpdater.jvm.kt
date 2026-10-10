@@ -3,6 +3,7 @@ package app.deference.embycl.data.repository
 import app.deference.embycl.BuildConfig
 import app.deference.embycl.core.networking.ResponseHandler.isSuccess
 import app.deference.embycl.core.networking.UpdaterHttpClient
+import app.deference.embycl.core.utils.Log
 import app.deference.embycl.core.utils.resolveLinks
 import app.deference.embycl.domain.ghrelease.GithubRelease
 import app.deference.embycl.domain.model.update.AppUpdate
@@ -25,6 +26,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -108,16 +110,18 @@ actual class AppUpdater(
 			result?.let { res ->
 				updateRelease?.let { release ->
 					publish(AppUpdate.Downloading(release, 0, 0))
-					updater.downloadUpdate(res.info)
-						.sample(500.milliseconds)
-						.catch {
-							publish(AppUpdate.Failed(it.message ?: "Could not download update. Check your connection and try again.", UpdateStage.Download))
-							it.printStackTrace()
-						}
-						.collect{ progress ->
-							progress.file?.let { installer = it }
-							publish(AppUpdate.Downloading(release, progress.bytesDownloaded, progress.totalBytes))
-						}
+					runCatching {
+						updater.downloadUpdate(res.info)
+							.sample(500.milliseconds)
+							.catch {
+								publish(AppUpdate.Failed(it.message ?: "Could not download update. Check your connection and try again.", UpdateStage.Download))
+								it.printStackTrace()
+							}
+							.collectLatest{ progress ->
+								progress.file?.let { installer = it }
+								publish(AppUpdate.Downloading(release, progress.bytesDownloaded, progress.totalBytes))
+							}
+					}
 					install()
 				}
 			}
@@ -125,6 +129,7 @@ actual class AppUpdater(
 	}
 	
 	actual fun install() {
+		Log.i("AppUpdater.jvm"){ "InstallingJvm---> $installer" }
 		installer?.let(updater::installAndRestart)
 	}
 	

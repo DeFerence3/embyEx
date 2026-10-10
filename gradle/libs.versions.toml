@@ -28,7 +28,7 @@ coil = "3.6.3"
 
 androidx-nav3 = "1.2.0-beta01"
 
-nucleus = "2.5.13"
+nucleus = "2.5.18"
 
 material = "1.14.0"
 
