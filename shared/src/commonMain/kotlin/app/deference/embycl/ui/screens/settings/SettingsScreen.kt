@@ -288,15 +288,6 @@ fun SettingsContent(
 				}
 				item {
 					InfoSection(
-						"Server information",
-						state.isLoading,
-						onRefresh,
-						serverDetails(state.serverDetails?.info),
-						state.error,
-					)
-				}
-				item {
-					InfoSection(
 						"Connection",
 						state.isLoading,
 						onRefresh,
@@ -331,11 +322,3 @@ private fun MutableList<Pair<String, String>>.addDetail(label: String, value: St
 }
 
 private fun Boolean.yesNo() = if (this) "Yes" else "No"
-
-private fun ServerInfo.storageDetails(): List<Pair<String, String>> = buildList {
-	addDetail("Program data", programDataPath)
-	addDetail("Cache", cachePath)
-	addDetail("Logs", logPath)
-	addDetail("Metadata", metadataPath)
-	addDetail("Transcoding temporary files", transcodingTempPath)
-}
