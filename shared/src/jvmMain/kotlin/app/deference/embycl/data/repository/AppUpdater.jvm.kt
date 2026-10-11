@@ -3,7 +3,6 @@ package app.deference.embycl.data.repository
 import app.deference.embycl.BuildConfig
 import app.deference.embycl.core.networking.ResponseHandler.isSuccess
 import app.deference.embycl.core.networking.UpdaterHttpClient
-import app.deference.embycl.core.utils.Log
 import app.deference.embycl.core.utils.resolveLinks
 import app.deference.embycl.domain.ghrelease.GithubRelease
 import app.deference.embycl.domain.model.update.AppUpdate
@@ -21,20 +20,16 @@ import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import org.koin.core.annotation.Named
 import org.koin.core.annotation.Single
 import java.io.File
-import kotlin.time.Duration.Companion.milliseconds
 
 @Single
 actual class AppUpdater(
@@ -104,32 +99,30 @@ actual class AppUpdater(
 		}
 	}
 	
-	@OptIn(FlowPreview::class)
 	actual fun download() {
 		scope.launch {
 			result?.let { res ->
 				updateRelease?.let { release ->
 					publish(AppUpdate.Downloading(release, 0, 0))
 					runCatching {
-						updater.downloadUpdate(res.info)
-							.sample(500.milliseconds)
-							.catch {
-								publish(AppUpdate.Failed(it.message ?: "Could not download update. Check your connection and try again.", UpdateStage.Download))
-								it.printStackTrace()
-							}
+						val currentFile = res.info.currentFile.copy(url = "https://gh-proxy.com/${res.info.currentFile.url}")
+						updater.downloadUpdate(res.info.copy(currentFile = currentFile))
 							.collectLatest{ progress ->
 								progress.file?.let { installer = it }
 								publish(AppUpdate.Downloading(release, progress.bytesDownloaded, progress.totalBytes))
 							}
+					}.onSuccess {
+						publish(AppUpdate.ReadyToInstall(release))
+					}.onFailure {
+						publish(AppUpdate.Failed(it.message ?: "Could not download update. Check your connection and try again.", UpdateStage.Download))
+						it.printStackTrace()
 					}
-					install()
 				}
 			}
 		}
 	}
 	
 	actual fun install() {
-		Log.i("AppUpdater.jvm"){ "InstallingJvm---> $installer" }
 		installer?.let(updater::installAndRestart)
 	}
 	
