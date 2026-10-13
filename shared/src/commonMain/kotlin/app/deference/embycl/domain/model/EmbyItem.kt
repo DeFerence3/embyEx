@@ -69,6 +69,14 @@ data class EmbyItem(
 	val people: List<EmbyPerson> = emptyList(),
 	@SerialName("UserData")
 	val userData: EmbyUserData? = null,
+	@SerialName("ServerId")
+	val serverId: String? = null,
+	@SerialName("CanDownload")
+	val canDownload: Boolean? = null,
+	@SerialName("MediaSources")
+	val mediaSources: List<EmbyMediaSource> = emptyList(),
+	@SerialName("PartCount")
+	val partCount: Int? = null,
 ) {
 	
 	fun isEpisode() = type == "Episode"

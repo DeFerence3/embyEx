@@ -100,6 +100,8 @@ kotlin {
 		commonTest {
 			dependencies {
 				implementation(libs.kotlin.test)
+				implementation("io.ktor:ktor-client-mock:${libs.versions.ktor.get()}")
+				implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:${libs.versions.kotlinx.coroutines.get()}")
 			}
 		}
 		
@@ -111,7 +113,6 @@ kotlin {
 
 		jvmTest.dependencies {
 			implementation(libs.kotlin.testJunit)
-			implementation("io.ktor:ktor-client-mock:${libs.versions.ktor.get()}")
 		}
 		
 		androidMain {
@@ -122,7 +123,6 @@ kotlin {
 
 		getByName("androidHostTest").dependencies {
 			implementation(libs.kotlin.testJunit)
-			implementation("io.ktor:ktor-client-mock:${libs.versions.ktor.get()}")
 		}
 		
 		appleMain.dependencies {

@@ -23,4 +23,14 @@ data class EmbyMediaStream(
 	val index: Int? = null,
 	@SerialName("IsDefault")
 	val isDefault: Boolean = false,
+	@SerialName("IsExternal")
+	val isExternal: Boolean? = null,
+	@SerialName("IsExternalUrl")
+	val isExternalUrl: Boolean? = null,
+	@SerialName("IsTextSubtitleStream")
+	val isTextSubtitleStream: Boolean? = null,
+	@SerialName("SupportsExternalStream")
+	val supportsExternalStream: Boolean? = null,
+	@SerialName("IsForced")
+	val isForced: Boolean = false,
 )

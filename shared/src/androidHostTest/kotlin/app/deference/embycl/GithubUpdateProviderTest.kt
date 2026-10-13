@@ -78,7 +78,7 @@ class GithubUpdateProviderTest {
     }
 
     @Test fun progressIsNormalizedAndUnknownLengthIsIndeterminate() {
-        val release = UpdateRelease("test", 2, "")
+        val release = UpdateRelease(version = "test", tag = "test", versionCode = 2L, changeLogMarkDown = "")
         assertEquals(0.5f, AppUpdate.Downloading(release, 50, 100).fraction)
         assertEquals(1f, AppUpdate.Downloading(release, 200, 100).fraction)
         assertNull(AppUpdate.Downloading(release, 0, 0).fraction)
