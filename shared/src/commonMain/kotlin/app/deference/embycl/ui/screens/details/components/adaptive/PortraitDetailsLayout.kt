@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -24,15 +25,21 @@ import app.deference.embycl.ui.screens.details.components.DetailsContent
 fun PortraitDetailsLayout(
 	data: ItemDetailsData,
 	tablet: Boolean,
+	actions: (@Composable () -> Unit)? = null,
 	onPlay: () -> Unit,
+	onDownload: () -> Unit = {},
+	onPlayFromServer: () -> Unit = {},
+	onRemove: () -> Unit = {},
 ) {
 	Column(
 		modifier = Modifier
 			.fillMaxSize()
+            .then(if (actions != null && data.backdrop.isNullOrBlank()) Modifier.statusBarsPadding().padding(top = 64.dp) else Modifier)
 			.verticalScroll(rememberScrollState()),
 	) {
 
-		Box(
+		// Saved details can render immediately when no local artwork is available.
+		if (actions == null || !data.backdrop.isNullOrBlank()) Box(
 			modifier = Modifier
 				.fillMaxWidth()
 				.aspectRatio(
@@ -70,20 +77,23 @@ fun PortraitDetailsLayout(
 
 			DetailsContent(
 				data = data,
-				compact = !tablet,
-				fillPlayButton = !tablet,
+				compact = ! tablet,
+				fillPlayButton = ! tablet,
 				modifier = Modifier
 					.widthIn(
 						max = if (tablet) 760.dp
 						else Dp.Infinity
 					)
-                    .fillMaxWidth()
+					.fillMaxWidth()
 					.padding(
 						horizontal = if (tablet) 32.dp else 20.dp,
 						vertical = 16.dp,
 					)
 					.padding(bottom = 48.dp),
 				onPlay = onPlay,
+				onDownload = onDownload,
+				onPlayFromServer = onPlayFromServer,
+				onRemove = onRemove,
 			)
 		}
 	}

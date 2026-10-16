@@ -16,6 +16,7 @@ data class ItemDetailsData(
 	val directors: List<String>,
 	val writers: List<String>,
 	val isResume: Boolean,
+	val isAvailableOffline: Boolean,
 	val progress: Float,
 	val remainingMinutes: Long?,
 )

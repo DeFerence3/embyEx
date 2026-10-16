@@ -17,6 +17,14 @@ data class EmbyUser(
 	val hasPassword: Boolean = false,
 	@SerialName("HasConfiguredPassword")
 	val hasConfiguredPassword: Boolean = false,
+	@SerialName("Policy")
+	val policy: EmbyUserPolicy? = null,
 ){
 	fun primaryImageUrl(discovery: EmbyServerDiscovery): String? = "${discovery.server.toUrl()}/Users/$id/Images/Primary?MaxWidth=164&Quality=90"
 }
+
+@Serializable
+data class EmbyUserPolicy(
+	@SerialName("EnableContentDownloading") val enableContentDownloading: Boolean? = null,
+	@SerialName("IsDisabled") val isDisabled: Boolean? = null,
+)

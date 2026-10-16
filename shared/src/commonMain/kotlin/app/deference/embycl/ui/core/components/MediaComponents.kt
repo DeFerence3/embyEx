@@ -43,6 +43,7 @@ import app.deference.embycl.core.utils.asRuntime
 import app.deference.embycl.domain.model.EmbyItem
 import app.deference.embycl.ui.core.animateWithHover
 import coil3.compose.AsyncImage
+import androidx.compose.material.icons.filled.DownloadDone
 
 @Composable
 fun MediaRow(title: String, media: List<EmbyItem>, wide: Boolean = false, onItemClick: (EmbyItem) -> Unit) {
@@ -281,5 +282,14 @@ fun Poster(item: EmbyItem, modifier: Modifier = Modifier, backdrop: Boolean = fa
 			modifier = Modifier.fillMaxSize(),
 			contentScale = ContentScale.Crop
 		)
+        if (item.isAvailableOffline) androidx.compose.material3.Surface(
+            modifier = Modifier.align(Alignment.TopEnd).padding(6.dp),
+            shape = androidx.compose.foundation.shape.CircleShape,
+            color = MaterialTheme.colorScheme.primaryContainer,
+        ) {
+            Icon(Icons.Default.DownloadDone, "Available offline", Modifier.padding(4.dp).size(16.dp),
+                tint = MaterialTheme.colorScheme.onPrimaryContainer)
+        }
+
 	}
 }

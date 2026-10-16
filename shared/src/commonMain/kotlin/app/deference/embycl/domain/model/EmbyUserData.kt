@@ -13,4 +13,8 @@ data class EmbyUserData(
 	val played: Boolean = false,
 	@SerialName("IsFavorite")
 	val isFavorite: Boolean = false,
+	@SerialName("PlayCount")
+	val playCount: Int? = null,
+	@SerialName("LastPlayedDate")
+	val lastPlayedDate: kotlin.time.Instant? = null,
 )

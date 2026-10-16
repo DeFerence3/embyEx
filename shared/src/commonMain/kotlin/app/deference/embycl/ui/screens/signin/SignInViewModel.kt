@@ -54,7 +54,7 @@ class SignInViewModel(
 				it.copy(discovery = null, selectedUser = null, isManualSignIn = false, error = null, password = "")
 			}
 			
-			SignInAction.UseLocalFiles -> viewModelScope.launch { /*_events.send(SignInEvent.OpenLocalFiles)*/ }
+			SignInAction.UseLocalFiles -> Session.browseLocalFiles()
 		}
 	}
 	

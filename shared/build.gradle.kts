@@ -6,7 +6,11 @@ plugins {
 	alias(libs.plugins.compose.compiler)
 	alias(libs.plugins.koin.compiler)
 	alias(libs.plugins.gmazzo.buildconfig)
+	alias(libs.plugins.ksp)
+	alias(libs.plugins.room)
 }
+
+room { schemaDirectory("$projectDir/schemas") }
 
 buildConfig {
 	packageName("app.deference.embycl")
@@ -58,7 +62,12 @@ kotlin {
 	// common to share sources between related targets.
 	// See: https://kotlinlang.org/docs/multiplatform-hierarchy.html
 	sourceSets {
+		// Share Java IO/FileChannel; Android Os and desktop NIO primitives stay platform-specific.
+		jvmMain { kotlin.srcDir("src/jvmAndroidMain/kotlin") }
+		androidMain { kotlin.srcDir("src/jvmAndroidMain/kotlin") }
 		commonMain.dependencies {
+			implementation(libs.room.runtime)
+			implementation(libs.sqlite.bundled)
 			implementation(libs.compose.runtime)
 			implementation(libs.compose.foundation)
 			api(libs.compose.material3)
@@ -100,6 +109,8 @@ kotlin {
 		commonTest {
 			dependencies {
 				implementation(libs.kotlin.test)
+				implementation("io.ktor:ktor-client-mock:${libs.versions.ktor.get()}")
+				implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:${libs.versions.kotlinx.coroutines.get()}")
 			}
 		}
 		
@@ -111,18 +122,20 @@ kotlin {
 
 		jvmTest.dependencies {
 			implementation(libs.kotlin.testJunit)
-			implementation("io.ktor:ktor-client-mock:${libs.versions.ktor.get()}")
 		}
 		
 		androidMain {
 			dependencies {
+				implementation(libs.androidx.work)
+				implementation(libs.androidx.activity.compose)
 				implementation(libs.ktor.client.okhttp)
 			}
 		}
 
 		getByName("androidHostTest").dependencies {
 			implementation(libs.kotlin.testJunit)
-			implementation("io.ktor:ktor-client-mock:${libs.versions.ktor.get()}")
+			implementation("org.robolectric:robolectric:4.17")
+			implementation("androidx.work:work-testing:${libs.versions.work.get()}")
 		}
 		
 		appleMain.dependencies {
@@ -131,3 +144,19 @@ kotlin {
 	}
 }
 
+dependencies {
+    add("kspAndroid", libs.room.compiler)
+    add("kspJvm", libs.room.compiler)
+    add("kspIosArm64", libs.room.compiler)
+    add("kspIosSimulatorArm64", libs.room.compiler)
+}
+
+// Explicitly invoked live-server check; never part of the ordinary test suite.
+tasks.register<JavaExec>("offlineLiveSmoke") {
+    group = "verification"
+    dependsOn("jvmTestClasses")
+    classpath = tasks.named<Test>("jvmTest").get().classpath
+    mainClass.set("app.deference.embycl.data.repository.download.OfflineLiveSmoke")
+    args(providers.gradleProperty("offlineLiveConnection").orElse("").get(),
+        rootProject.layout.buildDirectory.dir("c12-live-desktop").get().asFile.absolutePath)
+}

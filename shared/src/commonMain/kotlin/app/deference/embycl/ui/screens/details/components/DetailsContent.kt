@@ -8,9 +8,9 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -22,19 +22,28 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material3.Button
+import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SplitButtonDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
@@ -51,6 +60,9 @@ fun DetailsContent(
 	compact: Boolean,
 	fillPlayButton: Boolean,
 	onPlay: () -> Unit,
+	onDownload: () -> Unit,
+	onPlayFromServer: () -> Unit,
+	onRemove: () -> Unit = {},
 ) {
 	Column(
 		modifier = modifier,
@@ -102,7 +114,12 @@ fun DetailsContent(
 		PlayButton(
 			compact = fillPlayButton,
 			isResume = data.isResume,
-			onClick = onPlay,
+			onPlay = onPlay,
+			modifier = Modifier,
+			isAvailableOffline = data.isAvailableOffline,
+			onDownload = onDownload,
+			onPlayFromServer = onPlayFromServer,
+			onRemove = onRemove,
 		)
 
 		ResumeProgress(
@@ -290,50 +307,125 @@ private fun MediaValue(
 private fun PlayButton(
 	compact: Boolean,
 	isResume: Boolean,
-	onClick: () -> Unit,
+	modifier: Modifier = Modifier,
+	isAvailableOffline: Boolean = false,
+	onPlay: () -> Unit,
+	onDownload: () -> Unit,
+	onPlayFromServer: () -> Unit,
+	onRemove: () -> Unit = {},
 ) {
-	val interactionSource = remember {
-		MutableInteractionSource()
-	}
-
-	Button(
-		onClick = onClick,
-		interactionSource = interactionSource,
-		modifier = Modifier
+	
+	Row(
+		modifier = modifier
 			.then(
 				if (compact) {
 					Modifier.fillMaxWidth()
 				} else {
 					Modifier.widthIn(
 						min = 230.dp,
-						max = 310.dp,
+						max = 310.dp
 					)
-				},
+				}
 			)
-			.heightIn(min = 64.dp)
-			.animateWithHover(interactionSource),
-		shape = MaterialTheme.shapes.large,
-		contentPadding = PaddingValues(
-			horizontal = 24.dp, vertical = 16.dp,
-		),
+			.heightIn(min = 64.dp),
+		verticalAlignment = Alignment.CenterVertically,
+		horizontalArrangement = Arrangement.spacedBy(SplitButtonDefaults.Spacing)
 	) {
-		Icon(
-			imageVector = Icons.Filled.PlayArrow,
-			contentDescription = null,
-			modifier = Modifier.size(24.dp),
+		val interactionSource = remember {
+			MutableInteractionSource()
+		}
+		SplitButtonDefaults.LeadingButton(
+			onClick = onPlay,
+			interactionSource = interactionSource,
+			modifier = Modifier
+				.weight(1f)
+				.heightIn(min = 64.dp)
+				.animateWithHover(interactionSource),
+		) {
+			Icon(
+				imageVector = Icons.Filled.PlayArrow,
+				contentDescription = null,
+				modifier = Modifier.size(24.dp),
+			)
+			
+			Spacer(Modifier.width(8.dp))
+			
+			Text(
+				text = if (isResume) {
+					"Resume"
+				} else {
+					"Play"
+				},
+				style = MaterialTheme.typography.titleMedium,
+				fontWeight = FontWeight.Bold,
+			)
+		}
+		
+		var checked by remember { mutableStateOf(false) }
+		val rotation by animateFloatAsState(
+			targetValue = if (checked) 180f else 0f
 		)
-
-		Spacer(Modifier.width(8.dp))
-
-		Text(
-			text = if (isResume) {
-				"Resume"
-			} else {
-				"Play"
-			},
-			style = MaterialTheme.typography.titleMedium,
-			fontWeight = FontWeight.Bold,
-		)
+		
+		Box(
+			modifier = Modifier
+		){
+			val interactionSource = remember { MutableInteractionSource() }
+			
+			SplitButtonDefaults.TrailingButton(
+				interactionSource = interactionSource,
+				modifier = Modifier
+					.heightIn(min = 64.dp)
+					.animateWithHover(interactionSource),
+				checked = checked,
+				onCheckedChange = { checked = it }
+			) {
+				Icon(
+					Icons.Default.ArrowDropDown,
+					contentDescription = "More update options",
+					modifier = Modifier.graphicsLayer {
+						rotationZ = rotation
+					}
+				)
+			}
+			DropdownMenu(
+				expanded = checked,
+				onDismissRequest = { checked = false },
+				shape = MaterialTheme.shapes.large
+			) {
+				if (!isAvailableOffline) DropdownMenuItem(
+					text = { Text("Download") },
+					leadingIcon = {
+						Icon(Icons.Default.Download, null)
+					},
+					onClick = {
+						checked = false
+						onDownload()
+					}
+				)
+				
+				if (isAvailableOffline) DropdownMenuItem(
+					text = { Text("Remove from Downloads") },
+					leadingIcon = {
+						Icon(Icons.Default.Delete, null)
+					},
+					onClick = {
+						checked = false
+						onRemove()
+					}
+				)
+				
+				if (isAvailableOffline) DropdownMenuItem(
+					text = { Text("Play from server") },
+					leadingIcon = {
+						Icon(Icons.Default.Storage, null)
+					},
+					onClick = {
+						checked = false
+						onPlayFromServer()
+					}
+				)
+			}
+		}
 	}
 }
 

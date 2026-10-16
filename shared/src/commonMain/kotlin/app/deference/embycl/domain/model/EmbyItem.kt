@@ -5,6 +5,7 @@ import app.deference.embycl.core.utils.buildUrl
 import app.deference.embycl.core.utils.or
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import kotlin.time.Instant
 
 @Serializable
@@ -69,6 +70,20 @@ data class EmbyItem(
 	val people: List<EmbyPerson> = emptyList(),
 	@SerialName("UserData")
 	val userData: EmbyUserData? = null,
+	@SerialName("ServerId")
+	val serverId: String? = null,
+	@SerialName("CanDownload")
+	val canDownload: Boolean? = null,
+	@SerialName("MediaSources")
+	val mediaSources: List<EmbyMediaSource> = emptyList(),
+	@SerialName("PartCount")
+	val partCount: Int? = null,
+	@Transient
+	val isAvailableOffline: Boolean = true,
+	@Transient
+	val artwork: Map<String, String> = emptyMap(),
+	@Transient
+	val useServerArtwork: Boolean = true,
 ) {
 	
 	fun isEpisode() = type == "Episode"
@@ -82,6 +97,8 @@ data class EmbyItem(
 	}
 	
 	fun imageUrl(type: String = "Primary", maxWidth: Int = 600): String?{
+		artwork[type]?.let { return it }
+        if (!useServerArtwork) return null
 		val imageItemId = when (type) {
 			"Backdrop" if backdropImageTags.isNotEmpty() -> id
 			"Backdrop" if parentBackdropImageTags.isNotEmpty() -> parentBackdropItemId

@@ -1,6 +1,6 @@
 package app.deference.embycl.platform
 
-import app.deference.embycl.data.preference.EmbyPreference
+import app.deference.embycl.data.local.preference.EmbyPreference
 import java.io.File
 
 /** The preference belongs to the desktop installation and survives account sign-out. */

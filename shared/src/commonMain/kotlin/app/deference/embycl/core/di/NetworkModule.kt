@@ -6,6 +6,7 @@ import app.deference.embycl.core.networking.configureAuth
 import app.deference.embycl.core.networking.configureContentNegotiation
 import app.deference.embycl.core.networking.configureDefaultRequest
 import app.deference.embycl.core.networking.configureLogging
+import app.deference.embycl.core.networking.configureMediaDownloads
 import app.deference.embycl.core.networking.configureValidation
 import app.deference.embycl.core.networking.urlInterceptor
 import app.deference.embycl.core.session.Session
@@ -22,6 +23,12 @@ import org.koin.core.annotation.Single
 
 @Module
 class NetworkModule {
+
+	@Single
+	@Named("media_download")
+	fun provideMediaDownloadHttpClient(): HttpClient = HttpClient(clientEngine) {
+		configureMediaDownloads()
+	}
 
 	@Single
 	fun āprovideHttpClient(

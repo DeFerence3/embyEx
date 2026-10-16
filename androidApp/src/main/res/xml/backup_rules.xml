@@ -1,13 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?><!--
-   Sample backup rules file; uncomment and customize as necessary.
+   Legacy backup rules (API 24–30): downloaded payloads remain device-local.
    See https://developer.android.com/guide/topics/data/autobackup
    for details.
-   Note: This file is ignored for devices older than API 31
+   Android 12+ uses data_extraction_rules.xml instead.
    See https://developer.android.com/about/versions/12/backup-restore
 -->
 <full-backup-content>
-    <!--
-   <include domain="sharedpref" path="."/>
-   <exclude domain="sharedpref" path="device.xml"/>
--->
+    <exclude domain="file" path="offline-downloads/" />
 </full-backup-content>

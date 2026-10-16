@@ -122,15 +122,12 @@ fun HttpClientConfig<*>.configureDefaultRequest(userAgent: UserAgentProvider) {
 				is SocketTimeoutException,
 				is HttpRequestTimeoutException,
 				is TimeoutCancellationException -> {
-					Session.setConnected(false)
+					if (request.headers["X-Emby-Token"] == Session.accessToken) Session.setConnected(false)
 					throw cause
 				}
 				
 				is IOException -> {
-					if (cause.message?.contains("timeout", ignoreCase = true) == true ||
-						cause.message?.contains("timed out", ignoreCase = true) == true) {
-						Session.setConnected(false)
-					}
+					if (request.headers["X-Emby-Token"] == Session.accessToken) Session.setConnected(false)
 					throw cause
 				}
 				
@@ -153,7 +150,7 @@ fun HttpClientConfig<*>.configureValidation() {
 	HttpResponseValidator {
 		validateResponse { response: HttpResponse ->
 			if (response.status.value == 401) {
-				Session.logout()
+				Session.expireAuthentication(response.call.request.headers["X-Emby-Token"])
 				response.call.client.invalidateAuthTokens()
 			}
 		}

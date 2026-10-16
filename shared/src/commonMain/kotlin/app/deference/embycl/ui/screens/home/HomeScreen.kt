@@ -1,12 +1,12 @@
 package app.deference.embycl.ui.screens.home
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import app.deference.embycl.ui.core.components.PageIntro
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -17,6 +17,7 @@ import app.deference.embycl.ui.core.components.EmptyState
 import app.deference.embycl.ui.core.components.LibraryRow
 import app.deference.embycl.ui.core.components.LoadState
 import app.deference.embycl.ui.core.components.MediaRow
+import app.deference.embycl.ui.core.components.PageIntro
 
 @Composable
 fun HomeContent(
@@ -67,8 +68,8 @@ fun HomeContent(
 			}
 			if (home.resume.isEmpty() && home.latest.isEmpty() && home.views.isEmpty()) {
 				item {
-					androidx.compose.foundation.layout.Box(Modifier.height(320.dp)) {
-                        EmptyState("Your Emby home is empty", "Add media libraries on your Emby server, then refresh.")
+					Box(Modifier.height(320.dp)) {
+                        EmptyState("No media available", "Media from your library or saved on this device will appear here.")
                     }
 				}
 			}

@@ -11,9 +11,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.dp
 import app.deference.embycl.ui.screens.details.components.DetailsBackdrop
@@ -22,7 +22,11 @@ import app.deference.embycl.ui.screens.details.components.DetailsContent
 @Composable
 fun DesktopDetailsLayout(
 	data: ItemDetailsData,
+	actions: (@Composable () -> Unit)? = null,
 	onPlay: () -> Unit,
+	onDownload: () -> Unit = {},
+	onPlayFromServer: () -> Unit = {},
+	onRemove: () -> Unit = {},
 ) {
 	Box(
 		modifier = Modifier
@@ -82,11 +86,16 @@ fun DesktopDetailsLayout(
 
 			DetailsContent(
 				data = data,
-                modifier = Modifier.clip(MaterialTheme.shapes.extraLarge)
-                    .background(MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = 0.97f)).padding(28.dp),
+				modifier = Modifier
+					.clip(MaterialTheme.shapes.extraLarge)
+					.background(MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = 0.97f))
+					.padding(28.dp),
 				compact = false,
 				fillPlayButton = false,
 				onPlay = onPlay,
+				onDownload = onDownload,
+				onPlayFromServer = onPlayFromServer,
+				onRemove = onRemove,
 			)
 		}
 	}

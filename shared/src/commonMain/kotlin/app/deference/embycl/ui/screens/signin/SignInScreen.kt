@@ -270,7 +270,7 @@ fun SignInContent(
 				) {
 					Icon(Icons.Filled.Folder, null)
 					Spacer(Modifier.width(8.dp))
-					Text("Use local files")
+					Text("Browse local files")
 				}
 			}
 		}
