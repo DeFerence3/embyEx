@@ -2,6 +2,7 @@ package app.deference.embycl.core.utils
 
 import app.deference.embycl.core.networking.DataState
 import app.deference.embycl.core.networking.ResponseHandler.toDataState
+import io.ktor.client.call.NoTransformationFoundException
 import io.ktor.client.statement.HttpResponse
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.io.IOException
@@ -11,9 +12,15 @@ object NetworkUtils {
 	
 	suspend fun <T> safeApiCall(call: suspend () -> T): T = try {
 		call()
+	} catch (e: kotlinx.coroutines.CancellationException) {
+        throw e
 	} catch (e: Exception) {
 		e.printStackTrace()
 		val message = "Error: ${e.message ?: e.stackTraceToString()}"
+		throw IOException(message, e)
+	}catch (e: NoTransformationFoundException) {
+		e.printStackTrace()
+		val message = "Invalid response from server: ${e.message}"
 		throw IOException(message, e)
 	} catch (e: IOException) {
 		throw IOException(e.message ?: "Unable to connect to Emby server. Check address.", e)

@@ -25,6 +25,11 @@ val signingValues = listOf(releaseStoreFile, releaseStorePassword, releaseKeyAli
 val hasReleaseSigning = signingValues.all { it != null }
 
 android {
+	if (providers.gradleProperty("offlineVerification").orNull == "true") {
+		// Existing unrelated instrumentation suites may target older APIs; this mode compiles only the offline checks.
+		sourceSets.getByName("androidTest").kotlin.directories.clear()
+		sourceSets.getByName("androidTest").kotlin.directories.add("src/androidTest/java/app/deference/embcl/downloads")
+	}
 	namespace = "app.deference.embcl"
 	compileSdk {
 		version = release(libs.versions.android.compileSdk.get().toInt())
@@ -63,6 +68,8 @@ android {
 			)
 		}
 		debug {
+			// Opt-in device checks use a separate sandbox, preserving the normal installation.
+			if (providers.gradleProperty("offlineVerification").orNull == "true") applicationIdSuffix = ".offlinecheck"
 			if (hasReleaseSigning) signingConfig = signingConfigs.getByName("all")
 		}
 	}
@@ -93,4 +100,8 @@ dependencies {
 	androidTestImplementation("androidx.test:runner:1.7.0")
 	androidTestImplementation("io.ktor:ktor-client-mock:${libs.versions.ktor.get()}")
 	androidTestImplementation(libs.ktor.client.core)
+	androidTestImplementation(libs.ktor.client.okhttp)
+	androidTestImplementation(libs.ktor.serialization.kotlinx.json)
+	androidTestImplementation(libs.room.runtime)
+	androidTestImplementation(libs.sqlite.bundled)
 }

@@ -21,7 +21,11 @@ import app.deference.embycl.ui.screens.details.components.DetailsContent
 fun LandscapeDetailsLayout(
 	data: ItemDetailsData,
 	tablet: Boolean,
+	actions: (@Composable () -> Unit)? = null,
 	onPlay: () -> Unit,
+	onDownload: () -> Unit = {},
+	onPlayFromServer: () -> Unit = {},
+	onRemove: () -> Unit = {},
 ) {
 	Row(
 		modifier = Modifier
@@ -86,14 +90,15 @@ fun LandscapeDetailsLayout(
 			
 			DetailsContent(
 				data = data,
-				
 				// Keep landscape phone density compact.
-				compact = !tablet,
-				
+				compact = ! tablet,
 				// Don't make a huge full-width desktop-looking button.
-				fillPlayButton = !tablet,
-				
+				fillPlayButton = ! tablet,
 				onPlay = onPlay,
+				modifier = Modifier,
+				onDownload = onDownload,
+				onPlayFromServer = onPlayFromServer,
+				onRemove = onRemove,
 			)
 		}
 	}

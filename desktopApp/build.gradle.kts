@@ -11,6 +11,10 @@ plugins {
 	alias(libs.plugins.nucleus)
 }
 
+kotlin{
+	jvmToolchain(21)
+}
+
 dependencies {
     implementation(project(":shared"))
 
@@ -18,6 +22,9 @@ dependencies {
 
     testImplementation(libs.kotlin.testJunit)
     testImplementation(libs.compose.uiTest)
+    testImplementation(libs.compose.nav3)
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:${libs.versions.kotlinx.coroutines.get()}")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:${libs.versions.kotlinx.coroutines.get()}")
 	
 	implementation(libs.bundles.nucleus)
 }
@@ -25,6 +32,15 @@ dependencies {
 tasks.test {
     // Register renders so a clean checkout or cache restore also recreates the gallery images.
     outputs.dir(rootProject.file("build/ui-verification/screenshots"))
+}
+
+// A separate review window with test fixtures; no sample downloads enter the production app.
+tasks.register<JavaExec>("reviewDownloads") {
+    group = "verification"
+    description = "Open the interactive Downloads UI checkpoint with sample data"
+    dependsOn(tasks.testClasses)
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("app.deference.embycl.downloads.DownloadsReviewKt")
 }
 
 nucleus.application {

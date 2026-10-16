@@ -20,7 +20,7 @@ fun LibrariesContent(
 ) {
     LoadState(state.content, modifier, onRetry = { onAction(LibrariesAction.Retry) }) { libraries ->
         if (libraries.isEmpty()) {
-            EmptyState("Your collection starts here", "Add a library on your Emby server, then refresh.")
+            EmptyState("Your collection starts here", "Available media libraries will appear here.")
         } else {
             LazyVerticalGrid(
                 columns = GridCells.Adaptive(160.dp * LocalDensity.current.fontScale.coerceIn(1f, 1.5f)),

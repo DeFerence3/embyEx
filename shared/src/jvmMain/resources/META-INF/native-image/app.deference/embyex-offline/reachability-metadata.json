@@ -1,0 +1,17 @@
+{
+  "reflection": [
+    {
+      "type": "androidx.sqlite.SQLiteException",
+      "jniAccessible": true,
+      "methods": [{ "name": "<init>", "parameterTypes": ["java.lang.String"] }]
+    },
+    { "type": "androidx.sqlite.driver.bundled.BundledSQLiteConnectionKt", "jniAccessible": true },
+    { "type": "androidx.sqlite.driver.bundled.BundledSQLiteDriverKt", "jniAccessible": true },
+    { "type": "androidx.sqlite.driver.bundled.BundledSQLiteStatementKt", "jniAccessible": true }
+  ],
+  "resources": [
+    { "glob": "natives/**/sqliteJni.dll" },
+    { "glob": "natives/**/libsqliteJni.so" },
+    { "glob": "natives/**/libsqliteJni.dylib" }
+  ]
+}

@@ -9,6 +9,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Download
+import app.deference.embycl.ui.core.LocalNavigator
+import app.deference.embycl.ui.screens.downloads.EmbyDownloadsScreen
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.DropdownMenu
@@ -37,6 +40,7 @@ import coil3.compose.AsyncImage
 
 @Composable
 fun TopAppBar(currentTab: EmbyTab, onRefresh: () -> Unit, onLogout: () -> Unit, onSettings: () -> Unit) {
+	val navigator = LocalNavigator.current
 	var accountMenuOpen by rememberSaveable { mutableStateOf(false) }
 	TopAppBar(
 		title = {
@@ -65,6 +69,9 @@ fun TopAppBar(currentTab: EmbyTab, onRefresh: () -> Unit, onLogout: () -> Unit, 
 					}
 				}
 				DropdownMenu(expanded = accountMenuOpen, onDismissRequest = { accountMenuOpen = false }, shape = MaterialTheme.shapes.large) {
+                    DropdownMenuItem(
+                        text = { Text("Downloads") }, leadingIcon = { Icon(Icons.Default.Download, null) },
+                        onClick = { accountMenuOpen = false; navigator.goTo(EmbyDownloadsScreen) })
 					DropdownMenuItem(
 						text = { Text("Settings") }, leadingIcon = { Icon(Icons.Default.Settings, null) },
 						onClick = { accountMenuOpen = false; onSettings() })

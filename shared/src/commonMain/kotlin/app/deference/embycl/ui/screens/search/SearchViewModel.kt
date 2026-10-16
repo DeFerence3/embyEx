@@ -10,6 +10,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.currentCoroutineContext
 import org.koin.core.annotation.KoinViewModel
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -22,6 +24,8 @@ class SearchViewModel(private val repository: EmbyRepository) : ViewModel() {
 	val events = _events.receiveAsFlow()
 	private var searchJob: Job? = null
 	
+	init { viewModelScope.launch { repository.changes.collect { search(debounce = false) } } }
+
 	fun onAction(action: SearchAction) {
 		when (action) {
 			is SearchAction.QueryChanged -> {
@@ -44,8 +48,9 @@ class SearchViewModel(private val repository: EmbyRepository) : ViewModel() {
 			if (debounce) delay(350.milliseconds)
 			_state.value = _state.value.copy(isLoading = true, error = null)
 			runCatching { repository.search(query) }
-				.onSuccess { _state.value = _state.value.copy(results = it, isLoading = false) }
+				.onSuccess { currentCoroutineContext().ensureActive(); _state.value = _state.value.copy(results = it, isLoading = false) }
 				.onFailure {
+                    currentCoroutineContext().ensureActive()
 					val message = it.message ?: "Search failed."
 					_state.value = _state.value.copy(isLoading = false, error = message)
 					_events.send(SearchEvent.Error(message))

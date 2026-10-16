@@ -27,6 +27,7 @@ import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import org.koin.core.annotation.Named
 import org.koin.core.annotation.Single
+import kotlin.time.Clock
 
 /** Uses the isolated media client; does not mutate Session or start a file download. */
 @Single
@@ -44,7 +45,7 @@ class EmbyDownloadSourceResolver(
     } catch (e: CancellationException) {
         throw e
     } catch (e: Rejection) {
-        DownloadResolution.Rejected(e.reason, e.httpStatus)
+        DownloadResolution.Rejected(e.reason, e.httpStatus, e.retryAfterMillis)
     } catch (_: HttpRequestTimeoutException) {
         DownloadResolution.Rejected(DownloadRejection.NETWORK_UNAVAILABLE)
     } catch (_: ConnectTimeoutException) {
@@ -162,7 +163,7 @@ class EmbyDownloadSourceResolver(
         if (protocol != "File" || (type != null && type != "Default") || isRemote ||
             isInfiniteStream || requiresOpening || requiresClosing || (size != null && size <= 0)) return null
         val extension = container?.lowercase()?.takeIf {
-            it.matches(Regex("[a-z0-9]{1,12}")) && it !in setOf("m3u", "m3u8", "hls", "mpd", "ism", "strm")
+            it.matches(Regex("[a-z0-9]{1,12}")) && it !in setOf("m3u", "m3u8", "hls", "mpd", "ism", "strm", "part")
         } ?: return null
         return DownloadSource(
             key = DownloadKey(connection.serverId, connection.userId, item.id, sourceId),
@@ -205,9 +206,10 @@ class EmbyDownloadSourceResolver(
             in 300..399 -> DownloadRejection.REDIRECT_NOT_SUPPORTED
             in 500..599 -> DownloadRejection.SERVER_ERROR
             else -> DownloadRejection.INVALID_RESPONSE
-        }, code)
+        }, code, if (code == 429 || code in 500..599)
+            TransferProtocol.retryAfter(response.headers, Clock.System.now().toEpochMilliseconds()) else null)
     }
 
-    private class Rejection(val reason: DownloadRejection, val httpStatus: Int?) : Exception(reason.name)
-    private fun reject(reason: DownloadRejection, status: Int? = null): Nothing = throw Rejection(reason, status)
+    private class Rejection(val reason: DownloadRejection, val httpStatus: Int?, val retryAfterMillis: Long?) : Exception(reason.name)
+    private fun reject(reason: DownloadRejection, status: Int? = null, retryAfterMillis: Long? = null): Nothing = throw Rejection(reason, status, retryAfterMillis)
 }

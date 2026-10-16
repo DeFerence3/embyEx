@@ -21,8 +21,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -37,13 +37,15 @@ import app.deference.embycl.domain.model.EmbyItem
 import app.deference.embycl.ui.Screen
 import app.deference.embycl.ui.core.LocalNavigator
 import app.deference.embycl.ui.core.adaptive.DeviceConfiguration
-import app.deference.embycl.ui.core.components.LoadingScaffold
 import app.deference.embycl.ui.core.components.DetailTopBar
+import app.deference.embycl.ui.core.components.LoadingScaffold
 import app.deference.embycl.ui.screens.details.components.PlaybackEffect
 import app.deference.embycl.ui.screens.details.components.adaptive.DesktopDetailsLayout
 import app.deference.embycl.ui.screens.details.components.adaptive.ItemDetailsData
 import app.deference.embycl.ui.screens.details.components.adaptive.LandscapeDetailsLayout
 import app.deference.embycl.ui.screens.details.components.adaptive.PortraitDetailsLayout
+import app.deference.embycl.ui.screens.downloads.components.DownloadSourceDialog
+import app.deference.embycl.ui.screens.downloads.rememberDownloadPermissionRequest
 import kotlinx.serialization.Serializable
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -59,6 +61,7 @@ data class EmbyDetailsScreen(val id: String) : Screen {
 		val events = viewModel.events
 		val onAction = viewModel::onAction
 		val onBack = { backStack.goBack() }
+		val permission = rememberDownloadPermissionRequest()
 
 		PlaybackEffect(events, onAction)
 		LoadingScaffold(
@@ -71,17 +74,38 @@ data class EmbyDetailsScreen(val id: String) : Screen {
 					item = item,
 					onBack = onBack,
 					onPlay = { onAction(EmbyDetailsAction.Play) },
+					onDownload = { onAction(EmbyDetailsAction.Download) },
+					onPlayFromServer = { onAction(EmbyDetailsAction.PlayFromServer) },
+					onRemove = { onAction(EmbyDetailsAction.RemoveDownload) },
 				)
 			}
 		)
+		state.choice?.let { choice ->
+			DownloadSourceDialog(
+				title = choice.title,
+				sources = choice.sources,
+				selectedKey = choice.selected,
+				serverAvailable = true,
+				onSelect = { onAction(EmbyDetailsAction.SelectSource(it)) },
+				onConfirm = { source ->
+					permission { _ -> if (viewModel.state.value.choice?.selected == source.key) onAction(EmbyDetailsAction.ConfirmDownload) }
+				},
+				onDismiss = { onAction(EmbyDetailsAction.DismissDownload) },
+				isSubmitting = choice.submitting,
+			)
+		}
 	}
 }
 
 @Composable
-private fun ItemDetails(
+fun ItemDetails(
 	item: EmbyItem,
 	onBack: () -> Unit,
 	onPlay: () -> Unit,
+    actions: (@Composable () -> Unit)? = null,
+	onDownload: () -> Unit = {},
+	onPlayFromServer: () -> Unit = {},
+	onRemove: () -> Unit = {},
 ) {
 	val windowSizeClass =
 		currentWindowAdaptiveInfo().windowSizeClass
@@ -94,6 +118,10 @@ private fun ItemDetails(
 		configuration = configuration,
 		onBack = onBack,
 		onPlay = onPlay,
+        actions = actions,
+		onDownload = onDownload,
+		onPlayFromServer = onPlayFromServer,
+		onRemove = onRemove,
 	)
 }
 
@@ -103,16 +131,18 @@ private fun ItemDetailsContent(
 	configuration: DeviceConfiguration,
 	onBack: () -> Unit,
 	onPlay: () -> Unit,
+    actions: (@Composable () -> Unit)? = null,
+	onDownload: () -> Unit = {},
+	onPlayFromServer: () -> Unit = {},
+	onRemove: () -> Unit = {},
 ) {
-	val backdrop =
-		item.imageUrl(type = "Backdrop", maxWidth = 1920)
-			?: item.imageUrl(type = "Primary", maxWidth = 1280)
+	val backdrop = (item.imageUrl(type = "Backdrop", maxWidth = 1920) ?: item.imageUrl(type = "Primary", maxWidth = 1280))
 
-	val logoUrl =
-		item.imageUrl(type = "Logo", maxWidth = 800)
+	val logoUrl = item.imageUrl(type = "Logo", maxWidth = 800)
 
-	val videoStream =
-		item.mediaStreams.firstOrNull { it.type == "Video" }
+    val streams = item.mediaStreams
+
+	val videoStream = streams.firstOrNull { it.type == "Video" }
 
 	val videoResolution =
 		videoStream?.displayTitle
@@ -121,7 +151,7 @@ private fun ItemDetailsContent(
 			?: "HD"
 
 	val audioTitle =
-		item.mediaStreams
+		streams
 			.filter { it.type == "Audio" }
 			.mapNotNull {
 				(it.displayLanguage ?: it.displayTitle)
@@ -132,7 +162,7 @@ private fun ItemDetailsContent(
 			.ifBlank { "Unknown" }
 
 	val subtitleStreams =
-		item.mediaStreams
+        streams
 			.filter { it.type == "Subtitle" }
 			.mapNotNull {
 				(it.displayLanguage ?: it.displayTitle)
@@ -203,6 +233,7 @@ private fun ItemDetailsContent(
 		isResume = isResume,
 		progress = progress,
 		remainingMinutes = remainingMinutes,
+		isAvailableOffline = item.isAvailableOffline
 	)
 
 	Box(
@@ -227,39 +258,59 @@ private fun ItemDetailsContent(
 				DeviceConfiguration.MOBILE_PORTRAIT -> {
 					PortraitDetailsLayout(
 						data = data,
+                        actions = actions,
 						tablet = false,
 						onPlay = onPlay,
+						onDownload = onDownload,
+						onPlayFromServer = onPlayFromServer,
+						onRemove = onRemove,
 					)
 				}
 
 				DeviceConfiguration.MOBILE_LANDSCAPE -> {
 					LandscapeDetailsLayout(
 						data = data,
+                        actions = actions,
 						tablet = false,
 						onPlay = onPlay,
+						onDownload = onDownload,
+						onPlayFromServer = onPlayFromServer,
+						onRemove = onRemove,
 					)
 				}
 
 				DeviceConfiguration.TABLET_PORTRAIT -> {
 					PortraitDetailsLayout(
 						data = data,
+                        actions = actions,
 						tablet = true,
 						onPlay = onPlay,
+						onDownload = onDownload,
+						onPlayFromServer = onPlayFromServer,
+						onRemove = onRemove,
 					)
 				}
 
 				DeviceConfiguration.TABLET_LANDSCAPE -> {
 					LandscapeDetailsLayout(
 						data = data,
+                        actions = actions,
 						tablet = true,
 						onPlay = onPlay,
+						onDownload = onDownload,
+						onPlayFromServer = onPlayFromServer,
+						onRemove = onRemove,
 					)
 				}
 
 				DeviceConfiguration.DESKTOP -> {
 					DesktopDetailsLayout(
 						data = data,
+                        actions = actions,
 						onPlay = onPlay,
+						onDownload = onDownload,
+						onPlayFromServer = onPlayFromServer,
+						onRemove = onRemove,
 					)
 				}
 			}

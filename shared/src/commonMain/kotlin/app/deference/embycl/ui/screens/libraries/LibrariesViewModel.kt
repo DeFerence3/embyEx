@@ -8,6 +8,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.currentCoroutineContext
 import org.koin.core.annotation.KoinViewModel
 
 @KoinViewModel
@@ -18,8 +21,10 @@ class LibrariesViewModel(private val repository: EmbyRepository) : ViewModel() {
 	private val _events = Channel<LibrariesEvent>(Channel.BUFFERED)
 	val events = _events.receiveAsFlow()
 	
+	private var loadJob: Job? = null
 	init {
 		load()
+        viewModelScope.launch { repository.changes.collect { load() } }
 	}
 	
 	fun onAction(action: LibrariesAction) {
@@ -30,8 +35,10 @@ class LibrariesViewModel(private val repository: EmbyRepository) : ViewModel() {
 	
 	private fun load() {
 		_state.value = LibrariesState()
-		viewModelScope.launch {
+		loadJob?.cancel()
+		loadJob = viewModelScope.launch {
 			val result = runCatching { repository.libraries() }
+            currentCoroutineContext().ensureActive()
 			_state.value = LibrariesState(result)
 			result.exceptionOrNull()?.let { _events.send(LibrariesEvent.Error(it.message ?: "Could not load libraries.")) }
 		}

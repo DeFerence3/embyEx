@@ -32,8 +32,11 @@ data class DownloadTask private constructor(
     val status: DownloadStatus,
     val progress: DownloadProgress,
     val failure: DownloadFailureReason? = null,
+    /** Earliest retry after a server/network wait; null in older persisted records. */
+    val retryAtEpochMillis: Long? = null,
 ) {
     init {
+        require(retryAtEpochMillis == null || (retryAtEpochMillis >= 0 && status == DownloadStatus.WAITING_FOR_NETWORK))
         require((status == DownloadStatus.FAILED) == (failure != null)) {
             "Only failed tasks must carry a failure reason."
         }
@@ -80,12 +83,12 @@ data class DownloadTask private constructor(
             DownloadStatus.WAITING_FOR_NETWORK,
             DownloadStatus.WAITING_FOR_AUTHENTICATION,
         )
-        return copy(status = DownloadStatus.PAUSED)
+        return copy(status = DownloadStatus.PAUSED, retryAtEpochMillis = null)
     }
 
-    fun waitForNetwork(): DownloadTask {
+    fun waitForNetwork(retryAtEpochMillis: Long? = null): DownloadTask {
         requireStatus(DownloadStatus.QUEUED, DownloadStatus.DOWNLOADING)
-        return copy(status = DownloadStatus.WAITING_FOR_NETWORK)
+        return copy(status = DownloadStatus.WAITING_FOR_NETWORK, retryAtEpochMillis = retryAtEpochMillis)
     }
 
     fun waitForAuthentication(): DownloadTask {
@@ -101,7 +104,7 @@ data class DownloadTask private constructor(
             DownloadStatus.WAITING_FOR_AUTHENTICATION,
             DownloadStatus.FAILED,
         )
-        return copy(status = DownloadStatus.QUEUED, failure = null)
+        return copy(status = DownloadStatus.QUEUED, failure = null, retryAtEpochMillis = null)
     }
 
     /** The transfer must have reached a successful EOF before calling this. */
@@ -130,7 +133,7 @@ data class DownloadTask private constructor(
     /** Cancellation requests partial-file cleanup; it never deletes a completed download. */
     fun cancel(): DownloadTask {
         check(status != DownloadStatus.COMPLETED) { "Use local removal for a completed download." }
-        return copy(status = DownloadStatus.CANCELED, failure = null)
+        return copy(status = DownloadStatus.CANCELED, failure = null, retryAtEpochMillis = null)
     }
 
     /**
@@ -140,6 +143,12 @@ data class DownloadTask private constructor(
      */
     fun recoverAfterProcessRestart(): DownloadTask =
         if (status == DownloadStatus.DOWNLOADING) copy(status = DownloadStatus.QUEUED) else this
+
+    /** Disk length wins after a crash; this is bookkeeping, not proof of safe HTTP resume. */
+    fun reconcilePartialBytes(actualBytes: Long): DownloadTask {
+        check(status != DownloadStatus.COMPLETED && status != DownloadStatus.VERIFYING)
+        return recoverAfterProcessRestart().copy(progress = DownloadProgress(actualBytes, progress.totalBytes))
+    }
 
     private fun requireStatus(vararg allowed: DownloadStatus) {
         check(status in allowed) { "Operation is not allowed while a download is $status." }

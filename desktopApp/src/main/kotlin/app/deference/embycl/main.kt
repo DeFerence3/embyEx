@@ -5,13 +5,20 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.rememberCoroutineScope
+import app.deference.embycl.data.repository.download.DesktopDownloadRuntime
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
+import org.koin.mp.KoinPlatformTools
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.window.WindowPlacement
 import androidx.compose.ui.window.rememberWindowState
 import app.deference.embycl.core.di.initKoin
 import app.deference.embycl.core.session.Session
-import app.deference.embycl.data.preference.EmbyPreference
-import app.deference.embycl.data.preference.createDataStore
+import app.deference.embycl.data.local.preference.EmbyPreference
+import app.deference.embycl.data.local.preference.createDataStore
 import app.deference.embycl.ui.core.ExitConfirmationDialog
 import app.deference.embycl.ui.theme.EmbympvTheme
 import dev.nucleusframework.application.nucleusApplication
@@ -25,9 +32,20 @@ import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalComposeUiApi::class)
 fun main() = nucleusApplication {
-	initKoin()
-	val dataStore = createDataStore()
-	Session.init(EmbyPreference(dataStore))
+    val downloads = remember {
+        Session.init(EmbyPreference(createDataStore()))
+        initKoin()
+        KoinPlatformTools.defaultContext().get().get<DesktopDownloadRuntime>().also { it.start() }
+    }
+    val applicationScope = rememberCoroutineScope()
+    DisposableEffect(downloads) {
+        val shutdown = Thread({ runBlocking { withTimeoutOrNull(5_000) { downloads.close() } } }, "offline-download-shutdown")
+        Runtime.getRuntime().addShutdownHook(shutdown)
+        onDispose {
+            runBlocking { withTimeoutOrNull(5_000) { downloads.close() } }
+            runCatching { Runtime.getRuntime().removeShutdownHook(shutdown) }
+        }
+    }
 	val state = rememberWindowState(placement = WindowPlacement.Maximized)
 	var isLogoutRequested by remember { mutableStateOf(false) }
 	MaterialDecoratedWindow(
@@ -41,7 +59,7 @@ fun main() = nucleusApplication {
 		) {
 			if (isLogoutRequested){
 				ExitConfirmationDialog(
-					onConfirm = ::exitApplication,
+					onConfirm = { applicationScope.launch { downloads.close(); exitApplication() } },
 					onDismiss = { isLogoutRequested = false }
 				)
 			}
