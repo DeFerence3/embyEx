@@ -27,3 +27,4 @@ dependencyResolutionManagement {
 include(":androidApp")
 include(":desktopApp")
 include(":shared")
+include(":player")

@@ -11,4 +11,5 @@ expect val localPlaybackSupported: Boolean
 expect fun LocalPlaybackEffect(
     request: LocalPlaybackRequest?,
     onResult: (String, LocalPlaybackResult) -> Unit,
+    onProgress: (String, LocalPlaybackResult) -> Unit,
 )

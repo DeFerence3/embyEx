@@ -52,6 +52,8 @@ kotlin {
 		iosTarget.binaries.framework {
 			baseName = "Shared"
 			isStatic = true
+			// Keep PlaybackPosition available through the existing Shared framework.
+			export(project(":player"))
 		}
 	}
 	
@@ -66,6 +68,8 @@ kotlin {
 		jvmMain { kotlin.srcDir("src/jvmAndroidMain/kotlin") }
 		androidMain { kotlin.srcDir("src/jvmAndroidMain/kotlin") }
 		commonMain.dependencies {
+			// EmbyDetailsAction.PlaybackUpdate exposes PlaybackPosition from :player.
+			api(project(":player"))
 			implementation(libs.room.runtime)
 			implementation(libs.sqlite.bundled)
 			implementation(libs.compose.runtime)

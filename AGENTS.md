@@ -2,12 +2,14 @@
 
 Reviewed against official web documentation on 2026-10-17. Apply these rules to new and changed code; avoid unrelated rewrites. Repository-specific choices intentionally refine the general Kotlin conventions.
 
+Compose/CMP work: load the compose skill first; it picks the path and the files to read.
 ## 1. Repository facts
 
 - Read the nearest `AGENTS.md`, `settings.gradle.kts`, relevant module build files, and `gradle/libs.versions.toml` before editing. Build files are the source of truth for targets and versions.
-- Current modules: `:shared`, `:androidApp`, and `:desktopApp`. There is no `:composeApp`, `:shared:di`, or `:ui-design-system` module.
+- Current modules: `:shared`, `:player`, `:androidApp`, and `:desktopApp`. There is no `:composeApp`, `:shared:di`, or `:ui-design-system` module.
 - Shared targets are Android, JVM desktop (`jvm()`), `iosArm64`, and `iosSimulatorArm64`. Web/Wasm is not currently configured; do not claim it is built or tested.
 - Shared Kotlin code lives under `shared/src/commonMain/kotlin/app/deference/embycl`. Koin wiring is in `core/di`, theme definitions in `ui/theme`, and reusable UI in `ui/core/components`.
+- `:player` owns the embedded player, its resources/colors, `PlaybackPosition`, platform engines, and desktop JNI packaging under `player/src`. It retains the existing packages and has no dependency on `:shared`. Emby and offline playback coordination stay in `:shared`.
 - Maintain Clean Architecture boundaries between UI, domain contracts/models, and data implementations within the existing structure. Organize features coherently; do not create Gradle modules just to satisfy an architecture label.
 - Use pinned dependencies and toolchains. Do not upgrade libraries or enable experimental features as a side effect of another task.
 
@@ -115,6 +117,8 @@ Use these repository task paths. Commands use POSIX wrapper syntax; on Windows P
 | --- | --- |
 | Aggregate checks | `./gradlew check` |
 | Compile shared JVM code | `./gradlew :shared:compileKotlinJvm` |
+| Compile player JVM code | `./gradlew :player:compileKotlinJvm` |
+| Player multiplatform test aggregate | `./gradlew :player:allTests` |
 | Run common + JVM tests on JVM | `./gradlew :shared:jvmTest` |
 | Shared multiplatform test aggregate | `./gradlew :shared:allTests` |
 | Build Android debug app | `./gradlew :androidApp:assembleDebug` |
@@ -133,3 +137,7 @@ Use these repository task paths. Commands use POSIX wrapper syntax; on Windows P
 ## 11. Keeping these rules current
 
 Recheck linked official documentation before version-sensitive changes. Documentation snippets are examples, not instructions to copy their dependency versions. Record reasons for repository-specific exceptions and keep this file aligned with actual targets and paths.
+
+## Project decisions
+
+- The player extraction follows the existing module-local Gradle configuration and pinned catalog. Convention-plugin and Compose kit guard adoption are separate work, keeping this extraction scoped to playback rather than migrating the build system.

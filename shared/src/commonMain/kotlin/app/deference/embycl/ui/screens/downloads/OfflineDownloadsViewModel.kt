@@ -200,9 +200,9 @@ class OfflineDownloadsViewModel(
                     LocalPlaybackOutcome.UNAVAILABLE -> "This saved file is unavailable. Refresh Downloads and check its status."
                     LocalPlaybackOutcome.BUSY -> "This file or the player is busy. Close the current playback and try again."
                     LocalPlaybackOutcome.STORAGE_FAILED -> "Couldn't access the download or save progress. Check storage and try again."
-                    LocalPlaybackOutcome.PLAYER_MISSING -> "Player not found. Install mpvEx on Android, or choose mpv in desktop Settings."
+                    LocalPlaybackOutcome.PLAYER_MISSING -> "The embedded player is unavailable. Restart the app and try again."
                     LocalPlaybackOutcome.PLAYER_FAILED -> "The player couldn't open this download. Check the player and its support for this media format."
-                    LocalPlaybackOutcome.POSITION_UNSUPPORTED -> "This saved position exceeds mpvEx's supported resume range. Your progress was kept."
+                    LocalPlaybackOutcome.POSITION_UNSUPPORTED -> "This saved position is unsupported. Your progress was kept."
                     LocalPlaybackOutcome.UNSUPPORTED -> "Local playback isn't supported on this device."
                 }
                 error?.let(::message)

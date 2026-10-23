@@ -9,5 +9,11 @@ sealed interface EmbyDetailsAction {
 	data object ConfirmDownload : EmbyDetailsAction
 	data object DismissDownload : EmbyDetailsAction
 	data object RemoveDownload : EmbyDetailsAction
-	data class PlaybackFinished(val positionMs: Long?) : EmbyDetailsAction
+    data class PlaybackUpdate(
+        val request: app.deference.embycl.domain.model.EmbyPlaybackRequest,
+        val position: app.deference.embycl.domain.model.PlaybackPosition,
+        val finished: Boolean = false,
+    ) : EmbyDetailsAction
+    data object RetryPlaybackSave : EmbyDetailsAction
+    data object DismissPlaybackSaveError : EmbyDetailsAction
 }

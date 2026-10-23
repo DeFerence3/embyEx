@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">EmbyEx</string>
+    <string name="player_retry">Retry</string>
+    <string name="player_error">Could not play this media. Check your connection and media format, then retry.</string>
+    <string name="player_save_error">Watch progress could not be saved. Check your connection and retry.</string>
+    <string name="player_save_title">Watch progress</string>
+    <string name="player_dismiss">Dismiss</string>
 </resources>

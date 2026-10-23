@@ -65,7 +65,7 @@ nucleus.application {
 		packageName = "embyEx"
 		packageVersion = libs.versions.version.name.get()
 		vendor = "Abhishek Krishnan T R"
-		description = "A simple emby client, opens media in mpvEx in android and mpv in desktop."
+		description = "A simple emby client, uses built in mpv lib based player to play media or open in your desired player. Follows material3 design."
 		homepage = "https://github.com/DeFerence3/embyEx"
 		compressionLevel = CompressionLevel.Ultra
 		cleanupNativeLibs = true

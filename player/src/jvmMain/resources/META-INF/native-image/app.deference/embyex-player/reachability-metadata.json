@@ -1,0 +1,54 @@
+{
+  "reflection": [
+    {
+      "type": "org.openani.mediamp.nativeloader.WindowsDllKernel32",
+      "allDeclaredMethods": true
+    },
+    {
+      "type": {
+        "proxy": ["org.openani.mediamp.nativeloader.WindowsDllKernel32"]
+      }
+    },
+    {
+      "type": "org.jetbrains.skiko.SkiaLayer",
+      "methods": [{"name": "getRedrawer$skiko", "parameterTypes": []}]
+    },
+    {
+      "type": "org.jetbrains.skiko.context.ContextHandler",
+      "fields": [{"name": "context"}]
+    },
+    {
+      "type": "org.jetbrains.skiko.redrawer.Direct3DRedrawer",
+      "fields": [{"name": "device"}, {"name": "contextHandler"}]
+    }
+  ],
+  "jni": [
+    {
+      "type": "app.deference.embycl.ui.player.PlayerRenderListener",
+      "methods": [{"name": "onRenderUpdate", "parameterTypes": []}]
+    },
+    {
+      "type": "org.openani.mediamp.mpv.MPVLogKt",
+      "methods": [
+        {
+          "name": "onNativeLog",
+          "parameterTypes": ["long", "int", "java.lang.String", "java.lang.String"]
+        }
+      ]
+    },
+    {
+      "type": "org.openani.mediamp.io.SeekableInput",
+      "methods": [
+        {"name": "read", "parameterTypes": ["byte[]", "int", "int"]},
+        {"name": "seekTo", "parameterTypes": ["long"]},
+        {"name": "close", "parameterTypes": []}
+      ]
+    }
+  ],
+  "resources": [
+    {"glob": "mpv-natives-*.txt"},
+    {"glob": "*.dll"},
+    {"glob": "*.so*"},
+    {"glob": "*.dylib"}
+  ]
+}
