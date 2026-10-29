@@ -3,6 +3,7 @@ package app.deference.embycl.ui.player
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -11,16 +12,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Fullscreen
-import androidx.compose.material.icons.filled.FullscreenExit
-import androidx.compose.material.icons.filled.OpenInFull
-import androidx.compose.material.icons.filled.PictureInPictureAlt
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -35,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -46,23 +46,26 @@ import androidx.compose.ui.input.pointer.PointerType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalAccessibilityManager
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import app.deference.embycl.ui.player.components.PlayerFullScreenControls
+import app.deference.embycl.ui.player.components.PlayerTimeline
+import app.deference.embycl.ui.player.components.PlayerTransportControls
+import app.deference.embycl.ui.player.components.PlayerWindowControls
 import app.deference.embycl.ui.theme.PlayerColors
 import embyex.player.generated.resources.Res
-import embyex.player.generated.resources.player_close
 import embyex.player.generated.resources.player_exit_fullscreen
 import embyex.player.generated.resources.player_fullscreen
-import embyex.player.generated.resources.player_pip
 import embyex.player.generated.resources.player_pip_error
-import embyex.player.generated.resources.player_restore
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.stringResource
-import org.openani.mediamp.MediampPlayer
-import org.openani.mediamp.togglePlayWhenReady
 
 @Composable
 internal fun PlayerOverlay(
-    player: MediampPlayer?,
+    title: String,
+    player: EmbeddedPlayer?,
     window: PlayerWindowState,
     paused: Boolean,
     failed: Boolean,
@@ -74,13 +77,18 @@ internal fun PlayerOverlay(
     var interaction by remember { mutableIntStateOf(value = 0) }
     var pressed by remember { mutableStateOf(value = false) }
     var menuOpen by remember { mutableStateOf(value = false) }
+    var seeking by remember { mutableStateOf(value = false) }
     var controlsFocused by remember { mutableStateOf(value = false) }
     var keyboardInput by remember { mutableStateOf(value = false) }
     val focus = remember { FocusRequester() }
     val density = LocalDensity.current.density
     val accessibility = LocalAccessibilityManager.current
     val systemPip = window.isPictureInPicture && window.usesSystemPictureInPicture
-    val keepVisible = paused || failed || player == null || pressed || menuOpen || (controlsFocused && keyboardInput)
+    val fullControls = !window.isPictureInPicture
+    val fullscreenDescription = stringResource(
+        resource = if (window.isFullscreen) Res.string.player_exit_fullscreen else Res.string.player_fullscreen,
+    )
+    val keepVisible = !fullControls || paused || failed || player == null || pressed || seeking || menuOpen || (controlsFocused && keyboardInput)
 
     LaunchedEffect(key1 = paused, key2 = failed, key3 = window.isPictureInPicture) {
         visible = true
@@ -102,6 +110,11 @@ internal fun PlayerOverlay(
         // the player instead of letting focus fall back to the page underneath.
         if (!visible) focus.requestFocus()
     }
+    LaunchedEffect(key1 = fullControls) {
+        visible = true
+        menuOpen = false
+        seeking = false
+    }
 
     Box(
         modifier = modifier
@@ -122,14 +135,30 @@ internal fun PlayerOverlay(
                     }
                 }
             }
-            .pointerInput(key1 = Unit) {
+            .pointerInput(window, fullControls, window.isPictureInPicture) {
                 // Child buttons and sliders consume their gestures before this parent.
-                detectTapGestures(onTap = {
-                    focus.requestFocus()
-                    visible = !visible
-                })
+                detectTapGestures(
+                    onTap = {
+                        focus.requestFocus()
+                        visible = !fullControls || !visible
+                    },
+                    onDoubleTap = {
+                        if (window.supportsFullscreen && !window.isPictureInPicture) window.toggleFullscreen()
+                    },
+                )
+            }
+            .semantics {
+                if (window.supportsFullscreen && !window.isPictureInPicture) {
+                    customActions = listOf(
+                        CustomAccessibilityAction(
+                            label = fullscreenDescription,
+                            action = { window.toggleFullscreen(); true },
+                        ),
+                    )
+                }
             }
             .onPreviewKeyEvent { event ->
+                if (menuOpen) return@onPreviewKeyEvent false
                 interaction++
                 keyboardInput = true
                 visible = true
@@ -157,7 +186,7 @@ internal fun PlayerOverlay(
             .focusable(),
     ) {
         // Drag the video area to move the undecorated desktop window; controls handle their own gestures.
-        Box(
+        if (window.isPictureInPicture && !systemPip) Box(
             modifier = Modifier
                 .fillMaxSize()
                 .pointerInput(key1 = window, key2 = density) {
@@ -172,60 +201,89 @@ internal fun PlayerOverlay(
         )
         CompositionLocalProvider(LocalContentColor provides PlayerColors.content) {
             AnimatedVisibility(
-                visible = visible && !systemPip,
-                enter = fadeIn(),
-                exit = fadeOut(),
+                visible = (visible || !fullControls) && !systemPip,
+                enter = fadeIn(animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()),
+                exit = fadeOut(animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()),
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .onFocusChanged { controlsFocused = it.hasFocus }
-                        .focusGroup(),
-                    verticalArrangement = Arrangement.SpaceBetween,
+                        .focusGroup()
+                        .background(
+                            brush = Brush.verticalGradient(
+                                0f to PlayerColors.controlsScrim,
+                                0.4f to PlayerColors.transparent,
+                                0.6f to PlayerColors.transparent,
+                                1f to PlayerColors.controlsScrim,
+                            ),
+                        )
+                        .windowInsetsPadding(insets = WindowInsets.safeDrawing)
+                        .padding(all = if (fullControls) 16.dp else 0.dp),
+                    verticalArrangement = Arrangement.Bottom,
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(all = 4.dp),
-                        horizontalArrangement = Arrangement.End,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        if (player != null) {
-                            PlayerTrackControls(
+                    if (fullControls) {
+                        PlayerFullScreenControls(
+                            title = title,
+                            player = player,
+                            enabled = !failed,
+                            onMenuExpandedChange = { menuOpen = it; interaction++ },
+                            dispatchAction = dispatchAction,
+                            onClose = onClose,
+                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(weight = 1f),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            PlayerTransportControls(
                                 player = player,
+                                paused = paused,
                                 enabled = !failed,
-                                onMenuExpandedChange = { menuOpen = it },
                                 dispatchAction = dispatchAction,
                             )
                         }
-                        if (window.supportsPictureInPicture) {
-                            PlayerIconButton(
-                                icon = if (window.isPictureInPicture) Icons.Default.OpenInFull else Icons.Default.PictureInPictureAlt,
-                                description = stringResource(resource = if (window.isPictureInPicture) Res.string.player_restore else Res.string.player_pip),
-                                onClick = window.togglePictureInPicture,
-                            )
-                        }
-                        if (window.supportsFullscreen && !window.isPictureInPicture) {
-                            PlayerIconButton(
-                                icon = if (window.isFullscreen) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
-                                description = stringResource(resource = if (window.isFullscreen) Res.string.player_exit_fullscreen else Res.string.player_fullscreen),
-                                onClick = window.toggleFullscreen,
-                            )
-                        }
-                        PlayerIconButton(
-                            icon = Icons.Default.Close,
-                            description = stringResource(resource = Res.string.player_close),
-                            onClick = onClose,
-                        )
                     }
-                    Column {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
                         if (window.pictureInPictureFailed) {
                             Text(
                                 text = stringResource(resource = Res.string.player_pip_error),
                                 modifier = Modifier.padding(all = 12.dp),
                             )
                         }
-                        if (player != null) PlayerControls(player = player, enabled = !failed, dispatchAction = dispatchAction)
+                        if (fullControls) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(space = 16.dp),
+                            ) {
+                                Box(modifier = Modifier.weight(weight = 1f)) {
+                                    if (player != null) PlayerTimeline(
+                                        player = player,
+                                        enabled = !failed,
+                                        onSeeking = { seeking = it },
+                                        dispatchAction = dispatchAction,
+                                    )
+                                }
+                                PlayerWindowControls(
+                                    fullscreen = window.isFullscreen,
+                                    onToggleFullscreen = if (window.supportsFullscreen) window.toggleFullscreen else null,
+                                    onPictureInPicture = if (window.supportsPictureInPicture) window.togglePictureInPicture else null,
+                                )
+                            }
+                        } else if (player != null) {
+                            PlayerControls(
+                                player = player,
+                                enabled = !failed,
+                                dispatchAction = dispatchAction,
+                                showTime = fullControls,
+                                pictureInPicture = window.isPictureInPicture,
+                                onPictureInPicture = if (!fullControls && window.supportsPictureInPicture) window.togglePictureInPicture else null,
+                            )
+                        }
                     }
                 }
             }

@@ -2,7 +2,7 @@ package app.deference.embycl.ui.player
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import org.openani.mediamp.MediampPlayer
+import kotlinx.coroutines.CoroutineScope
 import org.openani.mediamp.mpv.MPVHandle
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.ContinuationInterceptor
@@ -16,12 +16,15 @@ internal actual fun isRecreatingPlayerHost(context: Any): Boolean = false
 internal actual fun createEmbeddedPlayer(
     context: Any,
     coroutineContext: CoroutineContext,
-): MediampPlayer = try {
+): EmbeddedPlayer = try {
     // Native errors may include authenticated URLs. UI shows sanitized errors instead.
     MPVHandle.setLogHandler(handler = { })
-    TaoMpvPlayer(
-        coroutineContext = coroutineContext,
-        dispatcher = coroutineContext[ContinuationInterceptor] as CoroutineDispatcher,
+    JvmEmbeddedPlayer(
+        engine = TaoMpvPlayer(
+            coroutineContext = coroutineContext,
+            dispatcher = coroutineContext[ContinuationInterceptor] as CoroutineDispatcher,
+        ),
+        scope = CoroutineScope(context = coroutineContext),
     )
 } catch (_: LinkageError) {
     throw IllegalStateException("The embedded player runtime could not be loaded.")
@@ -29,10 +32,11 @@ internal actual fun createEmbeddedPlayer(
 
 @Composable
 internal actual fun EmbeddedPlayerSurface(
-    player: MediampPlayer,
+    player: EmbeddedPlayer,
     modifier: Modifier,
 ) {
-    TaoPlayerSurface(player = player as TaoMpvPlayer, modifier = modifier)
+    require(value = player is JvmEmbeddedPlayer)
+    TaoPlayerSurface(player = player.engine, modifier = modifier)
 }
 
 @Composable

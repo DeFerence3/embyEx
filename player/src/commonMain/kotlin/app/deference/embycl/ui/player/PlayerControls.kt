@@ -9,10 +9,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Forward10
 import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.OpenInFull
+import androidx.compose.material.icons.filled.PictureInPictureAlt
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay10
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -25,24 +28,28 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import app.deference.embycl.ui.theme.PlayerColors
 import embyex.player.generated.resources.Res
 import embyex.player.generated.resources.player_back
 import embyex.player.generated.resources.player_forward
 import embyex.player.generated.resources.player_pause
 import embyex.player.generated.resources.player_play
 import embyex.player.generated.resources.player_position
+import embyex.player.generated.resources.player_pip
+import embyex.player.generated.resources.player_restore
 import org.jetbrains.compose.resources.stringResource
-import org.openani.mediamp.MediaStatus
-import org.openani.mediamp.MediampPlayer
-import org.openani.mediamp.isLoadingOrBuffering
-import org.openani.mediamp.togglePlayWhenReady
+import app.deference.embycl.ui.player.PlayerMediaStatus
+import app.deference.embycl.ui.player.EmbeddedPlayer
 
 @Composable
 internal fun PlayerControls(
-    player: MediampPlayer,
+    player: EmbeddedPlayer,
     enabled: Boolean,
     dispatchAction: (() -> Unit) -> Unit,
     modifier: Modifier = Modifier,
+    showTime: Boolean = true,
+    pictureInPicture: Boolean = false,
+    onPictureInPicture: (() -> Unit)? = null,
 ) {
     val state by player.state.collectAsState()
     val position by player.currentPositionMillis.collectAsState()
@@ -60,21 +67,25 @@ internal fun PlayerControls(
                 }
                 seeking = null
             },
-            enabled = enabled && duration > 0L && state.mediaStatus == MediaStatus.Ready,
+            enabled = enabled && duration > 0L && state.mediaStatus == PlayerMediaStatus.Ready,
+            colors = SliderDefaults.colors(
+                thumbColor = PlayerColors.content,
+                activeTrackColor = PlayerColors.content,
+                inactiveTrackColor = PlayerColors.controlsOutline,
+            ),
             modifier = Modifier.semantics { contentDescription = seekDescription },
         )
         FlowRow(
             modifier = Modifier
-				.fillMaxWidth()
-				.align(Alignment.CenterHorizontally),
-            horizontalArrangement = Arrangement.SpaceBetween,
+                .fillMaxWidth(),
+            horizontalArrangement = if (showTime) Arrangement.SpaceBetween else Arrangement.Center,
             verticalArrangement = Arrangement.Center,
         ) {
             Row(
-				modifier = Modifier
-					.align(alignment = Alignment.CenterVertically),
-				verticalAlignment = Alignment.CenterVertically
-			) {
+                modifier = Modifier.align(alignment = Alignment.CenterVertically),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(space = 8.dp),
+            ) {
                 PlayerIconButton(
                     icon = Icons.Default.Replay10,
                     description = stringResource(resource = Res.string.player_back),
@@ -93,11 +104,22 @@ internal fun PlayerControls(
                     onClick = { dispatchAction { player.skip(deltaMillis = 10_000L) } },
                     enabled = enabled,
                 )
+                if (onPictureInPicture != null) {
+                    PlayerIconButton(
+                        icon = if (pictureInPicture) Icons.Default.OpenInFull else Icons.Default.PictureInPictureAlt,
+                        description = stringResource(
+                            resource = if (pictureInPicture) Res.string.player_restore else Res.string.player_pip,
+                        ),
+                        onClick = onPictureInPicture,
+                    )
+                }
             }
-            Text(
-                text = "${playbackTime(milliseconds = position)} / ${playbackTime(milliseconds = duration)}",
-                modifier = Modifier.align(alignment = Alignment.CenterVertically),
-            )
+            if (showTime) {
+                Text(
+                    text = "${playbackTime(milliseconds = position)} / ${playbackTime(milliseconds = duration)}",
+                    modifier = Modifier.align(alignment = Alignment.CenterVertically),
+                )
+            }
         }
         if (state.isLoadingOrBuffering) CircularProgressIndicator()
     }

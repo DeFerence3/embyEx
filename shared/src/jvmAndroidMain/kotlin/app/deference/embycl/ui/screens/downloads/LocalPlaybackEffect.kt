@@ -5,9 +5,9 @@ import androidx.compose.runtime.key
 import app.deference.embycl.domain.model.PlaybackPosition
 import app.deference.embycl.domain.model.download.LocalPlaybackRequest
 import app.deference.embycl.domain.model.download.LocalPlaybackResult
-import app.deference.embycl.ui.player.EmbeddedPlayerDialog
+import app.deference.embycl.ui.player.EmbeddedPlayerScreen
 import app.deference.embycl.ui.player.PlayerSource
-import org.openani.mediamp.source.Subtitle
+import app.deference.embycl.ui.player.PlayerSubtitle
 import java.io.File
 
 actual val localPlaybackSupported: Boolean = true
@@ -20,15 +20,18 @@ actual fun LocalPlaybackEffect(
 ) {
     if (request == null) return
     key(request.sessionId) {
-        EmbeddedPlayerDialog(
+        EmbeddedPlayerScreen(
             source = PlayerSource(
                 key = request.sessionId,
                 title = request.title,
                 uri = File(request.media.absolutePath).toURI().toASCIIString(),
                 positionMs = request.positionMs,
+                resolveExternalUri = rememberExternalPlaybackUri(
+                    absolutePath = request.media.absolutePath,
+                ),
                 subtitles = request.subtitles.map { subtitle ->
                     val file = File(subtitle.file.absolutePath)
-                    Subtitle(
+                    PlayerSubtitle(
                         uri = file.toURI().toASCIIString(),
                         mimeType = when (file.extension.lowercase()) {
                             "srt" -> "application/x-subrip"

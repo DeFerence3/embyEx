@@ -1,4 +1,7 @@
 <resources>
+    <string name="player_title">Player</string>
+    <string name="player_loading">Getting ready to play…</string>
+    <string name="player_saving">Saving your watch progress…</string>
     <string name="app_name">EmbyEx</string>
     <string name="player_retry">Retry</string>
     <string name="player_error">Could not play this media. Check your connection and media format, then retry.</string>

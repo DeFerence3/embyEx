@@ -42,7 +42,7 @@ fun EmbyExApp(isLoggedIn: Boolean) {
 		AppUpdateHost()
         PlayerInlayHost {
             EmbyExNav(navigator)
-            OfflinePlaybackHost()
+            OfflinePlaybackHost(navigator = navigator)
         }
 	}
 }

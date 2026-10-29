@@ -6,7 +6,7 @@ Compose/CMP work: load the compose skill first; it picks the path and the files 
 ## 1. Repository facts
 
 - Read the nearest `AGENTS.md`, `settings.gradle.kts`, relevant module build files, and `gradle/libs.versions.toml` before editing. Build files are the source of truth for targets and versions.
-- Current modules: `:shared`, `:player`, `:androidApp`, and `:desktopApp`. There is no `:composeApp`, `:shared:di`, or `:ui-design-system` module.
+- Current modules: `:shared`, `:player`, `:coreui`, `:androidApp`, and `:desktopApp`. There is no `:composeApp`, `:shared:di`, or `:ui-design-system` module.
 - Shared targets are Android, JVM desktop (`jvm()`), `iosArm64`, and `iosSimulatorArm64`. Web/Wasm is not currently configured; do not claim it is built or tested.
 - Shared Kotlin code lives under `shared/src/commonMain/kotlin/app/deference/embycl`. Koin wiring is in `core/di`, theme definitions in `ui/theme`, and reusable UI in `ui/core/components`.
 - `:player` owns the embedded player, its resources/colors, `PlaybackPosition`, platform engines, and desktop JNI packaging under `player/src`. It retains the existing packages and has no dependency on `:shared`. Emby and offline playback coordination stay in `:shared`.
@@ -49,7 +49,8 @@ Follow [official Kotlin conventions](https://kotlinlang.org/docs/coding-conventi
 
 ## 5. Dependencies and Gradle
 
-- Before adding a dependency to `gradle/libs.versions.toml`, verify its exact version and target support through the klibs.io MCP server at `https://api.klibs.io/mcp`, as required by this project. If unavailable, report the verification blocker and defer the addition; never claim verification occurred.
+- Before adding a multiplatform dependency to `gradle/libs.versions.toml`, verify its exact version and target support through the klibs.io MCP server at `https://api.klibs.io/mcp`. If verification is unavailable, report the blocker and defer the addition; never claim verification occurred.
+- Exception: platform-specific libraries and native implementations for Android, JVM, or iOS/Apple may skip klibs verification because they may not be indexed there. Verify the exact published version and platform compatibility using the official artifact repository and upstream documentation instead, and keep the dependency in the applicable platform source set.
 - Confirm published variants and upstream documentation for every consuming source set. Common dependencies must support all active consuming targets; platform-only libraries belong in platform source sets.
 - Prefer existing libraries. Centralize new versions/aliases in the catalog, avoid dynamic versions, and use `implementation` unless consumers need an exported API.
 - Align the Compose compiler plugin version with Kotlin, not the Compose UI library version. Check the [Compose compatibility guide](https://kotlinlang.org/docs/multiplatform/compose-compatibility-and-versioning.html) and [KMP compatibility guide](https://kotlinlang.org/docs/multiplatform/multiplatform-compatibility-guide.html) before toolchain changes.
@@ -138,6 +139,18 @@ Use these repository task paths. Commands use POSIX wrapper syntax; on Windows P
 
 Recheck linked official documentation before version-sensitive changes. Documentation snippets are examples, not instructions to copy their dependency versions. Record reasons for repository-specific exceptions and keep this file aligned with actual targets and paths.
 
+## 12. README.md protection and update policy
+
+- Treat the root `README.md` as a **public, user-facing project page**, not a development log. Keep it concise, attractive, and focused on what EmbyEx does, how to install it, and important user notices.
+- **Do not edit `README.md` for routine coding tasks.** Refactoring, bug fixes with no user-visible impact, dependency upgrades, architecture changes, player internals, build configuration, testing, and work-in-progress do not require README updates.
+- Update `README.md` **only** when the user explicitly requests a README change, or when a completed, verified change materially affects user-facing features, platform/playback support, installation or download instructions, basic usage, or essential notices. Avoid advertising unreleased or unverified functionality.
+- When an update is warranted, **edit only the relevant lines**. Preserve the existing structure, badges, screenshots, links, wording style, and unrelated user edits. Do not rewrite, expand, or reorganize the README without an explicit request.
+- Keep implementation plans, technical architecture, module details, dependency versions, Gradle commands, native packaging notes, test reports, debugging history, and lengthy limitations in `docs/` or other appropriate developer documentation—not in `README.md`. Mention limitations in the README only when they directly affect users, and keep them brief.
+- Before editing, ask: **Would a prospective installer or current user need this information to decide whether to install or how to use EmbyEx?** If not, leave the README unchanged. Report user-facing README changes in the task summary; do not use the README itself as the task summary.
+
 ## Project decisions
 
+- MediaMP is a JVM-only implementation detail of `:player`. Shared playback contracts, state, tracks, and subtitle descriptions use app-owned types; Android uses `mpv-android` directly. Do not expose MediaMP through common APIs or add it to Android/iOS dependencies.
+
 - The player extraction follows the existing module-local Gradle configuration and pinned catalog. Convention-plugin and Compose kit guard adoption are separate work, keeping this extraction scoped to playback rather than migrating the build system.
+- New or changed UI components used by both `:player` and `:shared` belong in `:coreui`. Apply this incrementally within the current task; do not migrate unrelated components. Desktop player options use `:coreui`'s `DropDown` instead of bottom sheets.

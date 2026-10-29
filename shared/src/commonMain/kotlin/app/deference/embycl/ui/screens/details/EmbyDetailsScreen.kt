@@ -35,7 +35,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.dropUnlessResumed
 import app.deference.embycl.core.utils.asRuntime
 import app.deference.embycl.core.utils.formatToString
 import app.deference.embycl.domain.model.EmbyItem
@@ -45,19 +47,16 @@ import app.deference.embycl.ui.core.adaptive.DeviceConfiguration
 import app.deference.embycl.ui.core.components.DetailTopBar
 import app.deference.embycl.ui.core.components.LoadingScaffold
 import app.deference.embycl.ui.core.components.ObserveEvent
-import app.deference.embycl.ui.screens.details.components.PlaybackEffect
 import app.deference.embycl.ui.screens.details.components.adaptive.DesktopDetailsLayout
 import app.deference.embycl.ui.screens.details.components.adaptive.ItemDetailsData
 import app.deference.embycl.ui.screens.details.components.adaptive.LandscapeDetailsLayout
 import app.deference.embycl.ui.screens.details.components.adaptive.PortraitDetailsLayout
 import app.deference.embycl.ui.screens.downloads.components.DownloadSourceDialog
 import app.deference.embycl.ui.screens.downloads.rememberDownloadPermissionRequest
+import app.deference.embycl.ui.screens.player.EmbyPlayerScreen
 import embyex.shared.generated.resources.Res
 import embyex.shared.generated.resources.player_dismiss
 import embyex.shared.generated.resources.player_error
-import embyex.shared.generated.resources.player_retry
-import embyex.shared.generated.resources.player_save_error
-import embyex.shared.generated.resources.player_save_title
 import kotlinx.serialization.Serializable
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -68,12 +67,12 @@ data class EmbyDetailsScreen(val id: String) : Screen {
 
 	@Composable
 	override fun Content() {
-		val backStack = LocalNavigator.current
+		val navigator = LocalNavigator.current
 		val viewModel = koinViewModel<EmbyDetailsVM>(parameters = { parametersOf(id) })
 		val state by viewModel.state.collectAsStateWithLifecycle()
 		val events = viewModel.events
 		val onAction = viewModel::onAction
-		val onBack = { backStack.goBack() }
+		val onBack = { navigator.goBack() }
 		val permission = rememberDownloadPermissionRequest()
 
         var message by remember { mutableStateOf<String?>(value = null) }
@@ -84,25 +83,21 @@ data class EmbyDetailsScreen(val id: String) : Screen {
 				EmbyDetailsEvent.PlaybackFailed -> playbackError
 			}
         }
-        PlaybackEffect(request = state.playback, onAction = onAction)
-        if (state.playbackSaveFailed || message != null) {
+        LifecycleResumeEffect(key1 = id) {
+            onAction(EmbyDetailsAction.Retry)
+            onPauseOrDispose { }
+        }
+        if (message != null) {
             AlertDialog(
                 onDismissRequest = {
                     message = null
-                    onAction(EmbyDetailsAction.DismissPlaybackSaveError)
                 },
-                title = { Text(text = stringResource(resource = Res.string.player_save_title)) },
-                text = { Text(text = message ?: stringResource(resource = Res.string.player_save_error)) },
-                confirmButton = {
-                    if (state.playbackSaveFailed) TextButton(onClick = { onAction(EmbyDetailsAction.RetryPlaybackSave) }) {
-                        Text(text = stringResource(resource = Res.string.player_retry))
-                    }
-                },
+                text = { Text(text = message.orEmpty()) },
+                confirmButton = {},
                 dismissButton = {
                     TextButton(onClick = {
                         message = null
-                        onAction(EmbyDetailsAction.DismissPlaybackSaveError)
-                    }) { Text(text = stringResource(resource = Res.string.player_dismiss)) }
+                        }) { Text(text = stringResource(resource = Res.string.player_dismiss)) }
                 },
             )
         }
@@ -115,9 +110,9 @@ data class EmbyDetailsScreen(val id: String) : Screen {
 				ItemDetails(
 					item = item,
 					onBack = onBack,
-					onPlay = { onAction(EmbyDetailsAction.Play) },
+					onPlay = dropUnlessResumed { navigator.goTo(destination = EmbyPlayerScreen(id = id)) },
 					onDownload = { onAction(EmbyDetailsAction.Download) },
-					onPlayFromServer = { onAction(EmbyDetailsAction.PlayFromServer) },
+					onPlayFromServer = dropUnlessResumed { navigator.goTo(destination = EmbyPlayerScreen(id = id, fromServer = true)) },
 					onRemove = { onAction(EmbyDetailsAction.RemoveDownload) },
 				)
 			}

@@ -17,6 +17,9 @@ kotlin {
         withHostTest {
             isIncludeAndroidResources = true
         }
+        optimization {
+            consumerKeepRules.file("consumer-rules.pro")
+        }
     }
 
     jvm()
@@ -25,9 +28,10 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            // PlayerSource.subtitles exposes MediaMP's Subtitle value type.
-            api(libs.mediamp.api)
-            // EmbeddedPlayerDialog and PlayerInlayHost expose @Composable APIs.
+            // EmbeddedPlayerScreen and PlayerInlayHost expose @Composable APIs.
+			
+			implementation(project(":coreui"))
+			
             api(libs.compose.runtime)
             implementation(libs.compose.foundation)
             implementation(libs.compose.material3)
@@ -38,13 +42,14 @@ kotlin {
         }
 
         androidMain.dependencies {
-            implementation(libs.mediamp.exoplayer)
+            implementation(libs.mpv.android)
             implementation(libs.androidx.activity.compose)
         }
 
         jvmMain.dependencies {
             implementation(libs.nucleus.decorated.window.tao)
             implementation(libs.nucleus.application)
+            implementation(libs.mediamp.api)
             implementation(libs.mediamp.mpv)
 
             val osName = providers.systemProperty("os.name").get().lowercase()

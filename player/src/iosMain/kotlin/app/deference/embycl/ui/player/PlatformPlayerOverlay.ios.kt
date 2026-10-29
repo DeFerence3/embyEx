@@ -2,12 +2,12 @@ package app.deference.embycl.ui.player
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import org.openani.mediamp.MediampPlayer
+import app.deference.embycl.ui.player.EmbeddedPlayer
 
 @Composable
 internal actual fun PlatformPlayerOverlay(
-    title: String,
-    player: MediampPlayer?,
+    source: PlayerSource,
+    player: EmbeddedPlayer?,
     window: PlayerWindowState,
     paused: Boolean,
     failed: Boolean,
@@ -16,6 +16,7 @@ internal actual fun PlatformPlayerOverlay(
     modifier: Modifier,
 ) {
     PlayerOverlay(
+        title = source.title,
         player = player,
         window = window,
         paused = paused,

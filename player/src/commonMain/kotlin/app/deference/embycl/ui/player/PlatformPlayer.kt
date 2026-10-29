@@ -2,7 +2,7 @@ package app.deference.embycl.ui.player
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import org.openani.mediamp.MediampPlayer
+import app.deference.embycl.ui.player.EmbeddedPlayer
 import kotlin.coroutines.CoroutineContext
 
 @Composable
@@ -13,11 +13,11 @@ internal expect fun isRecreatingPlayerHost(context: Any): Boolean
 internal expect fun createEmbeddedPlayer(
     context: Any,
     coroutineContext: CoroutineContext,
-): MediampPlayer
+): EmbeddedPlayer
 
 @Composable
 internal expect fun EmbeddedPlayerSurface(
-    player: MediampPlayer,
+    player: EmbeddedPlayer,
     modifier: Modifier = Modifier,
 )
 
@@ -36,8 +36,8 @@ internal expect fun PlayerPresentation(
 
 @Composable
 internal expect fun PlatformPlayerOverlay(
-    title: String,
-    player: MediampPlayer?,
+    source: PlayerSource,
+    player: EmbeddedPlayer?,
     window: PlayerWindowState,
     paused: Boolean,
     failed: Boolean,

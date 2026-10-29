@@ -23,15 +23,15 @@ import embyex.player.generated.resources.player_crop
 import embyex.player.generated.resources.player_fit
 import embyex.player.generated.resources.player_stretch
 import org.jetbrains.compose.resources.stringResource
-import org.openani.mediamp.features.AspectRatioMode
+import app.deference.embycl.ui.player.PlayerAspectRatio
 
 @Composable
 internal fun AndroidPlayerAspectFeedback(
-    mode: AspectRatioMode?,
+    mode: PlayerAspectRatio?,
     trigger: Int,
     modifier: Modifier = Modifier,
 ) {
-    val shown = remember(key1 = trigger) { mode ?: AspectRatioMode.FIT }
+    val shown = remember(key1 = trigger) { mode ?: PlayerAspectRatio.FIT }
     AnimatedVisibility(
         visible = mode != null,
         modifier = modifier,
@@ -45,9 +45,9 @@ internal fun AndroidPlayerAspectFeedback(
         ) {
             Text(
                 text = stringResource(resource = when (shown) {
-                    AspectRatioMode.FIT -> Res.string.player_fit
-                    AspectRatioMode.STRETCH -> Res.string.player_stretch
-                    AspectRatioMode.CROP -> Res.string.player_crop
+                    PlayerAspectRatio.FIT -> Res.string.player_fit
+                    PlayerAspectRatio.STRETCH -> Res.string.player_stretch
+                    PlayerAspectRatio.CROP -> Res.string.player_crop
                 }),
                 fontFamily = FontFamily.Monospace,
                 style = MaterialTheme.typography.labelLarge,

@@ -119,16 +119,14 @@ internal fun TaoPlayerPresentation(
         }
     }
     if (!requestedPip || !pipPresented) {
-        PlayerInlay {
-            PlayerPresentationHost(
+        PlayerPresentationHost(
                 onDraw = {
                     if (!window.isPictureInPicture && pipPresented) {
                         ownerScope.launch { if (!window.isPictureInPicture) pipPresented = false }
                     }
                 },
                 content = content,
-            )
-        }
+        )
     }
 }
 

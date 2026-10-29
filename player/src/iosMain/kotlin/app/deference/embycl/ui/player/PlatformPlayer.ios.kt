@@ -3,8 +3,7 @@ package app.deference.embycl.ui.player
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.window.Dialog
-import org.openani.mediamp.MediampPlayer
+import app.deference.embycl.ui.player.EmbeddedPlayer
 import kotlin.coroutines.CoroutineContext
 
 @Composable
@@ -15,11 +14,11 @@ internal actual fun isRecreatingPlayerHost(context: Any): Boolean = false
 internal actual fun createEmbeddedPlayer(
     context: Any,
     coroutineContext: CoroutineContext,
-): MediampPlayer = throw UnsupportedOperationException("Embedded playback is not configured on iOS.")
+): EmbeddedPlayer = throw UnsupportedOperationException("Embedded playback is not configured on iOS.")
 
 @Composable
 internal actual fun EmbeddedPlayerSurface(
-    player: MediampPlayer,
+    player: EmbeddedPlayer,
     modifier: Modifier,
 ) = Unit
 
@@ -29,7 +28,7 @@ internal actual fun PlayerWindow(
     content: @Composable (window: PlayerWindowState) -> Unit,
 ) {
     val window = remember { PlayerWindowState() }
-    Dialog(onDismissRequest = { window.closeRequested = true }, content = { content(window) })
+    content(window)
 }
 
 @Composable

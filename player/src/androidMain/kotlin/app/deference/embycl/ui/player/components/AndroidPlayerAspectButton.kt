@@ -11,31 +11,31 @@ import androidx.compose.ui.Modifier
 import embyex.player.generated.resources.Res
 import embyex.player.generated.resources.player_aspect
 import org.jetbrains.compose.resources.stringResource
-import org.openani.mediamp.features.AspectRatioMode
-import org.openani.mediamp.features.VideoAspectRatio
+import app.deference.embycl.ui.player.PlayerAspectRatio
+import app.deference.embycl.ui.player.PlayerAspect
 
 @Composable
 internal fun AndroidPlayerAspectButton(
-    aspect: VideoAspectRatio,
+    aspect: PlayerAspect,
     enabled: Boolean,
-    onModeChanged: (AspectRatioMode) -> Unit,
+    onModeChanged: (PlayerAspectRatio) -> Unit,
     dispatchAction: (() -> Unit) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val mode by aspect.mode.collectAsState()
     AndroidPlayerButton(
         icon = when (mode) {
-            AspectRatioMode.FIT -> Icons.Default.AspectRatio
-            AspectRatioMode.STRETCH -> Icons.Default.CropFree
-            AspectRatioMode.CROP -> Icons.Default.FitScreen
+            PlayerAspectRatio.FIT -> Icons.Default.AspectRatio
+            PlayerAspectRatio.STRETCH -> Icons.Default.CropFree
+            PlayerAspectRatio.CROP -> Icons.Default.FitScreen
         },
         description = stringResource(resource = Res.string.player_aspect),
         onClick = {
             dispatchAction {
                 val next = when (aspect.mode.value) {
-                    AspectRatioMode.FIT -> AspectRatioMode.STRETCH
-                    AspectRatioMode.STRETCH -> AspectRatioMode.CROP
-                    AspectRatioMode.CROP -> AspectRatioMode.FIT
+                    PlayerAspectRatio.FIT -> PlayerAspectRatio.STRETCH
+                    PlayerAspectRatio.STRETCH -> PlayerAspectRatio.CROP
+                    PlayerAspectRatio.CROP -> PlayerAspectRatio.FIT
                 }
                 aspect.setMode(mode = next)
                 onModeChanged(next)

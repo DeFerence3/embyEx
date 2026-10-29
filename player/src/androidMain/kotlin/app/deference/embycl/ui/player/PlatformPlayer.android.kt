@@ -3,14 +3,15 @@ package app.deference.embycl.ui.player
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import android.app.Activity
+import android.content.Context
 import android.content.ContextWrapper
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
-import org.openani.mediamp.MediampPlayer
-import org.openani.mediamp.exoplayer.ExoPlayerMediampPlayer
-import org.openani.mediamp.exoplayer.ExoPlayerMediampPlayerFactory
-import org.openani.mediamp.exoplayer.compose.ExoPlayerMediampPlayerSurface
+import app.deference.embycl.ui.player.EmbeddedPlayer
+import androidx.compose.runtime.key
+import androidx.compose.ui.viewinterop.AndroidView
+import kotlinx.coroutines.CoroutineScope
 import kotlin.coroutines.CoroutineContext
 
 @Composable
@@ -25,27 +26,31 @@ internal actual fun isRecreatingPlayerHost(context: Any): Boolean {
 internal actual fun createEmbeddedPlayer(
     context: Any,
     coroutineContext: CoroutineContext,
-): MediampPlayer = ExoPlayerMediampPlayerFactory().create(
-    context = context,
-    parentCoroutineContext = coroutineContext,
+): EmbeddedPlayer = AndroidMpvPlayer(
+    context = context as Context,
+    ownerScope = CoroutineScope(context = coroutineContext),
 )
 
 @Composable
 internal actual fun EmbeddedPlayerSurface(
-    player: MediampPlayer,
+    player: EmbeddedPlayer,
     modifier: Modifier,
 ) {
-    require(value = player is ExoPlayerMediampPlayer)
+    require(value = player is AndroidMpvPlayer)
     val view = LocalView.current
     DisposableEffect(key1 = view) {
         val previous = view.keepScreenOn
         view.keepScreenOn = true
         onDispose { view.keepScreenOn = previous }
     }
-    ExoPlayerMediampPlayerSurface(
-        mediampPlayer = player,
-        modifier = modifier,
-    )
+    key(player) {
+        AndroidView(
+            factory = { context -> AndroidMpvSurfaceView(context = context, player = player) },
+            modifier = modifier,
+            onReset = null,
+            onRelease = { it.release() },
+        )
+    }
 }
 
 @Composable

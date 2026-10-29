@@ -26,6 +26,8 @@
     <string name="player_lock">Lock controls</string>
     <string name="player_unlock">Slide to unlock</string>
     <string name="player_more">More options</string>
+    <string name="player_external">Open in mpvEx</string>
+    <string name="player_external_error">Could not open this video in mpvEx. Make sure mpvEx is installed and try again.</string>
     <string name="player_no_tracks">No tracks available</string>
     <string name="player_volume">Volume</string>
     <string name="player_brightness">Brightness</string>

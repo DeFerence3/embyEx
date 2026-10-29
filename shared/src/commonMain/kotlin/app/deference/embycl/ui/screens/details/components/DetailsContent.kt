@@ -27,8 +27,6 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Storage
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -49,6 +47,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import app.deference.coreui.DropDown
+import app.deference.coreui.DropdownItem
 import app.deference.embycl.ui.core.animateWithHover
 import app.deference.embycl.ui.screens.details.components.adaptive.ItemDetailsData
 import coil3.compose.AsyncImage
@@ -387,38 +387,31 @@ private fun PlayButton(
 					}
 				)
 			}
-			DropdownMenu(
+			DropDown(
 				expanded = checked,
-				onDismissRequest = { checked = false },
-				shape = MaterialTheme.shapes.large
+				onDismiss = { checked = false },
 			) {
-				if (!isAvailableOffline) DropdownMenuItem(
-					text = { Text("Download") },
-					leadingIcon = {
-						Icon(Icons.Default.Download, null)
-					},
+				if (!isAvailableOffline) DropdownItem(
+					text = "Download",
+					icon = Icons.Default.Download,
 					onClick = {
 						checked = false
 						onDownload()
 					}
 				)
 				
-				if (isAvailableOffline) DropdownMenuItem(
-					text = { Text("Remove from Downloads") },
-					leadingIcon = {
-						Icon(Icons.Default.Delete, null)
-					},
+				if (isAvailableOffline) DropdownItem(
+					text = "Remove from Downloads",
+					icon = Icons.Default.Delete,
 					onClick = {
 						checked = false
 						onRemove()
 					}
 				)
 				
-				if (isAvailableOffline) DropdownMenuItem(
-					text = { Text("Play from server") },
-					leadingIcon = {
-						Icon(Icons.Default.Storage, null)
-					},
+				if (isAvailableOffline) DropdownItem(
+					text = "Play from server",
+					icon = Icons.Default.Storage,
 					onClick = {
 						checked = false
 						onPlayFromServer()

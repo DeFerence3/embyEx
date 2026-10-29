@@ -10,5 +10,6 @@ internal object PlayerColors {
     val controlsOutline = Color.White.copy(alpha = 0.2f)
     val seekHighlight = Color.White.copy(alpha = 0.2f)
     val controlsScrim = Color.Black.copy(alpha = 0.8f)
+    val dialogScrim = Color.Black.copy(alpha = 0.6f)
     val transparent = Color.Transparent
 }

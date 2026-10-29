@@ -19,6 +19,7 @@ dependencies {
     implementation(project(":shared"))
 
     implementation(compose.desktop.currentOs)
+    implementation(libs.compose.material3)
 
     testImplementation(libs.kotlin.testJunit)
     testImplementation(libs.compose.uiTest)

@@ -1,13 +1,16 @@
 package app.deference.embycl.ui.player;
 
+import androidx.annotation.NonNull;
+
+import org.openani.mediamp.mpv.internal.MpvReadbackBackend;
+import org.openani.mediamp.mpv.utils.SkiaLayerRedrawer;
+import org.openani.mediamp.mpv.utils.SkiaRenderDeviceInterop;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import org.openani.mediamp.mpv.internal.MpvReadbackBackend;
-import org.openani.mediamp.mpv.utils.SkiaLayerRedrawer;
-import org.openani.mediamp.mpv.utils.SkiaRenderDeviceInterop;
 
 /** Linux CPU frames are independent of Tao's Wayland/X11 graphics context. */
 final class LinuxReadbackBackend implements MpvReadbackBackend {
@@ -30,6 +33,7 @@ final class LinuxReadbackBackend implements MpvReadbackBackend {
 
     @Override public boolean createRenderContext(long id) { load(); return create(id); }
     @Override public boolean destroyRenderContext(long id) { destroy(id); return true; }
+    @NonNull
     @Override public String getRendererName() { return "libmpv software readback"; }
     @Override public boolean setSurfaceConfig(long id, int width, int height, long device) {
         return resize(id, width, height);

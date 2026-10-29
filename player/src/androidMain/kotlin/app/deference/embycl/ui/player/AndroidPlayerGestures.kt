@@ -14,21 +14,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
-import app.deference.embycl.ui.player.components.androidPlayerTime
+import app.deference.embycl.ui.player.components.playerTime
 import embyex.player.generated.resources.Res
 import embyex.player.generated.resources.player_brightness
 import embyex.player.generated.resources.player_volume
 import org.jetbrains.compose.resources.stringResource
-import org.openani.mediamp.MediaStatus
-import org.openani.mediamp.MediampPlayer
-import org.openani.mediamp.togglePlayWhenReady
+import app.deference.embycl.ui.player.PlayerMediaStatus
+import app.deference.embycl.ui.player.EmbeddedPlayer
 import java.text.NumberFormat
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
 @Composable
 internal fun AndroidPlayerGestures(
-    player: MediampPlayer?,
+    player: EmbeddedPlayer?,
     enabled: Boolean,
     onTap: () -> Unit,
     onSeek: (seconds: Int) -> Unit,
@@ -58,7 +57,7 @@ internal fun AndroidPlayerGestures(
                 detectTapGestures(
                     onTap = { currentTap() },
                     onDoubleTap = { position ->
-                        if (enabled && player?.state?.value?.mediaStatus == MediaStatus.Ready) {
+                        if (enabled && player?.state?.value?.mediaStatus == PlayerMediaStatus.Ready) {
                             when {
                                 position.x < size.width * 0.35f -> {
                                     currentDispatch { player.skip(deltaMillis = -10_000L) }
@@ -104,7 +103,7 @@ internal fun AndroidPlayerGestures(
                         currentDragging(true)
                     },
                     onDragEnd = {
-                        if (horizontal == true && player.state.value.mediaStatus == MediaStatus.Ready) {
+                        if (horizontal == true && player.state.value.mediaStatus == PlayerMediaStatus.Ready) {
                             val target = seekTarget
                             currentDispatch { player.seekTo(positionMillis = target) }
                         }
@@ -119,7 +118,7 @@ internal fun AndroidPlayerGestures(
                             val duration = player.mediaProperties.value?.durationMillis ?: 0L
                             if (duration > 0L) {
                                 seekTarget = (position + total.x / size.width * 120_000L).toLong().coerceIn(0L, duration)
-                                currentFeedback(AndroidPlayerFeedback(message = androidPlayerTime(milliseconds = seekTarget)))
+                                currentFeedback(AndroidPlayerFeedback(message = playerTime(milliseconds = seekTarget)))
                             }
                         } else {
                             val value = (initialLevel - total.y / size.height * 2f).coerceIn(0f, 1f)

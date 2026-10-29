@@ -1,24 +1,19 @@
 package app.deference.embycl
 
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.rememberCoroutineScope
-import app.deference.embycl.data.repository.download.DesktopDownloadRuntime
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeoutOrNull
-import org.koin.mp.KoinPlatformTools
-import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.window.WindowPlacement
 import androidx.compose.ui.window.rememberWindowState
 import app.deference.embycl.core.di.initKoin
 import app.deference.embycl.core.session.Session
 import app.deference.embycl.data.local.preference.EmbyPreference
 import app.deference.embycl.data.local.preference.createDataStore
+import app.deference.embycl.data.repository.download.DesktopDownloadRuntime
 import app.deference.embycl.ui.core.ExitConfirmationDialog
 import app.deference.embycl.ui.theme.EmbympvTheme
 import dev.nucleusframework.application.nucleusApplication
@@ -27,10 +22,13 @@ import dev.nucleusframework.window.material.MaterialDecoratedWindow
 import embyex.shared.generated.resources.Res
 import embyex.shared.generated.resources.app_name
 import embyex.shared.generated.resources.embyex_logo
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
+import org.koin.mp.KoinPlatformTools
 
-@OptIn(ExperimentalComposeUiApi::class)
 fun main() = nucleusApplication {
     val downloads = remember {
         Session.init(EmbyPreference(createDataStore()))

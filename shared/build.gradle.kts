@@ -68,13 +68,15 @@ kotlin {
 		jvmMain { kotlin.srcDir("src/jvmAndroidMain/kotlin") }
 		androidMain { kotlin.srcDir("src/jvmAndroidMain/kotlin") }
 		commonMain.dependencies {
-			// EmbyDetailsAction.PlaybackUpdate exposes PlaybackPosition from :player.
+			// The shared playback route reports PlaybackPosition from :player.
 			api(project(":player"))
+			implementation(project(":coreui"))
+			
 			implementation(libs.room.runtime)
 			implementation(libs.sqlite.bundled)
 			implementation(libs.compose.runtime)
 			implementation(libs.compose.foundation)
-			api(libs.compose.material3)
+			implementation(libs.compose.material3)
 			implementation(libs.compose.ui)
 			api(libs.compose.components.resources)
 			implementation(libs.androidx.lifecycle.viewmodelCompose)

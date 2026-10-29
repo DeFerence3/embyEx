@@ -1,12 +1,14 @@
 package app.deference.embycl.ui.player
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -18,16 +20,20 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.semantics.paneTitle
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import app.deference.embycl.ui.theme.PlayerColors
 import app.deference.embycl.domain.model.PlaybackPosition
+import app.deference.embycl.ui.theme.PlayerColors
 import embyex.player.generated.resources.Res
 import embyex.player.generated.resources.player_error
 import embyex.player.generated.resources.player_retry
@@ -39,11 +45,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
-import org.openani.mediamp.MediaStatus
-import org.openani.mediamp.MediampPlayer
-import org.openani.mediamp.PlaybackEvent
-import org.openani.mediamp.source.MediaExtraFiles
-import org.openani.mediamp.source.UriMediaData
 
 @Composable
 internal fun EmbeddedPlayerContent(
@@ -56,7 +57,8 @@ internal fun EmbeddedPlayerContent(
     val closeCallback by rememberUpdatedState(newValue = onClose)
     var position by remember(key1 = source.key) { mutableStateOf(value = PlaybackPosition()) }
     var closed by remember(key1 = source.key) { mutableStateOf(value = false) }
-    var player by remember(key1 = source.key) { mutableStateOf<MediampPlayer?>(value = null) }
+    var closing by remember(key1 = source.key) { mutableStateOf(value = false) }
+    var player by remember(key1 = source.key) { mutableStateOf<EmbeddedPlayer?>(value = null) }
     var failed by remember(key1 = source.key) { mutableStateOf(value = false) }
     var attempt by remember(key1 = source.key) { mutableStateOf(value = 0) }
     var resumePosition by rememberSaveable(source.key) { mutableStateOf(value = source.positionMs) }
@@ -65,10 +67,17 @@ internal fun EmbeddedPlayerContent(
     val context = playerContext()
     val lifecycle = LocalLifecycleOwner.current.lifecycle
 
+    fun requestClose() {
+        if (!closing && !closed) {
+            closing = true
+            player?.pause()
+        }
+    }
+
     fun finish() {
         if (!closed) {
             closed = true
-            player?.takeIf { it.state.value.mediaStatus == MediaStatus.Ready }?.let { active ->
+            player?.takeIf { !position.completed && it.state.value.mediaStatus == PlayerMediaStatus.Ready }?.let { active ->
                 position = position.copy(
                     positionMs = active.currentPositionMillis.value,
                     durationMs = active.mediaProperties.value?.durationMillis,
@@ -97,32 +106,41 @@ internal fun EmbeddedPlayerContent(
     }
 
     LaunchedEffect(key1 = window.closeRequested) {
-        if (window.closeRequested) finish()
+        if (window.closeRequested) requestClose()
+    }
+
+    LaunchedEffect(key1 = closing) {
+        if (closing) finish()
     }
 
     PlayerPresentation(title = source.title, window = window) {
-        Surface(
-            modifier = Modifier.fillMaxSize(),
-            color = PlayerColors.background,
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(color = PlayerColors.background)
+                .onGloballyPositioned { window.videoBounds = it.boundsInWindow() }
+                .semantics { paneTitle = source.title },
         ) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 player?.let { active ->
                     EmbeddedPlayerSurface(player = active, modifier = Modifier.fillMaxSize())
                 }
                 PlatformPlayerOverlay(
-                    title = source.title,
+                    source = source,
                     player = player,
                     window = window,
                     paused = position.paused,
-                    failed = failed || closed,
-                    onClose = { ownerScope.launch { finish() } },
+                    failed = failed || closed || closing,
+                    onClose = { ownerScope.launch { requestClose() } },
                     dispatchAction = { action -> ownerScope.launch { action() } },
                     modifier = Modifier.fillMaxSize(),
                 )
                 if (failed) {
                     Surface(shape = MaterialTheme.shapes.large) {
                         Column(
-                            modifier = Modifier.padding(all = 24.dp),
+                            modifier = Modifier
+                                .verticalScroll(state = rememberScrollState())
+                                .padding(all = 24.dp),
                             verticalArrangement = Arrangement.spacedBy(space = 12.dp),
                         ) {
                             Text(text = stringResource(resource = Res.string.player_error))
@@ -131,12 +149,9 @@ internal fun EmbeddedPlayerContent(
                             }
                         }
                     }
-                } else if (player == null) {
-                    CircularProgressIndicator()
                 }
             }
         }
-
     }
 
     // Create on the player window's UI thread and subscribe before opening media.
@@ -150,6 +165,10 @@ internal fun EmbeddedPlayerContent(
             failed = true
             return@LaunchedEffect
         }
+        if (closing || closed) {
+            active.close()
+            return@LaunchedEffect
+        }
         player = active
         try {
             coroutineScope {
@@ -157,28 +176,27 @@ internal fun EmbeddedPlayerContent(
                 launch(start = CoroutineStart.UNDISPATCHED) {
                     active.events.collect { event ->
                         when (event) {
-                            is PlaybackEvent.MediaEnded -> {
+                            is PlayerEvent.MediaEnded -> {
                                 position = PlaybackPosition(
                                     positionMs = event.durationMillis ?: event.finalPositionMillis,
                                     durationMs = event.durationMillis,
                                     paused = true,
                                     completed = true,
                                 )
-                                finish()
+                                requestClose()
                             }
-                            is PlaybackEvent.SeekCompleted -> if (opened && !closed) {
+                            is PlayerEvent.SeekCompleted -> if (opened && !closed && !closing) {
                                 position = position.copy(positionMs = event.positionMillis)
                                 progressCallback(position)
                             }
-                            is PlaybackEvent.ErrorOccurred -> failed = true
-                            is PlaybackEvent.ExternalPlayWhenReadyChanged -> Unit
+                            is PlayerEvent.ErrorOccurred -> failed = true
                         }
                     }
                 }
                 launch {
                     var previousPaused: Boolean? = null
                     combine(active.state, active.currentPositionMillis, active.mediaProperties) { state, time, metadata ->
-                        if (state.mediaStatus == MediaStatus.Ready) {
+                        if (state.mediaStatus == PlayerMediaStatus.Ready) {
                             PlaybackPosition(
                                 positionMs = time,
                                 durationMs = metadata?.durationMillis,
@@ -186,7 +204,7 @@ internal fun EmbeddedPlayerContent(
                             )
                         } else null
                     }.collect { latest ->
-                        if (opened && latest != null && !closed) {
+                        if (opened && latest != null && !closed && !closing) {
                             position = latest
                             resumePosition = latest.positionMs ?: resumePosition
                             resumePaused = latest.paused
@@ -195,19 +213,14 @@ internal fun EmbeddedPlayerContent(
                         }
                     }
                 }
-                active.setMediaData(
-                    data = UriMediaData(
-                        uri = source.uri,
-                        headers = source.headers,
-                        extraFiles = MediaExtraFiles(
-                            subtitles = source.subtitles,
-                        ),
-                    ),
-                    playWhenReady = !resumePaused && lifecycle.currentState.isAtLeast(state = Lifecycle.State.STARTED),
+                active.open(
+                    source = source,
+                    playWhenReady = !closing && !resumePaused && lifecycle.currentState.isAtLeast(state = Lifecycle.State.STARTED),
                     startPositionMillis = resumePosition,
                 )
                 opened = true
-                if (!closed) {
+                if (closing) active.pause()
+                if (!closed && !closing) {
                     position = PlaybackPosition(
                         positionMs = active.currentPositionMillis.value,
                         durationMs = active.mediaProperties.value?.durationMillis,
@@ -218,7 +231,7 @@ internal fun EmbeddedPlayerContent(
                 launch {
                     while (true) {
                         delay(timeMillis = 10_000L)
-                        if (!closed && !failed && position.positionMs != null) progressCallback(position)
+                        if (!closed && !closing && !failed && position.positionMs != null) progressCallback(position)
                     }
                 }
                 awaitCancellation()

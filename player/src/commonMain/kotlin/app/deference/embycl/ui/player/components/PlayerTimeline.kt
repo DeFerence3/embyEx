@@ -28,12 +28,12 @@ import embyex.player.generated.resources.Res
 import embyex.player.generated.resources.player_position
 import embyex.player.generated.resources.player_remaining
 import org.jetbrains.compose.resources.stringResource
-import org.openani.mediamp.MediaStatus
-import org.openani.mediamp.MediampPlayer
+import app.deference.embycl.ui.player.PlayerMediaStatus
+import app.deference.embycl.ui.player.EmbeddedPlayer
 
 @Composable
-internal fun AndroidPlayerTimeline(
-    player: MediampPlayer,
+internal fun PlayerTimeline(
+    player: EmbeddedPlayer,
     enabled: Boolean,
     onSeeking: (Boolean) -> Unit,
     dispatchAction: (() -> Unit) -> Unit,
@@ -54,7 +54,7 @@ internal fun AndroidPlayerTimeline(
         horizontalArrangement = Arrangement.spacedBy(space = 8.dp),
     ) {
         Text(
-            text = androidPlayerTime(milliseconds = displayed),
+            text = playerTime(milliseconds = displayed),
             color = PlayerColors.content,
             fontFamily = FontFamily.Monospace,
             style = MaterialTheme.typography.labelMedium,
@@ -72,7 +72,7 @@ internal fun AndroidPlayerTimeline(
                 seeking = null
                 onSeeking(false)
             },
-            enabled = enabled && duration > 0 && state.mediaStatus == MediaStatus.Ready,
+            enabled = enabled && duration > 0 && state.mediaStatus == PlayerMediaStatus.Ready,
             colors = SliderDefaults.colors(
                 thumbColor = PlayerColors.content,
                 activeTrackColor = PlayerColors.content,
@@ -83,7 +83,7 @@ internal fun AndroidPlayerTimeline(
                 .semantics { contentDescription = seekDescription },
         )
         Text(
-            text = (if (remaining) "−" else "") + androidPlayerTime(
+            text = (if (remaining) "−" else "") + playerTime(
                 milliseconds = if (remaining) duration - displayed else duration,
             ),
             color = PlayerColors.content,
@@ -98,7 +98,7 @@ internal fun AndroidPlayerTimeline(
     }
 }
 
-internal fun androidPlayerTime(
+internal fun playerTime(
     milliseconds: Long,
 ): String {
     val seconds = milliseconds.coerceAtLeast(minimumValue = 0L) / 1000L
