@@ -16,8 +16,6 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.material.icons.filled.Update
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -37,6 +35,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import app.deference.coreui.DropDown
+import app.deference.coreui.DropDownItem
 import app.deference.embycl.BuildConfig
 import app.deference.embycl.core.session.Session
 import app.deference.embycl.domain.model.ServerInfo
@@ -223,33 +223,28 @@ fun SettingsContent(
 									}
 								)
 							}
-							DropdownMenu(
+							DropDown(
 								expanded = checked,
-								onDismissRequest = { checked = false },
-								shape = MaterialTheme.shapes.large
-							) {
-								DropdownMenuItem(
-									text = { Text("Current build changelog") },
-									leadingIcon = {
-										Icon(Icons.Default.Description, null)
-									},
-									onClick = {
-										checked = false
-										showChangelog = true
-									}
-								)
-								
-								DropdownMenuItem(
-									text = { Text("View release page") },
-									leadingIcon = {
-										Icon(Icons.Default.OpenInBrowser, null)
-									},
-									onClick = {
-										checked = false
-										openReleasePage()
-									}
-								)
-							}
+								items = listOf(
+									DropDownItem(
+										text = "Current build changelog",
+										icon = Icons.Default.Description,
+										onClick = {
+											checked = false
+											showChangelog = true
+										}
+									),
+									DropDownItem(
+										text = "View release page",
+										icon = Icons.Default.OpenInBrowser,
+										onClick = {
+											checked = false
+											openReleasePage()
+										}
+									)
+								),
+								onDismiss = { checked = false },
+							)
 						}
 					}
 				}

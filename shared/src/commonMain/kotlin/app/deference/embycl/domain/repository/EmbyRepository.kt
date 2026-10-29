@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.emptyFlow
 
 interface EmbyRepository {
     val changes: Flow<Unit> get() = emptyFlow()
-    /** Returns an external-player request, or null when playback was handled by the repository. */
+    /** Returns a player request, or null when local playback was handled by the repository. */
     suspend fun play(item: EmbyItem): EmbyPlaybackRequest? = null
     /** Streams from the server even when a saved copy exists. */
     suspend fun playFromServer(item: EmbyItem): EmbyPlaybackRequest? = play(item)
@@ -25,5 +25,11 @@ interface EmbyRepository {
 	fun streamUrl(item: EmbyItem): String
 	suspend fun toggleFavorite(itemId: String, isFavorite: Boolean)
 	suspend fun togglePlayed(itemId: String, isPlayed: Boolean)
-	fun reportPlayback(itemId: String, positionTicks: Long, event: EmbyPlaybackEvent, isPaused: Boolean = false)
+    /** Caller owns ordering. Returns only after the server accepts the report. */
+    suspend fun reportPlayback(
+        request: EmbyPlaybackRequest,
+        positionTicks: Long,
+        event: EmbyPlaybackEvent,
+        isPaused: Boolean = false,
+    )
 }

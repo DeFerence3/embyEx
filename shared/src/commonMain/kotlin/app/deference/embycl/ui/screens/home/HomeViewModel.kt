@@ -8,6 +8,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.CancellationException
 import org.koin.core.annotation.KoinViewModel
 
 @KoinViewModel
@@ -20,9 +22,12 @@ class HomeViewModel(
 	private val _events = Channel<HomeEvent>(Channel.BUFFERED)
 	val events = _events.receiveAsFlow()
 	
-	init {
-		load()
-	}
+    private var loadJob: Job? = null
+
+    init {
+        load()
+        viewModelScope.launch { repository.changes.collect { load() } }
+    }
 	
 	fun onAction(action: HomeAction) {
 		when (action) {
@@ -32,9 +37,15 @@ class HomeViewModel(
 	}
 	
 	private fun load() {
-		_state.value = HomeState()
-		viewModelScope.launch {
-			val result = runCatching { repository.home() }
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
+            val result = try {
+                Result.success(value = repository.home())
+            } catch (exception: CancellationException) {
+                throw exception
+            } catch (exception: Exception) {
+                Result.failure(exception = exception)
+            }
 			_state.value = HomeState(result)
 			result.exceptionOrNull()?.let { _events.send(HomeEvent.Error(it.message ?: "Could not load home.")) }
 		}

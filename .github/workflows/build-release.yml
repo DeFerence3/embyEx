@@ -67,6 +67,7 @@ jobs:
             androidApp/build/outputs/apk/release/*.apk
             androidApp/build/outputs/apk/release/output-metadata.json
           if-no-files-found: error
+          retention-days: 5
 
       - name: Remove Android signing key
         if: always()
@@ -130,6 +131,7 @@ jobs:
             desktopApp/build/compose/binaries/main/graalvm-msi/*.msi
             desktopApp/build/compose/binaries/main/graalvm-msi/latest.yml
           if-no-files-found: error
+          retention-days: 5
 
       - name: Remove Windows signing certificate
         if: always()
@@ -195,6 +197,7 @@ jobs:
         with:
           name: release-assets-changelog
           path: release_notes.md
+          retention-days: 5
 
 
   release:

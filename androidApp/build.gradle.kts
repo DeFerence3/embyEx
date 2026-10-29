@@ -74,12 +74,20 @@ android {
 		}
 	}
 	compileOptions {
-		sourceCompatibility = JavaVersion.VERSION_11
-		targetCompatibility = JavaVersion.VERSION_11
+		sourceCompatibility = JavaVersion.VERSION_21
+		targetCompatibility = JavaVersion.VERSION_21
 	}
 	buildFeatures {
 		compose = true
 		buildConfig = true
+	}
+}
+
+androidComponents {
+	onVariants(selector().withBuildType("release")) { variant ->
+		// GitHub distributes APKs directly. Compress native codecs for smaller downloads;
+		// Android extracts the device's libraries during installation.
+		variant.packaging.jniLibs.useLegacyPackaging.set(true)
 	}
 }
 
@@ -97,8 +105,8 @@ dependencies {
 	debugImplementation(libs.compose.uiToolingPreview)
 	
 	androidTestImplementation(libs.androidx.testExt.junit)
-	androidTestImplementation("androidx.test:runner:1.7.0")
-	androidTestImplementation("io.ktor:ktor-client-mock:${libs.versions.ktor.get()}")
+	androidTestImplementation(libs.androidx.runner)
+	androidTestImplementation(libs.ktor.client.mock)
 	androidTestImplementation(libs.ktor.client.core)
 	androidTestImplementation(libs.ktor.client.okhttp)
 	androidTestImplementation(libs.ktor.serialization.kotlinx.json)

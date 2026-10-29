@@ -8,6 +8,8 @@ import androidx.compose.runtime.retain.retain
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.deference.embycl.core.session.Session
 import app.deference.embycl.ui.EmbyExNav
+import app.deference.embycl.ui.screens.downloads.OfflinePlaybackHost
+import app.deference.embycl.ui.player.PlayerInlayHost
 import app.deference.embycl.ui.core.LocalKoasty
 import app.deference.embycl.ui.core.nav.Navigator
 import app.deference.embycl.ui.core.update.AppUpdateHost
@@ -38,6 +40,9 @@ fun EmbyExApp(isLoggedIn: Boolean) {
 	)
 	KoastyProvider(koastManager, config = koastyHostConfig){
 		AppUpdateHost()
-		EmbyExNav(navigator)
+        PlayerInlayHost {
+            EmbyExNav(navigator)
+            OfflinePlaybackHost(navigator = navigator)
+        }
 	}
 }

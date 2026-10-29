@@ -1,0 +1,35 @@
+<resources>
+    <string name="player_close">Close player</string>
+    <string name="player_pip">Picture in picture</string>
+    <string name="player_restore">Restore player</string>
+    <string name="player_fullscreen">Full screen</string>
+    <string name="player_exit_fullscreen">Exit full screen</string>
+    <string name="player_pip_error">Could not enter picture in picture. Check whether it is allowed for this app in system settings.</string>
+    <string name="player_play">Play</string>
+    <string name="player_pause">Pause</string>
+    <string name="player_back">Back 10 s</string>
+    <string name="player_forward">Forward 10 s</string>
+    <string name="player_position">Playback position</string>
+    <string name="player_retry">Retry</string>
+    <string name="player_error">Could not play this media. Check your connection and media format, then retry.</string>
+    <string name="player_audio">Audio track</string>
+    <string name="player_subtitles">Subtitles</string>
+    <string name="player_subtitles_off">Off</string>
+    <string name="player_speed">Playback speed</string>
+    <string name="player_aspect">Aspect ratio</string>
+    <string name="player_fit">Fit Screen</string>
+    <string name="player_seek_forward_amount">Forward %1$d seconds</string>
+    <string name="player_seek_backward_amount">Back %1$d seconds</string>
+    <string name="player_crop">Crop</string>
+    <string name="player_stretch">Stretch</string>
+    <string name="player_rotate">Rotate screen</string>
+    <string name="player_lock">Lock controls</string>
+    <string name="player_unlock">Slide to unlock</string>
+    <string name="player_more">More options</string>
+    <string name="player_external">Open in mpvEx</string>
+    <string name="player_external_error">Could not open this video in mpvEx. Make sure mpvEx is installed and try again.</string>
+    <string name="player_no_tracks">No tracks available</string>
+    <string name="player_volume">Volume</string>
+    <string name="player_brightness">Brightness</string>
+    <string name="player_remaining">Show remaining time</string>
+</resources>

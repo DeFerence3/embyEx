@@ -2,11 +2,12 @@ package app.deference.embycl.ui.screens.details
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import app.deference.embycl.domain.model.EmbyPlaybackEvent
 import app.deference.embycl.domain.model.download.DownloadRequest
 import app.deference.embycl.domain.repository.DownloadsRepo
 import app.deference.embycl.domain.repository.EmbyRepository
 import app.deference.embycl.ui.screens.downloads.DownloadChoice
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,16 +28,10 @@ class EmbyDetailsVM(
 	val state = _state.asStateFlow()
 	private val _events = Channel<EmbyDetailsEvent>(Channel.BUFFERED)
 	val events = _events.receiveAsFlow()
-	
-	init {
-		load()
-	}
-	
+    private var loading: Job? = null
 	fun onAction(action: EmbyDetailsAction) {
 		when (action) {
 			EmbyDetailsAction.Retry -> load()
-			EmbyDetailsAction.Play -> preparePlayback()
-			EmbyDetailsAction.PlayFromServer -> preparePlayback(fromServer = true)
 			EmbyDetailsAction.Download -> requestDownload()
 			is EmbyDetailsAction.SelectSource -> _state.update { s ->
 				s.choice?.takeIf { c -> c.sources.any { it.key == action.key } }?.let { s.copy(choice = it.copy(selected = action.key)) } ?: s
@@ -44,12 +39,6 @@ class EmbyDetailsVM(
 			EmbyDetailsAction.ConfirmDownload -> confirmDownload()
 			EmbyDetailsAction.DismissDownload -> if (_state.value.choice?.submitting != true) _state.update { it.copy(choice = null) }
 			EmbyDetailsAction.RemoveDownload -> removeDownload()
-			is EmbyDetailsAction.PlaybackFinished -> {
-				action.positionMs?.let {
-					repository.reportPlayback(id, it * 10_000L, EmbyPlaybackEvent.Stopped)
-				}
-				load()
-			}
 		}
 	}
 
@@ -89,23 +78,21 @@ class EmbyDetailsVM(
 		}
 	}
 	
-	private fun preparePlayback(fromServer: Boolean = false) {
-        val item = _state.value.content?.getOrNull() ?: return
-        viewModelScope.launch {
-            try {
-                val request = if (fromServer) repository.playFromServer(item) else repository.play(item)
-                if (request != null) _events.send(EmbyDetailsEvent.LaunchPlayback(request))
-                else load()
-            } catch (e: kotlinx.coroutines.CancellationException) { throw e }
-            catch (e: Exception) { _events.send(EmbyDetailsEvent.Error(e.message ?: "Could not play media.")) }
-        }
-    }
-
 	private fun load() {
-		_state.value = _state.value.copy(content = null)
-		viewModelScope.launch {
-			val result = runCatching { repository.item(id) }
-			_state.value = _state.value.copy(content = result)
+        if (loading?.isActive == true) return
+        if (_state.value.content?.isSuccess != true) _state.update { it.copy(content = null) }
+		loading = viewModelScope.launch {
+			val result = try {
+                Result.success(value = repository.item(id = id))
+            } catch (exception: CancellationException) {
+                throw exception
+            } catch (exception: Exception) {
+                Result.failure(exception = exception)
+            }
+            _state.update { current ->
+                if (result.isSuccess || current.content?.isSuccess != true) current.copy(content = result)
+                else current
+            }
 			result.exceptionOrNull()?.let { _events.send(EmbyDetailsEvent.Error(it.message ?: "Could not load item.")) }
 		}
 	}

@@ -24,7 +24,7 @@ class EmbyRepositoryImpl(
         if (local) saved else listOfNotNull(selected)
     }.distinctUntilChanged()
 
-    override val changes: Flow<Unit> = combine(
+    override val changes: Flow<Unit> = merge(remote.changes, combine(
         accounts.flatMapLatest { selected ->
             if (selected.isEmpty()) flowOf(Unit) else combine(selected.map { account ->
                 offline.observeDownloads(account.key).map { rows -> rows.filter { it.isLocallyAvailable } }.distinctUntilChanged().flatMapLatest { rows ->
@@ -34,7 +34,7 @@ class EmbyRepositoryImpl(
                 }
             }) { Unit }
         }, Session.browseLocalFiles, Session.downloadConnection, Session.isConnected,
-    ) { _, _, _, _ -> }
+    ) { _, _, _, _ -> })
 
     private suspend fun rows(): List<StoredDownload> = accounts.first().flatMap { account ->
         offline.observeDownloads(account.key).first()

@@ -89,6 +89,8 @@ internal enum class WindowControlSlot { Minimize, Maximize, Close }
 fun DecoratedWindowScope.EmbyExTitleBar(
 ) {
 	val state = this.state
+	if (state.isFullscreen) return
+
 	val colors = MaterialTheme.colorScheme
 	val style = TitleBarStyle(
 		TitleBarColors(

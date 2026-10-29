@@ -1,10 +1,14 @@
 package app.deference.embycl.domain.model
 
 data class EmbyPlaybackRequest(
-	val itemId: String,
-	val title: String,
-	val urls: ArrayList<String>,
-	val selectedIndex: Int,
-	val positionMs: Int,
-	val accessToken: String,
-)
+    val items: List<EmbyPlaybackItem>,
+    val selectedIndex: Int,
+    val serverUrl: String,
+    val userId: String,
+    val accessToken: String,
+    val sessionId: String,
+) {
+    val item: EmbyPlaybackItem get() = items[selectedIndex]
+
+    override fun toString(): String = "EmbyPlaybackRequest(sessionId=$sessionId)"
+}

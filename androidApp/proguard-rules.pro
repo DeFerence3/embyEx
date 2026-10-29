@@ -1,7 +1,2 @@
-# Jetpack Compose Style Keep Rules
--keep class androidx.compose.foundation.style.** { *; }
--keep interface androidx.compose.foundation.style.** { *; }
--keepclassmembers class * implements androidx.compose.foundation.style.** { *; }
-
--keep class androidx.compose.material3.** { *; }
--keepclassmembers class androidx.compose.material3.** { *; }
+# AndroidX and Kotlin libraries provide their own consumer keep rules.
+# Keep JNI entry points in player/consumer-rules.pro, beside the native integration.

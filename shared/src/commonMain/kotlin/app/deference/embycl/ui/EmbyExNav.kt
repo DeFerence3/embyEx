@@ -18,11 +18,27 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import app.deference.embycl.ui.core.LocalNavigator
 import app.deference.embycl.ui.core.nav.Navigator
+import app.deference.embycl.ui.screens.player.EmbyPlayerScreen
 
 @Composable
 fun EmbyExNav(navigator: Navigator) {
 	val spatial = MaterialTheme.motionScheme.defaultSpatialSpec<IntOffset>()
 	val effects = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+	val slowEffects = MaterialTheme.motionScheme.slowEffectsSpec<Float>()
+	val popupEnterTransition = fadeIn(animationSpec = slowEffects) + scaleIn(
+			initialScale = 0.85f,
+			transformOrigin = TransformOrigin.Center,
+			animationSpec = slowEffects
+		)
+	
+	val popupExitTransition = fadeOut(animationSpec = slowEffects) + scaleOut(
+			targetScale = 0.85f,
+			transformOrigin = TransformOrigin.Center,
+			animationSpec = slowEffects
+		)
+	
+	val popupTransition = popupEnterTransition togetherWith popupExitTransition
+	
 	CompositionLocalProvider(LocalNavigator provides navigator) {
 		NavDisplay(
 			backStack = navigator.backStack,
@@ -32,7 +48,16 @@ fun EmbyExNav(navigator: Navigator) {
 			),
 			onBack = { navigator.goBack() },
 			entryProvider = { key ->
-				NavEntry(key) {
+				val metadata = if(key is EmbyPlayerScreen){
+					NavDisplay.transitionSpec { popupTransition } +
+					NavDisplay.popTransitionSpec { popupTransition }+
+					NavDisplay.predictivePopTransitionSpec { _ -> popupTransition }
+				} else emptyMap()
+				
+				NavEntry(
+					key = key,
+					metadata = metadata
+				) {
 					key.Content()
 				}
 			},

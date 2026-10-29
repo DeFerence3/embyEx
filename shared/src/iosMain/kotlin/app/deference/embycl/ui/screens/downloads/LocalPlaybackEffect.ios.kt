@@ -6,7 +6,11 @@ import app.deference.embycl.domain.model.download.*
 
 actual val localPlaybackSupported = false
 @Composable
-actual fun LocalPlaybackEffect(request: LocalPlaybackRequest?, onResult: (String, LocalPlaybackResult) -> Unit) {
+actual fun LocalPlaybackEffect(
+    request: LocalPlaybackRequest?,
+    onResult: (String, LocalPlaybackResult) -> Unit,
+    onProgress: (String, LocalPlaybackResult) -> Unit,
+) {
     LaunchedEffect(request?.sessionId) {
         request?.let { onResult(it.sessionId, LocalPlaybackResult(error = LocalPlayerError.UNSUPPORTED_PLATFORM)) }
     }

@@ -8,14 +8,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Download
-import app.deference.embycl.ui.core.LocalNavigator
-import app.deference.embycl.ui.screens.downloads.EmbyDownloadsScreen
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -34,7 +30,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import app.deference.coreui.DropDown
+import app.deference.coreui.DropDownItem
 import app.deference.embycl.core.session.Session
+import app.deference.embycl.ui.core.LocalNavigator
+import app.deference.embycl.ui.screens.downloads.EmbyDownloadsScreen
 import app.deference.embycl.ui.screens.shell.EmbyTab
 import coil3.compose.AsyncImage
 
@@ -68,17 +68,36 @@ fun TopAppBar(currentTab: EmbyTab, onRefresh: () -> Unit, onLogout: () -> Unit, 
 						}
 					}
 				}
-				DropdownMenu(expanded = accountMenuOpen, onDismissRequest = { accountMenuOpen = false }, shape = MaterialTheme.shapes.large) {
-                    DropdownMenuItem(
-                        text = { Text("Downloads") }, leadingIcon = { Icon(Icons.Default.Download, null) },
-                        onClick = { accountMenuOpen = false; navigator.goTo(EmbyDownloadsScreen) })
-					DropdownMenuItem(
-						text = { Text("Settings") }, leadingIcon = { Icon(Icons.Default.Settings, null) },
-						onClick = { accountMenuOpen = false; onSettings() })
-					DropdownMenuItem(
-						text = { Text("Sign out") }, leadingIcon = { Icon(Icons.AutoMirrored.Default.Logout, null, tint = MaterialTheme.colorScheme.error) },
-						onClick = { accountMenuOpen = false; onLogout() })
-				}
+				DropDown(
+					expanded = accountMenuOpen,
+					items = listOf(
+						DropDownItem(
+							text = "Downloads",
+							icon = Icons.Default.Download,
+							onClick = {
+								accountMenuOpen = false
+								navigator.goTo(EmbyDownloadsScreen)
+							}
+						),
+						DropDownItem(
+							text = "Settings",
+							icon = Icons.Default.Settings,
+							onClick = {
+								accountMenuOpen = false
+								onSettings()
+							}
+						),
+						DropDownItem(
+							text = "Sign Out",
+							icon = Icons.AutoMirrored.Default.Logout,
+							onClick = {
+								accountMenuOpen = false
+								onLogout()
+							}
+						),
+					),
+					onDismiss = { accountMenuOpen = false }
+				)
 			}
 		},
 		colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),

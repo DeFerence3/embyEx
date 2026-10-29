@@ -7,6 +7,11 @@ import app.deference.embycl.domain.model.EmbyHome
 import app.deference.embycl.domain.model.EmbyItem
 import app.deference.embycl.domain.model.EmbyItemsResult
 import app.deference.embycl.domain.model.EmbyPlaybackEvent
+import app.deference.embycl.core.networking.DONT_INTERCEPT
+import app.deference.embycl.domain.model.EmbyPlaybackItem
+import app.deference.embycl.domain.model.EmbyPlaybackRequest
+import kotlin.uuid.Uuid
+import io.ktor.client.request.header
 import app.deference.embycl.domain.model.EmbyPlaybackReport
 import app.deference.embycl.domain.model.ServerDetails
 import app.deference.embycl.domain.model.ServerInfo
@@ -21,18 +26,23 @@ import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.isSuccess
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
 import org.koin.core.annotation.Single
 
 @Single(binds = [RemoteEmbyRepository::class])
 class RemoteEmbyRepository(
 	private val httpClient: HttpClient,
 ) : EmbyRepository {
+    private val playbackChanges = MutableSharedFlow<Unit>(
+        replay = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST,
+    )
+    override val changes = playbackChanges.asSharedFlow()
+
 	
 	override suspend fun serverInfo(): ServerDetails {
 		var response = httpClient.get("/System/Info") { expectSuccess = false }
@@ -133,18 +143,32 @@ class RemoteEmbyRepository(
 	
     override suspend fun play(item: EmbyItem): app.deference.embycl.domain.model.EmbyPlaybackRequest {
         val token = Session.accessToken ?: error("Sign in to play this item.")
+        val server = Session.serverUrl
+        val user = Session.userId
         val parent = item.seasonId ?: item.parentId
         val siblings = if (item.isEpisode() && !parent.isNullOrBlank()) {
             try { items(parent).items.ifEmpty { listOf(item) } }
             catch (e: kotlinx.coroutines.CancellationException) { throw e }
             catch (_: Exception) { listOf(item) }
         } else listOf(item)
+        check(server == Session.serverUrl && user == Session.userId && token == Session.accessToken) {
+            "Playback account changed."
+        }
         val playlist = if (siblings.any { it.id == item.id }) siblings else listOf(item)
-        reportPlayback(item.id, item.userData?.playbackPositionTicks ?: 0L, EmbyPlaybackEvent.Started)
-        return app.deference.embycl.domain.model.EmbyPlaybackRequest(
-            item.id, item.name, ArrayList(playlist.map(::streamUrl)),
-            playlist.indexOfFirst { it.id == item.id },
-            ((item.userData?.playbackPositionTicks ?: 0L) / 10_000L).coerceAtMost(Int.MAX_VALUE.toLong()).toInt(), token,
+        return EmbyPlaybackRequest(
+            items = playlist.map { entry ->
+                EmbyPlaybackItem(
+                    id = entry.id,
+                    title = entry.name,
+                    url = streamUrl(item = entry),
+                    positionMs = (entry.userData?.playbackPositionTicks ?: 0L).coerceAtLeast(0L) / 10_000L,
+                )
+            },
+            selectedIndex = playlist.indexOfFirst { it.id == item.id },
+            serverUrl = server,
+            userId = user,
+            accessToken = token,
+            sessionId = Uuid.random().toString(),
         )
     }
 
@@ -162,7 +186,6 @@ class RemoteEmbyRepository(
 			mapOf(
 				"Static" to "true",
 				"DeviceId" to Session.deviceId,
-				"api_key" to Session.accessToken,
 			),
 		).toString()
 	}
@@ -187,44 +210,34 @@ class RemoteEmbyRepository(
 		}
 	}
 	
-	override fun reportPlayback(
-		itemId: String,
-		positionTicks: Long,
-		event: EmbyPlaybackEvent,
-		isPaused: Boolean,
-	) {
-		val playSessionId = "${Session.deviceId}_$itemId"
-		val report = EmbyPlaybackReport(
-			itemId = itemId,
-			positionTicks = positionTicks.coerceAtLeast(0),
-			playSessionId = playSessionId,
-			isPaused = isPaused,
-		)
-		val call = when (event) {
-			EmbyPlaybackEvent.Started -> suspend {
-				httpClient.post("/Sessions/Playing") {
-					setBody(report)
-				}
-			}
-			
-			EmbyPlaybackEvent.Progress -> suspend {
-				httpClient.post("/Sessions/Playing/Progress") {
-					setBody(report)
-				}
-			}
-			
-			EmbyPlaybackEvent.Stopped -> suspend {
-				httpClient.post("/Sessions/Playing/Stopped") {
-					setBody(report)
-				}
-			}
-		}
-		
-		CoroutineScope(Dispatchers.IO).launch {
-			call.invoke()
-		}
-	}
-	
+    override suspend fun reportPlayback(
+        request: EmbyPlaybackRequest,
+        positionTicks: Long,
+        event: EmbyPlaybackEvent,
+        isPaused: Boolean,
+    ) {
+        check(request.serverUrl == Session.serverUrl && request.userId == Session.userId &&
+            request.accessToken == Session.accessToken) { "Playback account changed." }
+        val report = EmbyPlaybackReport(
+            itemId = request.item.id,
+            positionTicks = positionTicks.coerceAtLeast(minimumValue = 0L),
+            playSessionId = request.sessionId,
+            isPaused = isPaused,
+        )
+        val path = when (event) {
+            EmbyPlaybackEvent.Started -> "/Sessions/Playing"
+            EmbyPlaybackEvent.Progress -> "/Sessions/Playing/Progress"
+            EmbyPlaybackEvent.Stopped -> "/Sessions/Playing/Stopped"
+        }
+        val response = httpClient.post(urlString = buildUrl(base = request.serverUrl, path = path, qParameters = emptyMap()).toString()) {
+            attributes.put(key = DONT_INTERCEPT, value = true)
+            header("X-Emby-Token", request.accessToken)
+            setBody(body = report)
+        }
+        check(response.status.isSuccess()) { "The server did not accept playback progress." }
+        if (event == EmbyPlaybackEvent.Stopped) playbackChanges.tryEmit(value = Unit)
+    }
+
 	private companion object {
 		
 		const val ITEM_FIELDS = "Overview,ProductionYear,CommunityRating,OfficialRating,RunTimeTicks,Genres,MediaSources,MediaStreams,ParentId,PrimaryImageAspectRatio"
