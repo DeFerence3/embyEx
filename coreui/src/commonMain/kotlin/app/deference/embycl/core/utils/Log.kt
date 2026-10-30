@@ -22,4 +22,5 @@ object Log {
 	} else Unit
 }
 
+
 internal expect fun logPlatform(level: String, tag: String, message: String)
