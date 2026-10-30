@@ -14,9 +14,11 @@ room { schemaDirectory("$projectDir/schemas") }
 
 buildConfig {
 	packageName("app.deference.embycl")
+	useKotlinOutput { internalVisibility = false }
 	buildConfigField("APP_NAME", rootProject.name)
 	buildConfigField("VERSION_NAME", libs.versions.version.name)
 	buildConfigField("APP_STORE_ID", providers.gradleProperty("APP_STORE_ID").orElse("").get())
+	buildConfigField("GIT_SHA", getCommitSha())
 }
 
 compose.resources {
@@ -165,4 +167,12 @@ tasks.register<JavaExec>("offlineLiveSmoke") {
     mainClass.set("app.deference.embycl.data.repository.download.OfflineLiveSmoke")
     args(providers.gradleProperty("offlineLiveConnection").orElse("").get(),
         rootProject.layout.buildDirectory.dir("c12-live-desktop").get().asFile.absolutePath)
+}
+
+fun getCommitSha(): String = runCommand("git rev-parse --short HEAD")
+
+fun runCommand(command: String): String {
+	return providers.exec {
+		commandLine(command.split(' '))
+	}.standardOutput.asText.get().trim()
 }

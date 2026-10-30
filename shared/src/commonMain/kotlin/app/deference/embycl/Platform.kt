@@ -8,5 +8,5 @@ interface Platform {
 expect fun getPlatform(): Platform
 
 enum class Platforms{
-	JVM,ANDROID,IOS
+	JVM,Android,IOS
 }

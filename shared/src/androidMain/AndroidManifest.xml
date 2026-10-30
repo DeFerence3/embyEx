@@ -12,17 +12,26 @@
             android:exported="false" android:grantUriPermissions="true">
             <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/offline_media_paths" />
         </provider>
-        <service android:name="app.deference.embycl.data.repository.download.DownloadJobService"
-            android:permission="android.permission.BIND_JOB_SERVICE" android:exported="false" />
-        <service android:name="androidx.work.impl.foreground.SystemForegroundService"
-            android:foregroundServiceType="dataSync" tools:node="merge" />
-        <receiver android:name="app.deference.embycl.data.repository.download.DownloadPauseReceiver" android:exported="false" />
+        <service
+            android:name="app.deference.embycl.data.repository.download.DownloadJobService"
+            android:permission="android.permission.BIND_JOB_SERVICE"
+            android:exported="false"
+            tools:targetApi="34" />
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:foregroundServiceType="dataSync"
+            tools:node="merge" />
+        <receiver
+            android:name="app.deference.embycl.data.repository.download.DownloadPauseReceiver"
+            android:exported="false" />
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.updates"
             android:exported="false"
             android:grantUriPermissions="true">
-            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/update_paths" />
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/update_paths" />
         </provider>
     </application>
 </manifest>

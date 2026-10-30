@@ -30,6 +30,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".crash.CrashActivity"
+            android:exported="false"
+            android:label="@string/title_activity_crash"
+            android:theme="@style/Theme.Embympv"/>
     </application>
 
 </manifest>

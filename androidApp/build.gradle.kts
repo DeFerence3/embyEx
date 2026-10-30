@@ -1,3 +1,4 @@
+
 import java.util.Properties
 
 plugins {
@@ -101,13 +102,13 @@ dependencies {
 	
 	implementation(libs.androidx.activity.compose)
 	implementation(libs.material)
+	implementation(libs.ktor.client.core)
 	
 	debugImplementation(libs.compose.uiToolingPreview)
 	
 	androidTestImplementation(libs.androidx.testExt.junit)
 	androidTestImplementation(libs.androidx.runner)
 	androidTestImplementation(libs.ktor.client.mock)
-	androidTestImplementation(libs.ktor.client.core)
 	androidTestImplementation(libs.ktor.client.okhttp)
 	androidTestImplementation(libs.ktor.serialization.kotlinx.json)
 	androidTestImplementation(libs.room.runtime)

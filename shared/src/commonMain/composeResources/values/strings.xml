@@ -8,4 +8,10 @@
     <string name="player_save_error">Watch progress could not be saved. Check your connection and retry.</string>
     <string name="player_save_title">Watch progress</string>
     <string name="player_dismiss">Dismiss</string>
+    <string name="crash_screen_report">Report</string>
+    <string name="crash_screen_copy_logs">Copy logs</string>
+    <string name="crash_screen_report_hint">Opens a prefilled GitHub issue with device details and a shortened crash log. Review it for private information before submitting. Use Copy logs for the full report.</string>
+    <string name="crash_screen_report_error">Could not open GitHub. Try again with a browser installed, or copy the logs and report the crash at github.com/DeFerence3/embyEx/issues.</string>
+    <string name="crash_screen_logcat_loading">Collecting logs…</string>
+    <string name="crash_screen_logcat_unavailable">No logcat output is available. You can still report this crash.</string>
 </resources>

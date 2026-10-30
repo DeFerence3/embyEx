@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">embyEx</string>
+<!--    Strings Related to Crash Screen    -->
+    <string name="title_activity_crash">CrashActivity</string>
+    <string name="crash_screen_restart">Restart</string>
+    <string name="crash_screen_title">Crash Detected!!</string>
+    <string name="crash_screen_subtitle">Unintended behavior detected, share the logs for further investigation.</string>
+    <string name="crash_screen_logs_title">Log</string>
+</resources>

@@ -20,10 +20,12 @@ dependencies {
 
     implementation(compose.desktop.currentOs)
     implementation(libs.compose.material3)
+	implementation(libs.ktor.client.core)
 
     testImplementation(libs.kotlin.testJunit)
     testImplementation(libs.compose.uiTest)
     testImplementation(libs.compose.nav3)
+	implementation(libs.compose.icons)
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:${libs.versions.kotlinx.coroutines.get()}")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:${libs.versions.kotlinx.coroutines.get()}")
 	
