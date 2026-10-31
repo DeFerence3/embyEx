@@ -17,6 +17,7 @@ kotlin{
 
 dependencies {
     implementation(project(":shared"))
+	implementation(project(":coreui"))
 
     implementation(compose.desktop.currentOs)
     implementation(libs.compose.material3)

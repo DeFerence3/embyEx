@@ -5,7 +5,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusGroup
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -31,15 +30,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onPreviewKeyEvent
-import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.PointerType
@@ -50,6 +43,9 @@ import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import app.deference.coreui.keyboard.KeyShortcut
+import app.deference.coreui.keyboard.RegisterShortcuts
+import app.deference.embycl.core.utils.Log
 import app.deference.embycl.ui.player.components.PlayerFullScreenControls
 import app.deference.embycl.ui.player.components.PlayerTimeline
 import app.deference.embycl.ui.player.components.PlayerTransportControls
@@ -80,7 +76,7 @@ internal fun PlayerOverlay(
     var seeking by remember { mutableStateOf(value = false) }
     var controlsFocused by remember { mutableStateOf(value = false) }
     var keyboardInput by remember { mutableStateOf(value = false) }
-    val focus = remember { FocusRequester() }
+    //val focus = remember { FocusRequester() }
     val density = LocalDensity.current.density
     val accessibility = LocalAccessibilityManager.current
     val systemPip = window.isPictureInPicture && window.usesSystemPictureInPicture
@@ -89,6 +85,37 @@ internal fun PlayerOverlay(
         resource = if (window.isFullscreen) Res.string.player_exit_fullscreen else Res.string.player_fullscreen,
     )
     val keepVisible = !fullControls || paused || failed || player == null || pressed || seeking || menuOpen || (controlsFocused && keyboardInput)
+	
+	val shortCuts = listOf(
+		KeyShortcut(
+			key = Key.F,
+			description = "Full screen control",
+			onAction = {
+				window.toggleFullscreen()
+			}
+		),
+		KeyShortcut(
+			key = Key.Escape,
+			description = "Dismiss or escape from a interactive ui",
+			onAction = {
+				when {
+					window.isPictureInPicture && !systemPip -> window.togglePictureInPicture()
+					window.isFullscreen && window.supportsFullscreen -> window.toggleFullscreen()
+					else -> onClose()
+				}
+			}
+		),
+		KeyShortcut(
+			key = Key.Spacebar,
+			description = "Play Pause",
+			onAction = {
+				Log.i("PlayerOverlay"){ "PlayPause---> $" }
+				if (!controlsFocused && player != null && !failed) {
+					dispatchAction { player.togglePlayWhenReady() }
+				}
+			}
+		)
+	)
 
     LaunchedEffect(key1 = paused, key2 = failed, key3 = window.isPictureInPicture) {
         visible = true
@@ -104,12 +131,12 @@ internal fun PlayerOverlay(
             visible = false
         }
     }
-    LaunchedEffect(key1 = Unit) { focus.requestFocus() }
+    /*LaunchedEffect(key1 = Unit) { focus.requestFocus() }
     LaunchedEffect(key1 = visible) {
         // A focused action can disappear with the controls. Keep shortcuts on
         // the player instead of letting focus fall back to the page underneath.
         if (!visible) focus.requestFocus()
-    }
+    }*/
     LaunchedEffect(key1 = fullControls) {
         visible = true
         menuOpen = false
@@ -139,7 +166,7 @@ internal fun PlayerOverlay(
                 // Child buttons and sliders consume their gestures before this parent.
                 detectTapGestures(
                     onTap = {
-                        focus.requestFocus()
+                        //focus.requestFocus()
                         visible = !fullControls || !visible
                     },
                     onDoubleTap = {
@@ -157,12 +184,12 @@ internal fun PlayerOverlay(
                     )
                 }
             }
-            .onPreviewKeyEvent { event ->
+            /*.onPreviewKeyEvent { event ->
                 if (menuOpen) return@onPreviewKeyEvent false
                 interaction++
                 keyboardInput = true
                 visible = true
-                if (event.key == Key.F && window.supportsFullscreen && !window.isPictureInPicture) {
+                *//*if (event.key == Key.F && window.supportsFullscreen && !window.isPictureInPicture) {
                     // Toggle once per press; held keys can repeat KeyDown.
                     if (event.type == KeyEventType.KeyUp) window.toggleFullscreen()
                     event.type == KeyEventType.KeyDown || event.type == KeyEventType.KeyUp
@@ -180,10 +207,11 @@ internal fun PlayerOverlay(
                         true
                     } else false
                     else -> false
-                }
+                }*//*
+				true
             }
             .focusRequester(focusRequester = focus)
-            .focusable(),
+            .focusable()*/,
     ) {
         // Drag the video area to move the undecorated desktop window; controls handle their own gestures.
         if (window.isPictureInPicture && !systemPip) Box(
@@ -289,4 +317,9 @@ internal fun PlayerOverlay(
             }
         }
     }
+	
+	RegisterShortcuts(
+		shortcuts = shortCuts,
+		key = "Player Shortcuts"
+	)
 }

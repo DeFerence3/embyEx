@@ -1,11 +1,14 @@
 package app.deference.embycl.ui.player
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.view.Surface
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 
 /** The view borrows the player; losing a surface never destroys the playback session. */
+
+@SuppressLint("ViewConstructor")
 internal class AndroidMpvSurfaceView(
     context: Context,
     private val player: AndroidMpvPlayer,

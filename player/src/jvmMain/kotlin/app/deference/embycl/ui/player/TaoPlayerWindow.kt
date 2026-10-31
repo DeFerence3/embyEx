@@ -1,15 +1,17 @@
 package app.deference.embycl.ui.player
 
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
@@ -25,11 +27,12 @@ import java.util.concurrent.Executor
 import kotlin.coroutines.EmptyCoroutineContext
 
 @Composable
-internal fun TaoPlayerWindow(
+internal fun TaoPlayerWindow2(
     content: @Composable (PlayerWindowState) -> Unit,
 ) {
     val parent = requireNotNull(value = LocalTaoWindow.current)
     val wasFullscreen = remember(key1 = parent) { parent.isFullscreen }
+	var isFullscreen by remember { mutableStateOf(parent.isFullscreen) }
     val windowExecutor = remember(key1 = parent) {
         Executor { command -> Dispatchers.Main.dispatch(context = EmptyCoroutineContext, block = command) }
     }
@@ -48,17 +51,23 @@ internal fun TaoPlayerWindow(
                     }
                 }
             },
-            toggleFullscreen = {
-                windowExecutor.execute {
-                    val fullscreen = !parent.isFullscreen
-                    parent.setFullscreen(fullscreen = fullscreen)
-                    state.isFullscreen = fullscreen
-                }
-            },
-        )
-        state.isFullscreen = wasFullscreen
-        state
-    }
+			toggleFullscreen = {
+				val next = !parent.isFullscreen
+				windowExecutor.execute {
+					parent.setFullscreen(next)
+				}
+			},
+		).also {
+			it.isFullscreen = parent.isFullscreen
+			isFullscreen = parent.isFullscreen
+		}
+		state
+	}
+	// Re-assert focus only after the native transition has settled
+	LaunchedEffect(isFullscreen) {
+		parent.setFullscreen(isFullscreen)
+		withFrameNanos { parent.focus() }
+	}
     DisposableEffect(key1 = parent) {
         onDispose {
             // Tao fullscreen changes render synchronously. Queue outside Compose's
@@ -71,6 +80,62 @@ internal fun TaoPlayerWindow(
         }
     }
     content(window)
+}
+
+@Composable
+internal fun TaoPlayerWindow(
+	content: @Composable (PlayerWindowState) -> Unit,
+) {
+	val parent = requireNotNull(LocalTaoWindow.current)
+	
+	var isFullscreen by remember { mutableStateOf(parent.isFullscreen) }
+	var hasFocus by remember { mutableStateOf(false) }
+	var restoreFocusAfterToggle by remember { mutableStateOf(false) }
+	val windowExecutor = remember(key1 = parent) {
+		Executor { command -> Dispatchers.Main.dispatch(context = EmptyCoroutineContext, block = command) }
+	}
+	
+	DisposableEffect(parent) {
+		parent.onFocusChanged { focused ->
+			if (restoreFocusAfterToggle && focused) {
+				restoreFocusAfterToggle = false
+				parent.focus()
+			}
+		}
+		onDispose { }
+	}
+	
+	val window = remember(parent) {
+		lateinit var state: PlayerWindowState
+		state = PlayerWindowState(
+			supportsPictureInPicture = true,
+			supportsFullscreen = true,
+			pauseOnHostStop = false,
+			togglePictureInPicture = {
+				state.isPictureInPicture = !state.isPictureInPicture
+				windowExecutor.execute {
+					if (state.isPictureInPicture && parent.isFullscreen) {
+						parent.setFullscreen(fullscreen = false)
+						state.isFullscreen = false
+					}
+				}
+			},
+			toggleFullscreen = {
+				isFullscreen = !isFullscreen
+			},
+		).also {
+			it.isFullscreen = parent.isFullscreen
+		}
+		
+		state
+	}
+	
+	LaunchedEffect(isFullscreen) {
+		parent.setFullscreen(isFullscreen)
+		restoreFocusAfterToggle = true
+	}
+	
+	content(window)
 }
 
 @Composable
