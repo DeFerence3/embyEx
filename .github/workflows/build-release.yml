@@ -169,14 +169,31 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v6
 
-      - name: Build Linux deb
+      - name: Build Linux deb and app image
         # :androidApp is configured too, and its signing config needs a keystore path (never read here).
         env:
           ANDROID_KEYSTORE_FILE: ${{ runner.temp }}/android-release.jks
-        # Also writes latest-linux.yml for the in-app updater.
+        # Also writes latest-linux.yml for the in-app updater. The app image feeds the Arch package.
         run: |
           chmod +x gradlew
-          ./gradlew :desktopApp:generateUpdateMetadata ${{ needs.version.outputs.gradle-args }} --no-daemon --no-configuration-cache --stacktrace
+          ./gradlew :desktopApp:generateUpdateMetadata :desktopApp:createDistributable ${{ needs.version.outputs.gradle-args }} --no-daemon --no-configuration-cache --stacktrace
+
+      - name: Pack app image for the Arch package
+        run: |
+          set -euo pipefail
+          mkdir -p arch-input
+          tar -C desktopApp/build/compose/binaries/main/app -czf arch-input/embyex-app-image.tar.gz embyEx
+          sed -n 's/^version: //p' desktopApp/build/compose/binaries/main/update-metadata/latest-linux.yml > arch-input/version.txt
+          echo "App version: $(cat arch-input/version.txt)"
+
+      # Not a release asset: only handed to the Arch job.
+      - name: Upload app image
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-app-image
+          path: arch-input/
+          if-no-files-found: error
+          retention-days: 1
 
       - name: Upload desktop installer
         uses: actions/upload-artifact@v4
@@ -185,6 +202,41 @@ jobs:
           path: |
             desktopApp/build/compose/binaries/main/deb/*.deb
             desktopApp/build/compose/binaries/main/update-metadata/latest-linux.yml
+          if-no-files-found: error
+          retention-days: 5
+
+  desktop-arch:
+    name: Desktop - Arch Linux
+    needs: desktop-linux
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Download app image
+        uses: actions/download-artifact@v8
+        with:
+          name: linux-app-image
+          path: desktopApp/packaging/arch
+
+      - name: Build Arch package
+        # makepkg refuses to run as root. --nodeps: package() only copies files, so the
+        # runtime dependencies need not be installed in the container.
+        run: |
+          set -euo pipefail
+          cd desktopApp/packaging/arch
+          version=$(cat version.txt)
+          useradd --create-home builder
+          chown -R builder .
+          su builder -c "EMBYEX_VERSION='$version' makepkg --nodeps --noconfirm"
+
+      - name: Upload Arch package
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-assets-arch
+          path: desktopApp/packaging/arch/*.pkg.tar.zst
           if-no-files-found: error
           retention-days: 5
 
@@ -255,7 +307,7 @@ jobs:
 
   release:
     name: Publish GitHub Release
-    needs: [ version, android, desktop, desktop-linux, generate-changelog ]
+    needs: [ version, android, desktop, desktop-linux, desktop-arch, generate-changelog ]
     # Only run if the workflow was triggered by a tag push
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest

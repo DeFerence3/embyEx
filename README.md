@@ -1,12 +1,13 @@
 # 🎬 EmbyEx
 
-A modern, unofficial [Emby](https://emby.media/) client for **Android, Windows, macOS, and Linux**, built with Kotlin Multiplatform and Compose Multiplatform.
+A modern, unofficial [Emby](https://emby.media/) client for **Android, Windows, and Linux**, built with Kotlin Multiplatform and Compose Multiplatform.
 
 ![Android](https://img.shields.io/badge/Android-3DDC84?logo=android&logoColor=white)
-![Desktop](https://img.shields.io/badge/Desktop-Windows%20%7C%20macOS%20%7C%20Linux-475569)
+![Desktop](https://img.shields.io/badge/Desktop-Windows%20%7C%20Linux-475569)
 ![Kotlin Multiplatform](https://img.shields.io/badge/Kotlin-Multiplatform-7F52FF?logo=kotlin&logoColor=white)
+![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue)
 
-### [⬇️ Download EmbyEx](../../releases/latest) · [🐛 Report an issue](../../issues)
+### [⬇️ Install EmbyEx](#-get-started) · [🐛 Report an issue](../../issues)
 
 ## ✨ Highlights
 
@@ -19,18 +20,46 @@ A modern, unofficial [Emby](https://emby.media/) client for **Android, Windows, 
 
 ## 🚀 Get started
 
-1. Download a compatible build from [GitHub Releases](../../releases/latest).
-2. Install the Android APK or an available desktop package.
-3. Connect to your Emby server and start watching.
+### 🖥️ Desktop
 
-Already downloaded something? Choose **Browse local files** on the sign-in screen to access media saved by EmbyEx without connecting to a server.
+Install with one command. It downloads the latest release and installs it for your system.
+
+**Linux** (Arch, Debian, Ubuntu and derivatives, x86_64):
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/DeFerence3/embyEx/master/scripts/install.sh | sh
+```
+
+**Windows** (PowerShell):
+
+```powershell
+irm https://raw.githubusercontent.com/DeFerence3/embyEx/master/scripts/install.ps1 | iex
+```
+
+Run the same command again to update. To get pre-release builds, use `sh -s -- --beta` on Linux, or set `$env:EMBYEX_BETA = '1'` before the command on Windows.
+
+<details>
+<summary>Prefer a manual install?</summary>
+
+Download the package for your system from [GitHub Releases](../../releases/latest): `.msi` for Windows, `.deb` for Debian/Ubuntu, or `.pkg.tar.zst` for Arch Linux.
+
+</details>
+
+### 📱 Android
+
+Download the APK from [GitHub Releases](../../releases/latest) and open it to install.
+
+### ▶️ First launch
+
+Connect to your Emby server and start watching. Already downloaded something? Choose **Browse local files** on the sign-in screen to access media saved by EmbyEx without connecting to a server.
 
 ## 📱 Platform support
 
 | Platform | Playback | Offline downloads |
 | --- | --- | --- |
 | Android | ✅ | ✅ |
-| Windows / macOS / Linux | ✅ | ✅ |
+| Windows / Linux | ✅ | ✅ |
+| macOS | On the way | On the way |
 | iOS | On the way | On the way |
 
 Available installers may vary by release. Video format support depends on the device and playback engine.
@@ -38,6 +67,7 @@ Available installers may vary by release. Video format support depends on the de
 ## ℹ️ Good to know
 
 - Downloads keep the **original media file**, without transcoding. Offline files are stored in app-managed storage; **uninstalling the Android app deletes its downloads**.
+- Want new features early? Turn on **Settings → Updates → Beta updates** to receive pre-release versions in the app. They may be less stable.
 - EmbyEx is an **independent, unofficial client** and is not affiliated with or endorsed by Emby. Online streaming requires access to an Emby server.
 - This project has been developed with substantial AI assistance and is still evolving. Bug reports and contributions are welcome.
 
@@ -46,3 +76,7 @@ Available installers may vary by release. Video format support depends on the de
 Inspired by [Emby](https://emby.media/) and the interface of [mpvEx](https://github.com/marlboro-advance/mpvEx). Built with Compose Multiplatform, MediaMP, ExoPlayer, and libmpv.
 
 Found a bug or have an idea? [Open an issue](../../issues).
+
+## 📄 License
+
+EmbyEx is free software, licensed under the [GNU General Public License v3.0](LICENSE).

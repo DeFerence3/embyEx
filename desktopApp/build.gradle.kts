@@ -88,6 +88,11 @@ compose.desktop.application {
 			"jdk.crypto.ec",
 			"jdk.unsupported",
 		)
+		linux {
+			iconFile.set(file("meta/images/icon.png"))
+			shortcut = true
+			menuGroup = "AudioVideo;Video;Player"
+		}
 		windows {
 			menuGroup = "embyEx"
 			iconFile.set(file("meta/images/icon.ico"))

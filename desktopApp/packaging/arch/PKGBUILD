@@ -1,0 +1,61 @@
+# Maintainer: Abhishek Krishnan T R
+#
+# Repackages the jpackage app image that :desktopApp:createDistributable builds. The release
+# workflow places it here as embyex-app-image.tar.gz and runs:
+#   EMBYEX_VERSION=1.2.4 makepkg --nodeps
+# Locally, from the repository root:
+#   ./gradlew :desktopApp:createDistributable
+#   tar -C desktopApp/build/compose/binaries/main/app -czf desktopApp/packaging/arch/embyex-app-image.tar.gz embyEx
+#   cd desktopApp/packaging/arch && EMBYEX_VERSION=1.2.4 makepkg --nodeps
+
+pkgname=embyex
+_version=${EMBYEX_VERSION:?Set EMBYEX_VERSION to the app version, e.g. 1.2.4 or 1.2.4-beta.1}
+# pkgver may not contain '-'; pacman orders 1.2.4beta1 before 1.2.4, as the app does.
+pkgver=${_version/-beta./beta}
+pkgrel=1
+pkgdesc="A simple Emby client with a built-in mpv-based player"
+arch=('x86_64')
+url="https://github.com/DeFerence3/embyEx"
+license=('GPL-3.0-only')
+# Libraries the bundled Java runtime and mpv runtime link against.
+depends=(
+    'alsa-lib'
+    'dbus'
+    'fontconfig'
+    'freetype2'
+    'glibc'
+    'libdrm'
+    'libgcc'
+    'libglvnd'
+    'libpulse'
+    'libstdc++'
+    'libx11'
+    'libxext'
+    'libxi'
+    'libxrender'
+    'libxtst'
+    'systemd-libs'
+    'vulkan-icd-loader'
+    'zlib'
+)
+# The bundled runtime and natives ship prebuilt; stripping or splitting them breaks nothing useful.
+options=('!strip' '!debug')
+source=(
+    'embyex-app-image.tar.gz'
+    'embyex.desktop'
+)
+sha256sums=(
+    'SKIP'
+    'SKIP'
+)
+
+package() {
+    install -d "$pkgdir/opt/embyex"
+    cp -a embyEx/. "$pkgdir/opt/embyex/"
+
+    install -d "$pkgdir/usr/bin"
+    ln -s /opt/embyex/bin/embyEx "$pkgdir/usr/bin/embyex"
+
+    install -Dm644 embyex.desktop "$pkgdir/usr/share/applications/embyex.desktop"
+    install -Dm644 embyEx/lib/embyEx.png "$pkgdir/usr/share/icons/hicolor/256x256/apps/embyex.png"
+}

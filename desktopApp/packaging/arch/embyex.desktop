@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=EmbyEx
+GenericName=Emby Client
+Comment=Browse and play your Emby library
+Exec=embyex
+Icon=embyex
+Terminal=false
+Categories=AudioVideo;Video;Player;
+StartupWMClass=app-deference-embycl-MainKt
