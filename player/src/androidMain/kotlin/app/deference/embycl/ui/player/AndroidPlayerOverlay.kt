@@ -37,11 +37,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onPreviewKeyEvent
-import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalAccessibilityManager
@@ -63,7 +58,6 @@ import embyex.player.generated.resources.Res
 import embyex.player.generated.resources.player_pip_error
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.stringResource
-import app.deference.embycl.ui.player.EmbeddedPlayer
 
 @Composable
 internal fun AndroidPlayerOverlay(
@@ -126,6 +120,18 @@ internal fun AndroidPlayerOverlay(
             seekSeconds = 0
         }
     }
+
+    RegisterPlaybackShortcuts(
+        player = player,
+        enabled = !window.isPictureInPicture && !locked && sheet == null && !controlsFocused && !failed,
+        onTriggered = {
+            keyboardInput = true
+            visible = true
+            interaction++
+        },
+        dispatchAction = dispatchAction,
+    )
+
     BackHandler(enabled = locked && !window.isPictureInPicture) { visible = true }
     if (window.isPictureInPicture) return
     val onSheet: (AndroidPlayerSheet) -> Unit = { sheet = it; visible = true }
@@ -141,7 +147,7 @@ internal fun AndroidPlayerOverlay(
                     }
                 }
             }
-            .onPreviewKeyEvent { event ->
+            /*.onPreviewKeyEvent { event ->
                 keyboardInput = true
                 visible = true
                 interaction++
@@ -153,7 +159,7 @@ internal fun AndroidPlayerOverlay(
 					} else false
 					else -> false
 				}
-            }
+            }*/
             .focusRequester(focusRequester = focus)
             .focusable(),
     ) {

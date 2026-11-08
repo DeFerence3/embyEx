@@ -27,11 +27,14 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.deference.coreui.DropDown
 import app.deference.coreui.DropDownItem
+import app.deference.coreui.keyboard.KeyShortcut
+import app.deference.coreui.keyboard.RegisterShortcuts
 import app.deference.embycl.core.session.Session
 import app.deference.embycl.ui.core.LocalNavigator
 import app.deference.embycl.ui.screens.downloads.EmbyDownloadsScreen
@@ -58,7 +61,20 @@ fun TopAppBar(currentTab: EmbyTab, onRefresh: () -> Unit, onLogout: () -> Unit, 
 			}
 		},
 		actions = {
-			if (currentTab == EmbyTab.Home) FilledTonalIconButton(onClick = onRefresh) { Icon(Icons.Default.Refresh, "Refresh home") }
+			if (currentTab == EmbyTab.Home) {
+				FilledTonalIconButton(onClick = onRefresh) { Icon(Icons.Default.Refresh, "Refresh home") }
+				RegisterShortcuts(
+					listOf(
+						KeyShortcut(
+							key = Key.R,
+							ctrl = true,
+							description = "Refreshes",
+							onAction = onRefresh
+						)
+					),
+					key = "RefreshAction",
+				)
+			}
 			Box {
 				IconButton(onClick = { accountMenuOpen = true }) {
 					Surface(shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.size(40.dp)) {

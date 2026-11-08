@@ -1,5 +1,7 @@
 package app.deference.embycl.ui.player.components
 
+import android.R.attr.label
+import android.system.Os.close
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -27,6 +29,7 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import app.deference.coreui.DropdownItem
 import app.deference.embycl.ui.player.AndroidPlayerSheet
 import embyex.player.generated.resources.Res
 import embyex.player.generated.resources.player_aspect
@@ -92,6 +95,7 @@ internal fun AndroidPlayerSheets(
 							} ?: track.id
 							label
 						},
+                        offLabel = "Off",
                         onDismiss = onDismiss,
                         dispatchAction = dispatchAction,
                     )
@@ -137,11 +141,21 @@ internal fun AndroidPlayerSheets(
 private fun AndroidTrackChoices(
     tracks: PlayerTrackGroup,
     label: (PlayerTrack) -> String,
+    offLabel: String? = null,
     onDismiss: () -> Unit,
     dispatchAction: (() -> Unit) -> Unit,
 ) {
     val candidates by tracks.candidates.collectAsState(initial = emptyList())
     val current by tracks.selected.collectAsState()
+
+    if (offLabel != null) AndroidPlayerChoice(
+        label = offLabel,
+        selected = current == null,
+        onClick = {
+            dispatchAction { tracks.select(track = null) }
+            onDismiss()
+        },
+    )
 
     if (candidates.isEmpty()) Text(
         text = stringResource(resource = Res.string.player_no_tracks),

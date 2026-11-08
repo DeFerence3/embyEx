@@ -57,6 +57,8 @@ import app.deference.embycl.ui.screens.settings.components.SettingsSection
 import app.deference.embycl.ui.screens.settings.components.UserCard
 import embyex.shared.generated.resources.Res
 import embyex.shared.generated.resources.app_name
+import embyex.shared.generated.resources.settings_title_bar
+import embyex.shared.generated.resources.settings_title_bar_description
 import kotlinx.serialization.Serializable
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -257,14 +259,28 @@ fun SettingsContent(
 				}
 				
 				item {
-					val settings = listOf(
-						SettingsAction(
-							header = "Show Banners",
-							description = "Intro banners on Home, Libraries and Settings.",
-							value = SettingsPreferences.bannerEnabled,
-							onAction = SettingsPreferences::setBanner
+					val titleBarHeader = stringResource(resource = Res.string.settings_title_bar)
+					val titleBarDescription = stringResource(resource = Res.string.settings_title_bar_description)
+					val settings = buildList {
+						add(
+							SettingsAction(
+								header = "Show Banners",
+								description = "Intro banners on Home, Libraries and Settings.",
+								value = SettingsPreferences.bannerEnabled,
+								onAction = SettingsPreferences::setBanner
+							),
 						)
-					)
+						if (hasTitleBarSetting) {
+							add(
+								SettingsAction(
+									header = titleBarHeader,
+									description = titleBarDescription,
+									value = SettingsPreferences.titleBarEnabled,
+									onAction = SettingsPreferences::setTitleBar,
+								),
+							)
+						}
+					}
 					
 					SettingsSection(
 						title = "Ui Elements",

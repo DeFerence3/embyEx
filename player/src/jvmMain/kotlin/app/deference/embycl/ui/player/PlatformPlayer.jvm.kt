@@ -20,7 +20,7 @@ internal actual fun createEmbeddedPlayer(
     // Native errors may include authenticated URLs. UI shows sanitized errors instead.
     MPVHandle.setLogHandler(handler = { })
     JvmEmbeddedPlayer(
-        engine = TaoMpvPlayer(
+        engine = MpvPlayer(
             coroutineContext = coroutineContext,
             dispatcher = coroutineContext[ContinuationInterceptor] as CoroutineDispatcher,
         ),
@@ -36,7 +36,7 @@ internal actual fun EmbeddedPlayerSurface(
     modifier: Modifier,
 ) {
     require(value = player is JvmEmbeddedPlayer)
-    TaoPlayerSurface(player = player.engine, modifier = modifier)
+    PlayerSurface(player = player.engine, modifier = modifier)
 }
 
 @Composable
@@ -44,7 +44,7 @@ internal actual fun PlayerWindow(
     title: String,
     content: @Composable (window: PlayerWindowState) -> Unit,
 ) {
-    TaoPlayerWindow(content = content)
+    PlayerWindow(content = content)
 }
 
 @Composable

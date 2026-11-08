@@ -47,8 +47,8 @@ kotlin {
         }
 
         jvmMain.dependencies {
-            implementation(libs.nucleus.decorated.window.tao)
-            implementation(libs.nucleus.application)
+//            implementation(libs.nucleus.decorated.window.tao)
+//            implementation(libs.nucleus.application)
             implementation(libs.mediamp.api)
             implementation(libs.mediamp.mpv)
 

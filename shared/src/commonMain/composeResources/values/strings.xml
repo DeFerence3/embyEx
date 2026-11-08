@@ -3,6 +3,7 @@
     <string name="player_loading">Getting ready to play…</string>
     <string name="player_saving">Saving your watch progress…</string>
     <string name="app_name">EmbyEx</string>
+    <string name="app_name_crashed">EmbyEx crashed</string>
     <string name="player_retry">Retry</string>
     <string name="player_error">Could not play this media. Check your connection and media format, then retry.</string>
     <string name="player_save_error">Watch progress could not be saved. Check your connection and retry.</string>
@@ -14,4 +15,10 @@
     <string name="crash_screen_report_error">Could not open GitHub. Try again with a browser installed, or copy the logs and report the crash at github.com/DeFerence3/embyEx/issues.</string>
     <string name="crash_screen_logcat_loading">Collecting logs…</string>
     <string name="crash_screen_logcat_unavailable">No logcat output is available. You can still report this crash.</string>
+    <string name="settings_title_bar">Show title bar</string>
+    <string name="settings_title_bar_description">Turn off title bar. Aimed at Linux uses</string>
+    <string name="window_minimize">Minimize</string>
+    <string name="window_maximize">Maximize</string>
+    <string name="window_restore">Restore</string>
+    <string name="window_close">Close</string>
 </resources>

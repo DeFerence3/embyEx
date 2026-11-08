@@ -99,6 +99,7 @@ base {
 dependencies {
 	
 	implementation(project(":shared"))
+	implementation(project(":coreui"))
 	
 	implementation(libs.androidx.activity.compose)
 	implementation(libs.material)

@@ -18,7 +18,7 @@ import org.openani.mediamp.source.UriMediaData
 
 /** Keeps the desktop engine and all MediaMP types inside jvmMain. */
 internal class JvmEmbeddedPlayer(
-    val engine: TaoMpvPlayer,
+    val engine: MpvPlayer,
     scope: CoroutineScope,
 ) : EmbeddedPlayer {
     override val state = engine.state.map { it.toPlayerState() }.stateIn(

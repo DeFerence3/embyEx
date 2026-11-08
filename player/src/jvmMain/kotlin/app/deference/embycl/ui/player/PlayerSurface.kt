@@ -13,8 +13,8 @@ import org.jetbrains.skia.Rect
 import org.jetbrains.skia.SamplingMode
 
 @Composable
-internal fun TaoPlayerSurface(
-    player: TaoMpvPlayer,
+internal fun PlayerSurface(
+    player: MpvPlayer,
     modifier: Modifier = Modifier,
 ) {
     val surface = remember(key1 = player) { player.surface() }

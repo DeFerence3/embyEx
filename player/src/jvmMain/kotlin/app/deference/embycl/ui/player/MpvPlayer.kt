@@ -9,7 +9,7 @@ import org.openani.mediamp.mpv.MPVHandle
 import kotlin.coroutines.CoroutineContext
 
 /** Playback and its raster cache belong to the original composition; windows borrow views. */
-internal class TaoMpvPlayer(
+internal class MpvPlayer(
     coroutineContext: CoroutineContext,
     dispatcher: CoroutineDispatcher,
 ) : JvmMpvMediampPlayer(

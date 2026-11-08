@@ -60,7 +60,7 @@ fun SettingsSection(
 	settings: List<SettingsAction>,
 	extra: @Composable () -> Unit = {}
 ) {
-	Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+	Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
 		InfoHeader(title, isLoading = false, onRefresh = null)
 		extra()
 		settings.forEachIndexed { index, setting ->
@@ -138,15 +138,15 @@ fun SettingsCard(
 
 @Composable
 fun InfoCard(details: List<Pair<String, String>>) {
-    SelectionContainer {
-        Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            details.forEachIndexed { index, (label, value) ->
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.surfaceContainerLow,
-                    shape = calculateShape(index, details.lastIndex),
-                ) {
-                    Row(
+	Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+		details.forEachIndexed { index, (label, value) ->
+			SelectionContainer {
+				Surface(
+					modifier = Modifier.fillMaxWidth(),
+					color = MaterialTheme.colorScheme.surfaceContainerLow,
+					shape = calculateShape(index, details.lastIndex),
+				) {
+					Row(
 						verticalAlignment = Alignment.CenterVertically,
 						horizontalArrangement = Arrangement.SpaceBetween
 					){

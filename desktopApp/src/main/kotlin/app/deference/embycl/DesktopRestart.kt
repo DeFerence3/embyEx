@@ -7,8 +7,8 @@ private const val RESTART_PARENT_ARGUMENT = "--embyex-restart-after="
 
 /**
  * Starts the same JVM/native executable in a waiting mode, then lets the caller
- * exit. The replacement waits until this process has ended before entering
- * nucleusApplication, avoiding Nucleus' single-instance lock race.
+ * exit. The replacement waits until this process has ended before composing
+ * the application, so the two processes never share the download store.
  *
  * This requires the current process command line to be available from ProcessHandle.
  */
@@ -34,7 +34,7 @@ fun restartDesktopProcess() {
         .start()
 }
 
-/** Call before nucleusApplication so the waiting instance doesn't acquire its single-instance lock. */
+/** Call before `application` so the restarted instance starts only after its parent has exited. */
 fun waitForPreviousProcessIfRequested(args: Array<String>): Array<String> {
     val marker = args.firstOrNull { it.startsWith(RESTART_PARENT_ARGUMENT) } ?: return args
     val parentPid = marker.removePrefix(RESTART_PARENT_ARGUMENT).toLongOrNull() ?: return args

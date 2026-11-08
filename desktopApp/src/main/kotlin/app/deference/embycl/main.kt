@@ -1,35 +1,53 @@
 package app.deference.embycl
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEvent
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.LocalWindowExceptionHandlerFactory
+import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowExceptionHandler
+import androidx.compose.ui.window.WindowExceptionHandlerFactory
 import androidx.compose.ui.window.WindowPlacement
 import androidx.compose.ui.window.WindowPosition
+import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
+import app.deference.coreui.LocalKeyShortcutManager
+import app.deference.coreui.keyboard.KeyShortcutManager
 import app.deference.embycl.core.di.initKoin
 import app.deference.embycl.core.session.Session
 import app.deference.embycl.data.local.preference.EmbyPreference
 import app.deference.embycl.data.local.preference.createDataStore
 import app.deference.embycl.data.repository.download.DesktopDownloadRuntime
 import app.deference.embycl.ui.core.ExitConfirmationDialog
+import app.deference.embycl.ui.core.SettingsPreferences
 import app.deference.embycl.ui.theme.EmbympvTheme
-import dev.nucleusframework.application.nucleusApplication
-import dev.nucleusframework.darkmodedetector.isSystemInDarkMode
-import dev.nucleusframework.window.material.MaterialDecoratedWindow
-import dev.nucleusframework.window.tao.LocalWindowExceptionHandlerFactory
-import dev.nucleusframework.window.tao.WindowExceptionHandlerFactory
 import embyex.shared.generated.resources.Res
 import embyex.shared.generated.resources.app_name
+import embyex.shared.generated.resources.app_name_crashed
 import embyex.shared.generated.resources.embyex_logo
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -42,11 +60,11 @@ import kotlin.time.Duration.Companion.seconds
 
 @OptIn(ExperimentalComposeUiApi::class)
 fun main(args: Array<String>) {
-	// Must execute before nucleusApplication: restarted child waits outside
-	// the single-instance lock until the previous process has exited.
-	val effectiveArgs = waitForPreviousProcessIfRequested(args)
-	
-	nucleusApplication(effectiveArgs) {
+	// A restarted child waits until the crashed process has exited so both never
+	// hold the download store and player runtime at the same time.
+	waitForPreviousProcessIfRequested(args = args)
+
+	application{
 		val downloads = remember {
 			Session.init(EmbyPreference(createDataStore()))
 			initKoin()
@@ -72,19 +90,37 @@ fun main(args: Array<String>) {
 		)
 		var capturedCrash by remember { mutableStateOf<Throwable?>(null) }
 		
-		val crashHandlerFactory = WindowExceptionHandlerFactory{ _ ->
+		val crashHandlerFactory = WindowExceptionHandlerFactory { _ ->
 			WindowExceptionHandler { throwable ->
 				capturedCrash = throwable
 			}
 		}
+		val keyShortcutManager = remember { KeyShortcutManager() }
+		val pressedKeys = remember { mutableStateMapOf<Key, Boolean>() }
+		val onPreviewKeyEvent: (KeyEvent) -> Boolean ={ keyEvent ->
+			val handled = when (keyEvent.type) {
+				KeyEventType.KeyDown -> {
+					val processed = keyShortcutManager.processKeyEvent(keyEvent)
+					pressedKeys[keyEvent.key] = processed
+					processed
+				}
+				KeyEventType.KeyUp -> {
+					val isHandled = pressedKeys[keyEvent.key] == true
+					isHandled
+				}
+				else -> false
+			}
+			handled
+		}
 		
-		EmbympvTheme(darkTheme = isSystemInDarkMode()) {
+		EmbympvTheme(darkTheme = isSystemInDarkTheme()) {
 			CompositionLocalProvider(
 				LocalWindowExceptionHandlerFactory provides crashHandlerFactory,
+				LocalKeyShortcutManager provides keyShortcutManager
 			) {
 				val crash = capturedCrash
 				if (crash != null) {
-					MaterialDecoratedWindow(
+					Window(
 						state = crashWindowState,
 						onCloseRequest = {
 							applicationScope.launch {
@@ -92,10 +128,10 @@ fun main(args: Array<String>) {
 								exitProcess(0)
 							}
 						},
-						title = "EmbyEx crashed",
+						onPreviewKeyEvent = onPreviewKeyEvent,
+						title = stringResource(Res.string.app_name_crashed),
 						icon = painterResource(Res.drawable.embyex_logo),
 					) {
-						EmbyExTitleBar()
 						DesktopCrashScreen(
 							throwable = crash,
 							appVersion = BuildConfig.VERSION_NAME,
@@ -114,26 +150,56 @@ fun main(args: Array<String>) {
 					}
 				} else {
 					var isLogoutRequested by remember { mutableStateOf(false) }
-					MaterialDecoratedWindow(
-						state = mainWindowState,
-						onCloseRequest = { isLogoutRequested = true },
-						title = stringResource(Res.string.app_name),
-						icon = painterResource(Res.drawable.embyex_logo),
-					) {
-						if (isLogoutRequested) {
-							ExitConfirmationDialog(
-								onConfirm = {
-									applicationScope.launch {
-										downloads.close()
-										exitApplication()
-									}
-								},
-								onDismiss = { isLogoutRequested = false },
-							)
+					val titleBarEnabled = SettingsPreferences.titleBarEnabled
+					// AWT cannot change `undecorated` on a showing window, so toggling the
+					// title bar recreates the window. Its size and placement live in
+					// mainWindowState and survive; in-window UI state does not.
+					key(titleBarEnabled) {
+						Window(
+							state = mainWindowState,
+							onCloseRequest = { isLogoutRequested = true },
+							title = stringResource(Res.string.app_name),
+							undecorated = titleBarEnabled,
+							onPreviewKeyEvent = onPreviewKeyEvent,
+							icon = painterResource(Res.drawable.embyex_logo),
+						) {
+							if (isLogoutRequested) {
+								ExitConfirmationDialog(
+									onConfirm = {
+										applicationScope.launch {
+											downloads.close()
+											exitApplication()
+										}
+									},
+									onDismiss = { isLogoutRequested = false },
+								)
+							}
+							val isLoggedIn by Session.isLoggedInState.collectAsState()
+							Column(
+								modifier = Modifier
+									.fillMaxSize()
+									.background(MaterialTheme.colorScheme.surface),
+							) {
+								if (titleBarEnabled && mainWindowState.placement != WindowPlacement.Fullscreen) {
+									EmbyExTitleBar(
+										modifier = Modifier
+											.fillMaxWidth(),
+										state = mainWindowState,
+										onCloseRequest = { isLogoutRequested = true },
+									)
+								}
+								EmbyExApp(isLoggedIn)
+							}
+							/*Column(
+								modifier = Modifier
+									.fillMaxSize()
+									.background(color = MaterialTheme.colorScheme.background),
+							) {
+								// Hidden in fullscreen, e.g. while the player is fullscreen.
+
+
+							}*/
 						}
-						val isLoggedIn by Session.isLoggedInState.collectAsState()
-						EmbyExTitleBar()
-						EmbyExApp(isLoggedIn)
 					}
 				}
 			}
