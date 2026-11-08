@@ -16,7 +16,10 @@ buildConfig {
 	packageName("app.deference.embycl")
 	useKotlinOutput { internalVisibility = false }
 	buildConfigField("APP_NAME", rootProject.name)
-	buildConfigField("VERSION_NAME", libs.versions.version.name)
+	buildConfigField(
+		"VERSION_NAME",
+		providers.gradleProperty("appVersion").orElse(libs.versions.version.name),
+	)
 	buildConfigField("APP_STORE_ID", providers.gradleProperty("APP_STORE_ID").orElse("").get())
 	buildConfigField("GIT_SHA", getCommitSha())
 }

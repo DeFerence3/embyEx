@@ -126,7 +126,7 @@ class AndroidUpdateController(
                     }
                 }
                 verifyFile(partial, info)
-                verifyPackage(partial, info)
+                verifyPackage(partial)
                 check(!apk.exists() || apk.delete()) { "Could not replace the previous download." }
                 check(partial.renameTo(apk)) { "Could not save the downloaded update." }
                 pending.writeText(updateJson.encodeToString(info))
@@ -155,7 +155,7 @@ class AndroidUpdateController(
                     else -> return@launch
                 }
                 verifyFile(apk, info)
-                verifyPackage(apk, info)
+                verifyPackage(apk)
                 stage = UpdateStage.Install
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !context.packageManager.canRequestPackageInstalls()) {
                     publish(AppUpdate.AwaitingPermission(info.release))
@@ -215,7 +215,7 @@ class AndroidUpdateController(
         return try {
             val info = updateJson.decodeFromString<UpdateInfo>(pending.readText())
             verifyFile(apk, info)
-            verifyPackage(apk, info)
+            verifyPackage(apk)
             selected = info
             true
         } catch (_: Exception) {
@@ -250,7 +250,7 @@ class AndroidUpdateController(
     }
 	
 	@Suppress("DEPRECATION")
-    private fun verifyPackage(file: File, info: UpdateInfo) {
+    private fun verifyPackage(file: File) {
         val pm = context.packageManager
         val flags = if (Build.VERSION.SDK_INT >= 28) PackageManager.GET_SIGNING_CERTIFICATES else PackageManager.GET_SIGNATURES
         val candidate = pm.getPackageArchiveInfo(file.absolutePath, flags) ?: error("The downloaded file is not a valid APK.")

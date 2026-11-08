@@ -20,8 +20,41 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  version:
+    name: App version
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      # Empty when not run from a tag; Gradle then falls back to the version catalog.
+      gradle-args: ${{ steps.parse.outputs.gradle-args }}
+      # "true" for vMAJOR.MINOR.PATCH-beta.N tags.
+      prerelease: ${{ steps.parse.outputs.prerelease }}
+    steps:
+      - name: Parse version from tag
+        id: parse
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_REF_TYPE" != "tag" ]]; then
+            echo "Not a tag build; using the version from gradle/libs.versions.toml"
+            echo "gradle-args=" >> "$GITHUB_OUTPUT"
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [[ ! "$GITHUB_REF_NAME" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)(-beta\.([1-9][0-9]?))?$ ]]; then
+            echo "::error::Tag '$GITHUB_REF_NAME' is not in the form vMAJOR.MINOR.PATCH or vMAJOR.MINOR.PATCH-beta.N (N = 1-99)"
+            exit 1
+          fi
+          version="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.${BASH_REMATCH[3]}${BASH_REMATCH[4]}"
+          prerelease=false
+          [[ -n "${BASH_REMATCH[4]}" ]] && prerelease=true
+          echo "App version: $version (pre-release: $prerelease)"
+          echo "gradle-args=-PappVersion=$version" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$prerelease" >> "$GITHUB_OUTPUT"
+
   android:
     name: Android APK
+    needs: version
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -57,7 +90,7 @@ jobs:
           ANDROID_KEYSTORE_FILE: ${{ runner.temp }}/android-release.jks
         run: |
           chmod +x gradlew
-          ./gradlew :androidApp:assembleRelease -PrequireAndroidSigning=true --no-daemon --no-configuration-cache --stacktrace
+          ./gradlew :androidApp:assembleRelease -PrequireAndroidSigning=true ${{ needs.version.outputs.gradle-args }} --no-daemon --no-configuration-cache --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -75,6 +108,7 @@ jobs:
 
   desktop:
     name: Desktop - Windows
+    needs: version
     runs-on: windows-latest
     timeout-minutes: 90
 
@@ -97,8 +131,14 @@ jobs:
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-        # Also writes latest.yml, which the in-app updater reads from the latest release.
-        run: ./gradlew.bat :desktopApp:generateMsiUpdateMetadata --no-daemon --no-configuration-cache --stacktrace
+          GRADLE_VERSION_ARGS: ${{ needs.version.outputs.gradle-args }}
+        # Also writes latest-windows.yml and the generic latest.yml for the in-app updater.
+        # PowerShell splits a bare -PappVersion=1.4.0 at the first dot, so the argument is
+        # passed from a variable, which PowerShell hands over as one argument.
+        run: |
+          $gradleArgs = @(':desktopApp:generateUpdateMetadata', '--no-daemon', '--no-configuration-cache', '--stacktrace')
+          if ($env:GRADLE_VERSION_ARGS) { $gradleArgs += $env:GRADLE_VERSION_ARGS }
+          ./gradlew.bat @gradleArgs
 
       - name: Upload desktop installer
         uses: actions/upload-artifact@v4
@@ -106,7 +146,45 @@ jobs:
           name: release-assets-windows
           path: |
             desktopApp/build/compose/binaries/main/msi/*.msi
+            desktopApp/build/compose/binaries/main/update-metadata/latest-windows.yml
             desktopApp/build/compose/binaries/main/update-metadata/latest.yml
+          if-no-files-found: error
+          retention-days: 5
+
+  desktop-linux:
+    name: Desktop - Linux
+    needs: version
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # jpackage builds the .deb; :player compiles its libmpv bridge with the runner's c++.
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: zulu
+          java-version: "21"
+
+      - uses: gradle/actions/setup-gradle@v6
+
+      - name: Build Linux deb
+        # :androidApp is configured too, and its signing config needs a keystore path (never read here).
+        env:
+          ANDROID_KEYSTORE_FILE: ${{ runner.temp }}/android-release.jks
+        # Also writes latest-linux.yml for the in-app updater.
+        run: |
+          chmod +x gradlew
+          ./gradlew :desktopApp:generateUpdateMetadata ${{ needs.version.outputs.gradle-args }} --no-daemon --no-configuration-cache --stacktrace
+
+      - name: Upload desktop installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-assets-linux
+          path: |
+            desktopApp/build/compose/binaries/main/deb/*.deb
+            desktopApp/build/compose/binaries/main/update-metadata/latest-linux.yml
           if-no-files-found: error
           retention-days: 5
 
@@ -128,8 +206,14 @@ jobs:
       - name: Get Changelog
         shell: bash
         run: |
-          CURRENT_TAG=$(git tag --sort=-v:refname | sed -n '1p')
-          PREVIOUS_TAG=$(git tag --sort=-v:refname | sed -n '2p')
+          CURRENT_TAG="$GITHUB_REF_NAME"
+          # Newest first, with each -beta.N ordered before its release. A release's notes cover
+          # everything since the previous release (its betas included); a beta's, since the previous tag.
+          TAGS=$(git -c versionsort.suffix=-beta tag --sort=-v:refname)
+          if [[ "$CURRENT_TAG" != *-beta.* ]]; then
+            TAGS=$(grep -v -e '-beta\.' <<< "$TAGS" || true)
+          fi
+          PREVIOUS_TAG=$(grep -x -F -A1 -- "$CURRENT_TAG" <<< "$TAGS" | sed -n '2p')
           BRANCH="master"
 
           # 1. Get exact timestamps for the tag window
@@ -171,7 +255,7 @@ jobs:
 
   release:
     name: Publish GitHub Release
-    needs: [ android, desktop, generate-changelog ]
+    needs: [ version, android, desktop, desktop-linux, generate-changelog ]
     # Only run if the workflow was triggered by a tag push
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
@@ -189,5 +273,7 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           token: ${{ secrets.PAT }}
-          files: release-assets/*
+          # upload-artifact keeps paths relative to the files' common parent (msi/, deb/, update-metadata/).
+          files: release-assets/**/*
           body_path: release-assets/release_notes.md
+          prerelease: ${{ needs.version.outputs.prerelease == 'true' }}

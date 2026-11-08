@@ -4,14 +4,15 @@ import app.deference.embycl.BuildConfig
 import app.deference.embycl.core.networking.ResponseHandler.isSuccess
 import app.deference.embycl.core.networking.UpdaterHttpClient
 import app.deference.embycl.core.utils.resolveLinks
+import app.deference.embycl.data.repository.download.EmbyExUpdateProvider
 import app.deference.embycl.domain.ghrelease.GithubRelease
 import app.deference.embycl.domain.model.update.AppUpdate
 import app.deference.embycl.domain.model.update.UpdateRelease
 import app.deference.embycl.domain.model.update.UpdateStage
 import app.deference.embycl.domain.model.update.UpdateState
+import app.deference.embycl.ui.core.SettingsPreferences
 import dev.nucleusframework.updater.NucleusUpdater
 import dev.nucleusframework.updater.UpdateResult
-import dev.nucleusframework.updater.provider.GitHubProvider
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.timeout
 import io.ktor.client.request.get
@@ -44,12 +45,18 @@ actual class AppUpdater(
 	private var result: UpdateResult.Available? = null
 	private var updateRelease: UpdateRelease? = null
 	private val _state = MutableStateFlow(UpdateState())
-	private val gitHubProvider = GitHubProvider(owner = owner, repo = repo)
+	private val updateProvider = EmbyExUpdateProvider(
+		owner = owner,
+		repo = repo,
+		includePrerelease = { SettingsPreferences.betaUpdatesEnabled },
+	)
 	private var installer: File? = null
 	private val updateHttpClient = UpdaterHttpClient()
 	private val updater = NucleusUpdater {
-		provider = gitHubProvider
+		provider = updateProvider
 		currentVersion = BuildConfig.VERSION_NAME
+		// The provider only offers a pre-release to users who opted in; let Nucleus accept it.
+		allowPrerelease = true
 		executableType = "msi"
 		httpClient = updateHttpClient
 	}

@@ -6,5 +6,7 @@ internal actual val hasPlayerSettings = false
 
 internal actual val hasTitleBarSetting = false
 
+internal actual val hasUpdateChannelSetting = true
+
 @Composable
 internal actual fun PlayerSettings() = Unit

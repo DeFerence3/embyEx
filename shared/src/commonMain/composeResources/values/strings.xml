@@ -17,6 +17,9 @@
     <string name="crash_screen_logcat_unavailable">No logcat output is available. You can still report this crash.</string>
     <string name="settings_title_bar">Show title bar</string>
     <string name="settings_title_bar_description">Turn off title bar. Aimed at Linux uses</string>
+    <string name="settings_updates">Updates</string>
+    <string name="settings_beta_updates">Beta updates</string>
+    <string name="settings_beta_updates_description">Opt into pre-release, may contain bugs.</string>
     <string name="window_minimize">Minimize</string>
     <string name="window_maximize">Maximize</string>
     <string name="window_restore">Restore</string>

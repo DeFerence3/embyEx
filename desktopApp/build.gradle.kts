@@ -47,7 +47,12 @@ tasks.register<JavaExec>("reviewDownloads") {
     mainClass.set("app.deference.embycl.downloads.DownloadsReviewKt")
 }
 
-val appVersion = libs.versions.version.name.get()
+// CI passes -PappVersion parsed from the vMAJOR.MINOR.PATCH[-beta.N] tag; local builds use the catalog.
+val appVersion = providers.gradleProperty("appVersion").orElse(libs.versions.version.name).get()
+
+// MSI accepts only numeric MAJOR.MINOR.BUILD, so installers carry 1.2.4 for 1.2.4-beta.1.
+// The updater compares appVersion (written to latest-<platform>.yml and BuildConfig) instead.
+val installerVersion = appVersion.substringBefore('-')
 
 compose.desktop.application {
 	mainClass = "app.deference.embycl.MainKt"
@@ -69,7 +74,7 @@ compose.desktop.application {
 	nativeDistributions {
 		targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
 		packageName = "embyEx"
-		packageVersion = appVersion
+		packageVersion = installerVersion
 		vendor = "Abhishek Krishnan T R"
 		description = "A simple emby client, uses built in mpv lib based player to play media or open in your desired player. Follows material3 design."
 		/*homepage = "https://github.com/DeFerence3/embyEx"
@@ -120,26 +125,38 @@ compose.desktop.application {
 }
 
 /**
- * The in-app updater (Nucleus updater runtime) reads `latest.yml` from the latest GitHub
- * release: the version, plus each artifact's file name, base64 SHA-512 and size in bytes.
- * Publish this file next to the MSI it describes.
+ * The in-app updater (Nucleus updater runtime) reads `latest-<platform>.yml` from the latest
+ * GitHub release: the version, plus each artifact's file name, base64 SHA-512 and size in bytes.
+ * jpackage only packages for the host OS, so this writes the host's file. The Windows build also
+ * writes the generic `latest.yml` (same content) for installs that predate the per-platform files.
+ * Publish these files next to the installer they describe.
  */
-tasks.register("generateMsiUpdateMetadata") {
+tasks.register("generateUpdateMetadata") {
 	group = "compose desktop"
-	description = "Writes latest.yml for the packaged MSI so the in-app updater can find it"
-	dependsOn("packageMsi")
-	val msiDirectory = layout.buildDirectory.dir("compose/binaries/main/msi")
-	val metadataFile = layout.buildDirectory.file("compose/binaries/main/update-metadata/latest.yml")
-	inputs.dir(msiDirectory)
+	description = "Writes latest-<platform>.yml for the host's installer so the in-app updater can find it"
+	val osName = providers.systemProperty("os.name").get().lowercase()
+	val (platform, format) = when {
+		osName.startsWith("windows") -> "windows" to "msi"
+		osName.startsWith("linux") -> "linux" to "deb"
+		else -> error("Update metadata is only generated for Windows and Linux, not $osName")
+	}
+	dependsOn("package${format.replaceFirstChar { it.uppercase() }}")
+	val installerDirectory = layout.buildDirectory.dir("compose/binaries/main/$format")
+	val metadataDirectory = layout.buildDirectory.dir("compose/binaries/main/update-metadata")
+	val metadataNames = buildList {
+		add("latest-$platform.yml")
+		if (platform == "windows") add("latest.yml")
+	}
+	inputs.dir(installerDirectory)
 	inputs.property("version", appVersion)
-	outputs.file(metadataFile)
+	metadataNames.forEach { name -> outputs.file(metadataDirectory.map { it.file(name) }) }
 	doLast {
-		val msi = msiDirectory.get().asFile
-			.listFiles { file -> file.extension == "msi" }
+		val installer = installerDirectory.get().asFile
+			.listFiles { file -> file.extension == format }
 			?.singleOrNull()
-			?: error("Expected exactly one MSI in ${msiDirectory.get().asFile}")
+			?: error("Expected exactly one .$format in ${installerDirectory.get().asFile}")
 		val digest = MessageDigest.getInstance("SHA-512")
-		msi.inputStream().use { input ->
+		installer.inputStream().use { input ->
 			val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
 			while (true) {
 				val read = input.read(buffer)
@@ -148,17 +165,17 @@ tasks.register("generateMsiUpdateMetadata") {
 			}
 		}
 		val sha512 = Base64.getEncoder().encodeToString(digest.digest())
-		metadataFile.get().asFile.apply { parentFile.mkdirs() }.writeText(
-			"""
+		val metadata = """
 			|version: $appVersion
 			|files:
-			|  - url: ${msi.name}
+			|  - url: ${installer.name}
 			|    sha512: $sha512
-			|    size: ${msi.length()}
-			|path: ${msi.name}
+			|    size: ${installer.length()}
+			|path: ${installer.name}
 			|sha512: $sha512
 			|releaseDate: '${Instant.now()}'
-			|""".trimMargin(),
-		)
+			|""".trimMargin()
+		val directory = metadataDirectory.get().asFile.apply { mkdirs() }
+		metadataNames.forEach { name -> directory.resolve(name).writeText(metadata) }
 	}
 }

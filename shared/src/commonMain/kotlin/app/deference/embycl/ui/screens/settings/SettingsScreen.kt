@@ -57,6 +57,9 @@ import app.deference.embycl.ui.screens.settings.components.SettingsSection
 import app.deference.embycl.ui.screens.settings.components.UserCard
 import embyex.shared.generated.resources.Res
 import embyex.shared.generated.resources.app_name
+import embyex.shared.generated.resources.settings_beta_updates
+import embyex.shared.generated.resources.settings_beta_updates_description
+import embyex.shared.generated.resources.settings_updates
 import embyex.shared.generated.resources.settings_title_bar
 import embyex.shared.generated.resources.settings_title_bar_description
 import kotlinx.serialization.Serializable
@@ -96,7 +99,7 @@ fun SettingsContent(
 	onBack: () -> Unit,
 	onSignOut: () -> Unit,
 	onLoadChangelog: () -> Unit = {},
-) {
+){
 	var showChangelog by rememberSaveable { mutableStateOf(false) }
 	val uriHandler = LocalUriHandler.current
 	val koasty = LocalKoasty.current
@@ -138,7 +141,7 @@ fun SettingsContent(
 				contentPadding = PaddingValues(20.dp),
 				verticalArrangement = Arrangement.spacedBy(20.dp),
 			) {
-                item {
+				item {
 					PageIntro(
 						eyebrow = "PREFERENCES & CONNECTION",
 						title = "Your space, connected.",
@@ -286,6 +289,22 @@ fun SettingsContent(
 						title = "Ui Elements",
 						settings = settings
 					)
+				}
+
+				if (hasUpdateChannelSetting) {
+					item {
+						SettingsSection(
+							title = stringResource(resource = Res.string.settings_updates),
+							settings = listOf(
+								SettingsAction(
+									header = stringResource(resource = Res.string.settings_beta_updates),
+									description = stringResource(resource = Res.string.settings_beta_updates_description),
+									value = SettingsPreferences.betaUpdatesEnabled,
+									onAction = SettingsPreferences::setBetaUpdates,
+								),
+							),
+						)
+					}
 				}
 
 				item {

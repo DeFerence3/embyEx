@@ -3,6 +3,7 @@ package app.deference.embycl.data.repository.download
 import android.app.job.JobParameters
 import android.app.job.JobService
 import androidx.annotation.RequiresApi
+import androidx.work.Configuration
 import kotlinx.coroutines.*
 import org.koin.mp.KoinPlatformTools
 

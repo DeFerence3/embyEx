@@ -25,6 +25,28 @@ val releaseKeyPassword = signingValue("KEY_PASSWORD", "storeKeyPassword")
 val signingValues = listOf(releaseStoreFile, releaseStorePassword, releaseKeyAlias, releaseKeyPassword)
 val hasReleaseSigning = signingValues.all { it != null }
 
+// CI passes -PappVersion parsed from the vMAJOR.MINOR.PATCH[-beta.N] tag; local builds use the catalog.
+val appVersion = providers.gradleProperty("appVersion")
+	.orElse(libs.versions.version.name)
+	.get()
+
+/**
+ * A release is MAJOR * 1_000_000 + MINOR * 10_000 + PATCH * 100. `-beta.N` of that release is
+ * N below the previous slot (release - 100 + N), so betas sit between the previous release and
+ * their own: 1.2.3 = 1020300, 1.2.4-beta.1 = 1020301, 1.2.4-beta.2 = 1020302, 1.2.4 = 1020400.
+ */
+fun versionCodeOf(version: String): Int {
+	val match = requireNotNull(Regex("""(\d+)\.(\d+)\.(\d+)(?:-beta\.(\d+))?""").matchEntire(version)) {
+		"App version must be MAJOR.MINOR.PATCH or MAJOR.MINOR.PATCH-beta.N, was '$version'"
+	}
+	val (major, minor, patch) = match.groupValues.subList(1, 4).map { it.toInt() }
+	val beta = match.groupValues[4].toIntOrNull()
+	require(minor < 100 && patch < 100) { "MINOR and PATCH must be below 100, was '$version'" }
+	require(beta == null || beta in 1..99) { "The beta number must be 1 to 99, was '$version'" }
+	val release = major * 1_000_000 + minor * 10_000 + patch * 100
+	return if (beta == null) release else release - 100 + beta
+}
+
 android {
 	if (providers.gradleProperty("offlineVerification").orNull == "true") {
 		// Existing unrelated instrumentation suites may target older APIs; this mode compiles only the offline checks.
@@ -49,8 +71,8 @@ android {
 		applicationId = "app.deference.embcl"
 		minSdk = libs.versions.android.minSdk.get().toInt()
 		targetSdk = libs.versions.android.targetSdk.get().toInt()
-		versionCode = libs.versions.version.code.get().toInt()
-		versionName = libs.versions.version.name.get()
+		versionCode = versionCodeOf(version = appVersion)
+		versionName = appVersion
 		
 		testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 		if (hasReleaseSigning) signingConfig = signingConfigs.getByName("all")
