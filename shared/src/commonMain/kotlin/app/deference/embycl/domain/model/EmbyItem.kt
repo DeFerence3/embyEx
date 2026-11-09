@@ -26,6 +26,8 @@ data class EmbyItem(
 	val isFolder: Boolean = false,
 	@SerialName("Overview")
 	val overview: String? = null,
+	@SerialName("Genres")
+	val genres: List<String> = emptyList(),
 	@SerialName("ProductionYear")
 	val productionYear: Int? = null,
 	@SerialName("OfficialRating")
