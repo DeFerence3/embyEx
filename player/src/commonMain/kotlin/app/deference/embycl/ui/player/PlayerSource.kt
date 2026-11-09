@@ -10,6 +10,8 @@ data class PlayerSource(
     val subtitles: List<PlayerSubtitle> = emptyList(),
     // Called only for a user-requested handoff; hosts supply authentication or a shareable content URI.
     val resolveExternalUri: (() -> String)? = null,
+    /** Image shown behind the system media controls, fetched with [headers]. */
+    val artworkUri: String? = null,
 ) {
     override fun toString(): String = "PlayerSource(uri=<redacted>, headers=<redacted>)"
 }

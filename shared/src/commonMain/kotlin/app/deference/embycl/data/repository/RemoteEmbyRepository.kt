@@ -162,6 +162,9 @@ class RemoteEmbyRepository(
                     title = entry.name,
                     url = streamUrl(item = entry),
                     positionMs = (entry.userData?.playbackPositionTicks ?: 0L).coerceAtLeast(0L) / 10_000L,
+                    // Episodes fall back to the series backdrop inside imageUrl.
+                    artworkUrl = entry.imageUrl(type = "Backdrop", maxWidth = 1280)
+                        ?: entry.imageUrl(type = "Primary", maxWidth = 1280),
                 )
             },
             selectedIndex = playlist.indexOfFirst { it.id == item.id },

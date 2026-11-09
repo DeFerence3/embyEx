@@ -31,6 +31,20 @@ internal actual fun createEmbeddedPlayer(
     ownerScope = CoroutineScope(context = coroutineContext),
 )
 
+internal actual fun createPlatformMediaSession(
+    context: Any,
+    source: PlayerSource,
+    player: EmbeddedPlayer,
+    dispatchAction: (() -> Unit) -> Unit,
+    onStop: () -> Unit,
+): PlatformMediaSession? = AndroidMediaSession(
+    context = context as Context,
+    source = source,
+    player = player,
+    dispatchAction = dispatchAction,
+    stopPlayback = onStop,
+)
+
 @Composable
 internal actual fun EmbeddedPlayerSurface(
     player: EmbeddedPlayer,

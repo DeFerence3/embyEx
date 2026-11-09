@@ -51,6 +51,9 @@ kotlin {
 //            implementation(libs.nucleus.application)
             implementation(libs.mediamp.api)
             implementation(libs.mediamp.mpv)
+            // MPRIS media controls on Linux desktops; loaded only there. The transport is found by ServiceLoader.
+            implementation(libs.dbus.java.core)
+            runtimeOnly(libs.dbus.java.transport.native.unixsocket)
 
             val osName = providers.systemProperty("os.name").get().lowercase()
             val architecture = providers.systemProperty("os.arch").get().lowercase()

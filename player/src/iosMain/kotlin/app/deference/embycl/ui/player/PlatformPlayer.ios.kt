@@ -16,6 +16,14 @@ internal actual fun createEmbeddedPlayer(
     coroutineContext: CoroutineContext,
 ): EmbeddedPlayer = throw UnsupportedOperationException("Embedded playback is not configured on iOS.")
 
+internal actual fun createPlatformMediaSession(
+    context: Any,
+    source: PlayerSource,
+    player: EmbeddedPlayer,
+    dispatchAction: (() -> Unit) -> Unit,
+    onStop: () -> Unit,
+): PlatformMediaSession? = null
+
 @Composable
 internal actual fun EmbeddedPlayerSurface(
     player: EmbeddedPlayer,

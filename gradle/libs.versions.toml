@@ -35,6 +35,7 @@ nucleus = "3.0.0-dev-202611061347"
 
 material = "1.14.0"
 mediamp = "0.5.3"
+dbus-java = "5.2.2"
 mpv-android = "1.0.0"
 kotlinStdlib = "2.4.20"
 runner = "1.7.0"
@@ -43,6 +44,8 @@ core = "1.7.0"
 [libraries]
 ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
 mediamp-api = { module = "org.openani.mediamp:mediamp-api", version.ref = "mediamp" }
+dbus-java-core = { module = "com.github.hypfvieh:dbus-java-core", version.ref = "dbus-java" }
+dbus-java-transport-native-unixsocket = { module = "com.github.hypfvieh:dbus-java-transport-native-unixsocket", version.ref = "dbus-java" }
 mpv-android = { module = "io.github.marlboro-advance:mpv-android", version.ref = "mpv-android" }
 mediamp-mpv = { module = "org.openani.mediamp:mediamp-mpv", version.ref = "mediamp" }
 mediamp-mpv-runtime-windows-x64 = { module = "org.openani.mediamp:mediamp-mpv-runtime-windows-x64", version.ref = "mediamp" }

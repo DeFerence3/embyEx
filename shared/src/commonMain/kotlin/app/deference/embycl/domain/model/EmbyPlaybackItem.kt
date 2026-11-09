@@ -5,6 +5,8 @@ data class EmbyPlaybackItem(
     val title: String,
     val url: String,
     val positionMs: Long,
+    /** Backdrop (or poster) shown behind the system media controls; null when the item has none. */
+    val artworkUrl: String? = null,
 ) {
     override fun toString(): String = "EmbyPlaybackItem(id=$id)"
 }

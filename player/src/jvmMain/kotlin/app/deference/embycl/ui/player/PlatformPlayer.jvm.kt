@@ -30,6 +30,27 @@ internal actual fun createEmbeddedPlayer(
     throw IllegalStateException("The embedded player runtime could not be loaded.")
 }
 
+internal actual fun createPlatformMediaSession(
+    context: Any,
+    source: PlayerSource,
+    player: EmbeddedPlayer,
+    dispatchAction: (() -> Unit) -> Unit,
+    onStop: () -> Unit,
+): PlatformMediaSession? {
+    // Linux publishes through MPRIS. Windows' System Media Transport Controls are not implemented.
+    if (!System.getProperty("os.name").startsWith("Linux", ignoreCase = true)) return null
+    return try {
+        MprisMediaSession(
+            source = source,
+            player = player,
+            dispatchAction = dispatchAction,
+            stopPlayback = onStop,
+        )
+    } catch (_: LinkageError) {
+        null
+    }
+}
+
 @Composable
 internal actual fun EmbeddedPlayerSurface(
     player: EmbeddedPlayer,

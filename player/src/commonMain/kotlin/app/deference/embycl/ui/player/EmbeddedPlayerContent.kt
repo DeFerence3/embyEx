@@ -113,6 +113,13 @@ internal fun EmbeddedPlayerContent(
         if (closing) finish()
     }
 
+    RegisterPlayerMediaSession(
+        source = source,
+        player = player,
+        dispatchAction = { action -> ownerScope.launch { action() } },
+        onStop = { requestClose() },
+    )
+
     PlayerPresentation(title = source.title, window = window) {
         Box(
             modifier = Modifier

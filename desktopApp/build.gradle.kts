@@ -86,6 +86,7 @@ compose.desktop.application {
 			"java.management",
 			"java.net.http",
 			"jdk.crypto.ec",
+			"jdk.security.auth",
 			"jdk.unsupported",
 		)
 		linux {

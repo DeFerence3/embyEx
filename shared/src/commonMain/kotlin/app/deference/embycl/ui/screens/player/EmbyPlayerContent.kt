@@ -57,6 +57,7 @@ internal fun EmbyPlayerContent(
                         uri = request.item.url,
                         positionMs = request.item.positionMs,
                         headers = mapOf("X-Emby-Token" to request.accessToken),
+                        artworkUri = request.item.artworkUrl,
                     ),
                     onProgress = { onAction(EmbyPlayerAction.Update(request = request, position = it)) },
                     onClose = { onAction(EmbyPlayerAction.Update(request = request, position = it, finished = true)) },
