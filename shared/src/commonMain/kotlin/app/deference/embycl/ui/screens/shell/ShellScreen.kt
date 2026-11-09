@@ -21,17 +21,12 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.dp
-import app.deference.embycl.core.session.Session
 import app.deference.embycl.ui.Screen
 import app.deference.embycl.ui.core.LocalNavigator
 import app.deference.embycl.ui.core.components.ObserveEvent
-import app.deference.embycl.ui.core.components.SignOutConfirmationDialog
 import app.deference.embycl.ui.screens.home.HomeAction
 import app.deference.embycl.ui.screens.home.HomeContent
 import app.deference.embycl.ui.screens.home.HomeState
@@ -46,7 +41,6 @@ import app.deference.embycl.ui.screens.search.SearchAction
 import app.deference.embycl.ui.screens.search.SearchContent
 import app.deference.embycl.ui.screens.search.SearchState
 import app.deference.embycl.ui.screens.search.SearchViewModel
-import app.deference.embycl.ui.screens.settings.EmbySettingsScreen
 import app.deference.embycl.ui.screens.shell.components.EmbyExBottomBar
 import app.deference.embycl.ui.screens.shell.components.TopAppBar
 import kotlinx.coroutines.flow.Flow
@@ -67,17 +61,6 @@ fun EmbyShellContent(
 ) {
 	val backStack = LocalNavigator.current
 	val tab = state.selectedTab
-	var showSignOutConfirmation by rememberSaveable { mutableStateOf(false) }
-	if (showSignOutConfirmation) {
-		SignOutConfirmationDialog(
-			serverName = Session.serverName,
-			onConfirm = {
-				showSignOutConfirmation = false
-				onAction(ShellAction.SignOut)
-			},
-			onDismiss = { showSignOutConfirmation = false },
-		)
-	}
 	events.ObserveEvent {
 		when (it) {
 			ShellEvent.SignedOut -> Unit
@@ -89,9 +72,7 @@ fun EmbyShellContent(
 		topBar = {
 			TopAppBar(
 				currentTab = tab,
-				onRefresh = { onHomeAction(HomeAction.Refresh) },
-				onLogout = { showSignOutConfirmation = true },
-				onSettings = { backStack.goTo(EmbySettingsScreen) }
+				onRefresh = { onHomeAction(HomeAction.Refresh) }
 			)
 		},
 		bottomBar = {
@@ -179,43 +160,6 @@ fun EmbyShellContent(
 			}
 		}
 	}
-	
-	
-	/*NavigationSuiteScaffold(
-		navigationSuiteItems = {
-			EmbyTab.entries.forEach { destination ->
-				val isSelected = destination == tab
-				item(
-					icon = {
-						val iconScale by animateFloatAsState(
-							targetValue = if (isSelected) 1.15f else 1.0f,
-							animationSpec = spring(
-								dampingRatio = Spring.DampingRatioMediumBouncy,
-								stiffness = Spring.StiffnessMediumLow
-							),
-							label = "icon_scale_${destination.name}"
-						)
-						Icon(
-							imageVector = if (isSelected) destination.selectedIcon else destination.unselectedIcon,
-							contentDescription = destination.label,
-							modifier = Modifier.scale(iconScale)
-						)
-					},
-					label = {
-						Text(
-							text = destination.label,
-							style = MaterialTheme.typography.labelMedium,
-							fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium
-						)
-					},
-					selected = isSelected,
-					onClick = { onAction(ShellAction.SelectTab(destination)) },
-					alwaysShowLabel = false
-				)
-			}
-		}
-	) {
-	}*/
 }
 
 @Serializable
