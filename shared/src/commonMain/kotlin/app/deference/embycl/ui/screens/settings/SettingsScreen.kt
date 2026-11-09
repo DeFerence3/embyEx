@@ -153,29 +153,6 @@ fun SettingsContent(
 					UserCard(account, onSignout = { showSignOutConfirmation = showSignOutConfirmation.not() })
 				}
 
-/*
-				item {
-					Row(
-						modifier = Modifier.fillMaxWidth(),
-						verticalAlignment = Alignment.CenterVertically,
-						horizontalArrangement = Arrangement.SpaceBetween,
-					) {
-						Column(Modifier.weight(1f)) {
-							Text("Show banners", style = MaterialTheme.typography.titleMedium)
-							Text(
-								"Intro banners on Home, Libraries and Settings.",
-								style = MaterialTheme.typography.bodySmall,
-								color = MaterialTheme.colorScheme.onSurfaceVariant,
-							)
-						}
-						Switch(
-							checked = SettingsPreferences.bannerEnabled,
-							onCheckedChange = SettingsPreferences::setBanner,
-						)
-					}
-				}
-*/
-
 				item {
 					Row(
 						modifier = Modifier.fillMaxWidth(),
@@ -300,7 +277,12 @@ fun SettingsContent(
 									header = stringResource(resource = Res.string.settings_beta_updates),
 									description = stringResource(resource = Res.string.settings_beta_updates_description),
 									value = SettingsPreferences.betaUpdatesEnabled,
-									onAction = SettingsPreferences::setBetaUpdates,
+									onAction = {
+										SettingsPreferences.setBetaUpdates(it)
+										if (it){
+											onCheckUpdates()
+										}
+									},
 								),
 							),
 						)

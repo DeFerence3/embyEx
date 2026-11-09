@@ -70,8 +70,8 @@ class AndroidUpdateController(
             try {
                 if (!userInitiated && checkedAutomatically) return@launch
                 checkedAutomatically = true
-                // Reopening from Settings shows the existing operation or verified download.
-                if (selected != null && state.value.update !is AppUpdate.Failed) return@launch
+                val current = state.value.update
+                if (selected != null && current !is AppUpdate.Failed && current !is AppUpdate.Available) return@launch
                 if (restoreDownload()) {
                     publish(AppUpdate.ReadyToInstall(selected!!.release), reveal = !userInitiated && dismissVersion.get() == dismissalAtStart)
                     return@launch
@@ -84,7 +84,7 @@ class AndroidUpdateController(
                     includePrerelease = SettingsPreferences.betaUpdatesEnabled,
                 )
                 selected = info
-				val update = info?.let { AppUpdate.Available(it.release) } ?: AppUpdate.NotAvailable
+                val update = info?.let { AppUpdate.Available(it.release) } ?: AppUpdate.NotAvailable
 				val reveal = info != null && !userInitiated && dismissVersion.get() == dismissalAtStart
                 publish(update,reveal)
             } catch (e: CancellationException) {
@@ -216,8 +216,7 @@ class AndroidUpdateController(
     private fun installedCode(): Long = PackageInfoCompat.getLongVersionCode(context.packageManager.getPackageInfo(context.packageName, 0))
 
     private fun restoreDownload(): Boolean {
-        if (!pending.isFile || !apk.isFile) return false
-        return try {
+        return !(!pending.isFile || !apk.isFile) && try {
             val info = updateJson.decodeFromString<UpdateInfo>(pending.readText())
             verifyFile(apk, info)
             verifyPackage(apk)
