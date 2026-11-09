@@ -12,6 +12,7 @@ import app.deference.embycl.domain.appupdate.UpdateInfo
 import app.deference.embycl.domain.model.update.AppUpdate
 import app.deference.embycl.domain.model.update.UpdateStage
 import app.deference.embycl.domain.model.update.UpdateState
+import app.deference.embycl.ui.core.SettingsPreferences
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.request.prepareGet
@@ -77,7 +78,11 @@ class AndroidUpdateController(
                 }
                 selected = null
                 publish(AppUpdate.Checking)
-                val info = provider.findUpdate(context.packageName, installedCode())
+                val info = provider.findUpdate(
+                    applicationId = context.packageName,
+                    installedVersionCode = installedCode(),
+                    includePrerelease = SettingsPreferences.betaUpdatesEnabled,
+                )
                 selected = info
 				val update = info?.let { AppUpdate.Available(it.release) } ?: AppUpdate.NotAvailable
 				val reveal = info != null && !userInitiated && dismissVersion.get() == dismissalAtStart

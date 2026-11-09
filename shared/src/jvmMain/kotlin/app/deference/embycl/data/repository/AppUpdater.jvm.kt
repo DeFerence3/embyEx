@@ -57,7 +57,9 @@ actual class AppUpdater(
 		currentVersion = BuildConfig.VERSION_NAME
 		// The provider only offers a pre-release to users who opted in; let Nucleus accept it.
 		allowPrerelease = true
-		executableType = "msi"
+		// The Nucleus Gradle plugin is not applied, so the package type is not detected at runtime.
+		// It selects the artifact in latest-<platform>.yml: the MSI on Windows, the .deb on Linux.
+		executableType = if (System.getProperty("os.name").startsWith("Windows", ignoreCase = true)) "msi" else "deb"
 		httpClient = updateHttpClient
 	}
 	
