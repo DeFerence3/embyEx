@@ -1,7 +1,7 @@
 package app.deference.embycl.ui.player
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
@@ -26,9 +26,6 @@ import embyex.player.generated.resources.player_no_tracks
 import embyex.player.generated.resources.player_subtitles
 import embyex.player.generated.resources.player_subtitles_off
 import org.jetbrains.compose.resources.stringResource
-import app.deference.embycl.ui.player.EmbeddedPlayer
-import app.deference.embycl.ui.player.PlayerTrackGroup
-import app.deference.embycl.ui.player.PlayerTrack
 
 @Composable
 internal fun PlayerTrackControls(

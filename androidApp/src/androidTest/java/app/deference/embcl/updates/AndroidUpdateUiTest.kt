@@ -1,4 +1,4 @@
-package app.deference.embcl
+package app.deference.embcl.updates
 
 import androidx.activity.compose.setContent
 import android.view.accessibility.AccessibilityNodeInfo
@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import app.deference.embcl.MainActivity
 import app.deference.embycl.domain.model.update.AppUpdate
 import app.deference.embycl.domain.model.update.UpdateRelease
 import app.deference.embycl.domain.model.update.UpdateStage

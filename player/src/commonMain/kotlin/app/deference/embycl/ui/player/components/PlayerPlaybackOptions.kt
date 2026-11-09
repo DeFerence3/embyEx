@@ -20,6 +20,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import app.deference.coreui.DropDown
 import app.deference.coreui.DropdownItem
+import app.deference.embycl.ui.player.EmbeddedPlayer
+import app.deference.embycl.ui.player.PlayerAspectRatio
 import app.deference.embycl.ui.player.PlayerIconButton
 import embyex.player.generated.resources.Res
 import embyex.player.generated.resources.player_aspect
@@ -29,9 +31,6 @@ import embyex.player.generated.resources.player_more
 import embyex.player.generated.resources.player_speed
 import embyex.player.generated.resources.player_stretch
 import org.jetbrains.compose.resources.stringResource
-import app.deference.embycl.ui.player.EmbeddedPlayer
-import app.deference.embycl.ui.player.PlayerAspectRatio
-import app.deference.embycl.ui.player.PlayerAspect
 
 @Composable
 internal fun PlayerPlaybackOptions(

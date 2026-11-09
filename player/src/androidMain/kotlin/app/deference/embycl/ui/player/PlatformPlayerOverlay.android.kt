@@ -14,7 +14,6 @@ import androidx.compose.ui.platform.LocalContext
 import embyex.player.generated.resources.Res
 import embyex.player.generated.resources.player_external_error
 import org.jetbrains.compose.resources.stringResource
-import app.deference.embycl.ui.player.EmbeddedPlayer
 
 @Composable
 internal actual fun PlatformPlayerOverlay(

@@ -4,7 +4,6 @@ import app.deference.embycl.domain.model.EmbyItem
 import app.deference.embycl.domain.model.download.DownloadKey
 import app.deference.embycl.domain.model.download.DownloadRequest
 import app.deference.embycl.domain.model.download.DownloadResult
-import app.deference.embycl.domain.model.download.DownloadSource
 
 /** Single entry point for saving and removing media. Connection, permissions, queueing and playback guards live here. */
 interface DownloadsRepo {

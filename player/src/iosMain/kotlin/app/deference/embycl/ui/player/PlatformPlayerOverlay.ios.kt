@@ -2,7 +2,6 @@ package app.deference.embycl.ui.player
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import app.deference.embycl.ui.player.EmbeddedPlayer
 
 @Composable
 internal actual fun PlatformPlayerOverlay(

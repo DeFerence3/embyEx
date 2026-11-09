@@ -1,15 +1,14 @@
 package app.deference.embycl.ui.player
 
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
-import app.deference.embycl.ui.player.EmbeddedPlayer
-import androidx.compose.runtime.key
 import androidx.compose.ui.viewinterop.AndroidView
 import kotlinx.coroutines.CoroutineScope
 import kotlin.coroutines.CoroutineContext

@@ -9,6 +9,3 @@ fun createDataStore(context: Context): DataStore<Preferences> {
 		context.filesDir.resolve(dataStoreFileName).absolutePath
 	}
 }
-
-actual val gello: String
-	get() = TODO("Not yet implemented")

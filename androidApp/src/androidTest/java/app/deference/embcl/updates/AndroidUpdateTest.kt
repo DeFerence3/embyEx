@@ -1,12 +1,12 @@
-package app.deference.embcl
+package app.deference.embcl.updates
 
-import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
 import androidx.core.content.pm.PackageInfoCompat
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.core.app.ActivityScenario
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import app.deference.embcl.MainActivity
 import app.deference.embycl.domain.model.update.AppUpdate
 import app.deference.embycl.domain.model.update.UpdateRelease
 import app.deference.embycl.domain.model.update.UpdateStage
@@ -28,7 +28,10 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.junit.After
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -36,6 +39,7 @@ import java.io.File
 import java.security.MessageDigest
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.time.Duration.Companion.milliseconds
 
 @RunWith(AndroidJUnit4::class)
 class AndroidUpdateTest {
@@ -81,7 +85,9 @@ class AndroidUpdateTest {
     }) { install(HttpTimeout) }.also { clients += it }
 
     private suspend fun AndroidUpdateController.awaitState(predicate: (AppUpdate) -> Boolean): AppUpdate =
-        withTimeout(10_000) { state.first { predicate(it.update) }.update }.also { delay(50) }
+        withTimeout(10_000.milliseconds) { state.first { predicate(it.update) }.update }.also { delay(
+            50.milliseconds
+        ) }
 
     @Test fun progressUsesFractionAndHandlesUnknownLength() {
         val release = UpdateRelease("test", 2, "")

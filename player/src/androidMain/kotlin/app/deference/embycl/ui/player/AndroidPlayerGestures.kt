@@ -19,8 +19,6 @@ import embyex.player.generated.resources.Res
 import embyex.player.generated.resources.player_brightness
 import embyex.player.generated.resources.player_volume
 import org.jetbrains.compose.resources.stringResource
-import app.deference.embycl.ui.player.PlayerMediaStatus
-import app.deference.embycl.ui.player.EmbeddedPlayer
 import java.text.NumberFormat
 import kotlin.math.abs
 import kotlin.math.roundToInt

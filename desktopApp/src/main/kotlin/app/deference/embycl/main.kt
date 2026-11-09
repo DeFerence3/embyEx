@@ -2,7 +2,6 @@ package app.deference.embycl
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -40,7 +39,7 @@ import app.deference.coreui.keyboard.KeyShortcutManager
 import app.deference.embycl.core.di.initKoin
 import app.deference.embycl.core.session.Session
 import app.deference.embycl.data.local.preference.EmbyPreference
-import app.deference.embycl.data.local.preference.createDataStore
+import app.deference.embycl.data.preference.createDataStore
 import app.deference.embycl.data.repository.download.DesktopDownloadRuntime
 import app.deference.embycl.ui.core.ExitConfirmationDialog
 import app.deference.embycl.ui.core.SettingsPreferences

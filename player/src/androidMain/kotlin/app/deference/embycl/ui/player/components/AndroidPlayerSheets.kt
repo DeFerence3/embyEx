@@ -1,7 +1,5 @@
 package app.deference.embycl.ui.player.components
 
-import android.R.attr.label
-import android.system.Os.close
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -29,8 +27,11 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import app.deference.coreui.DropdownItem
 import app.deference.embycl.ui.player.AndroidPlayerSheet
+import app.deference.embycl.ui.player.EmbeddedPlayer
+import app.deference.embycl.ui.player.PlayerAspectRatio
+import app.deference.embycl.ui.player.PlayerTrack
+import app.deference.embycl.ui.player.PlayerTrackGroup
 import embyex.player.generated.resources.Res
 import embyex.player.generated.resources.player_aspect
 import embyex.player.generated.resources.player_audio
@@ -41,11 +42,6 @@ import embyex.player.generated.resources.player_speed
 import embyex.player.generated.resources.player_stretch
 import embyex.player.generated.resources.player_subtitles
 import org.jetbrains.compose.resources.stringResource
-import app.deference.embycl.ui.player.EmbeddedPlayer
-import app.deference.embycl.ui.player.PlayerAspectRatio
-import app.deference.embycl.ui.player.PlayerAspect
-import app.deference.embycl.ui.player.PlayerTrackGroup
-import app.deference.embycl.ui.player.PlayerTrack
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
