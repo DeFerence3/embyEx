@@ -18,5 +18,3 @@ fun createDataStore(producePath: () -> String): DataStore<Preferences> =
     PreferenceDataStoreFactory.createWithPath(produceFile = { producePath().toPath() })
 
 internal const val dataStoreFileName = "embyex.preferences_pb"
-
-expect val gello: String

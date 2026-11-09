@@ -8,8 +8,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Forward10
-import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.OpenInFull
+import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PictureInPictureAlt
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay10
@@ -33,13 +33,11 @@ import embyex.player.generated.resources.Res
 import embyex.player.generated.resources.player_back
 import embyex.player.generated.resources.player_forward
 import embyex.player.generated.resources.player_pause
+import embyex.player.generated.resources.player_pip
 import embyex.player.generated.resources.player_play
 import embyex.player.generated.resources.player_position
-import embyex.player.generated.resources.player_pip
 import embyex.player.generated.resources.player_restore
 import org.jetbrains.compose.resources.stringResource
-import app.deference.embycl.ui.player.PlayerMediaStatus
-import app.deference.embycl.ui.player.EmbeddedPlayer
 
 @Composable
 internal fun PlayerControls(

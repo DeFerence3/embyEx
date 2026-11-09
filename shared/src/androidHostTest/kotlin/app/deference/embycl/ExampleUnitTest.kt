@@ -1,4 +1,4 @@
-package app.deference.embyex
+package app.deference.embycl
 
 import kotlin.test.Test
 import kotlin.test.assertEquals

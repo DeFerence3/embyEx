@@ -3,8 +3,15 @@ package app.deference.embycl.data.repository.download
 import android.app.job.JobParameters
 import android.app.job.JobService
 import androidx.annotation.RequiresApi
-import androidx.work.Configuration
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.koin.mp.KoinPlatformTools
 
 @RequiresApi(34)

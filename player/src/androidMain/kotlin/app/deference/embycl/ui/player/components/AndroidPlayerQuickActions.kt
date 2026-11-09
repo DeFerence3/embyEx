@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import app.deference.embycl.ui.player.AndroidPlayerSheet
+import app.deference.embycl.ui.player.EmbeddedPlayer
 import embyex.player.generated.resources.Res
 import embyex.player.generated.resources.player_aspect
 import embyex.player.generated.resources.player_audio
@@ -26,8 +27,6 @@ import embyex.player.generated.resources.player_rotate
 import embyex.player.generated.resources.player_speed
 import embyex.player.generated.resources.player_subtitles
 import org.jetbrains.compose.resources.stringResource
-import app.deference.embycl.ui.player.EmbeddedPlayer
-import app.deference.embycl.ui.player.PlayerAspect
 
 @Composable
 internal fun AndroidPlayerQuickActions(

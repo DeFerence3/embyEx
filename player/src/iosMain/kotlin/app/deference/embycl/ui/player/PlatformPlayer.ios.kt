@@ -3,7 +3,6 @@ package app.deference.embycl.ui.player
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import app.deference.embycl.ui.player.EmbeddedPlayer
 import kotlin.coroutines.CoroutineContext
 
 @Composable
