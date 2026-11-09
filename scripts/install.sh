@@ -80,12 +80,16 @@ main() {
         tag=$(printf '%s' "$release" | grep -o '"tag_name": *"[^"]*"' | head -n 1 | sed 's/.*"\([^"]*\)"$/\1/')
     fi
 
+    # -e: the Arch pattern starts with '-', which grep would otherwise parse as options.
     url=$(printf '%s' "$release" |
         grep -o '"browser_download_url": *"[^"]*"' |
         sed 's/.*"\([^"]*\)"$/\1/' |
-        grep -E "$pattern" |
+        grep -E -e "$pattern" |
         head -n 1) || true
-    [ -n "$url" ] || die "Release $tag has no $format for x86_64."
+    if [ -z "$url" ]; then
+        [ "$beta" -eq 1 ] || die "Release $tag has no $format for x86_64. Pass --beta to install the newest pre-release instead."
+        die "Release $tag has no $format for x86_64."
+    fi
 
     sudo=""
     if [ "$(id -u)" -ne 0 ]; then

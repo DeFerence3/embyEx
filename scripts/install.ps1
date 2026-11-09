@@ -58,7 +58,10 @@ function Install-EmbyEx {
     }
 
     $asset = $release.assets | Where-Object { $_.name -like '*.msi' } | Select-Object -First 1
-    if (-not $asset) { throw "Release $($release.tag_name) has no Windows installer." }
+    if (-not $asset) {
+        if ($IncludePrerelease) { throw "Release $($release.tag_name) has no Windows installer." }
+        throw "Release $($release.tag_name) has no Windows installer. Pass -Beta to install the newest pre-release instead."
+    }
 
     $installer = Join-Path -Path ([IO.Path]::GetTempPath()) -ChildPath $asset.name
     try {

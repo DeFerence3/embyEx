@@ -36,7 +36,17 @@ curl -fsSL https://raw.githubusercontent.com/DeFerence3/embyEx/master/scripts/in
 irm https://raw.githubusercontent.com/DeFerence3/embyEx/master/scripts/install.ps1 | iex
 ```
 
-Run the same command again to update. To get pre-release builds, use `sh -s -- --beta` on Linux, or set `$env:EMBYEX_BETA = '1'` before the command on Windows.
+Run the same command again to update.
+
+**Beta builds:** to install the newest pre-release instead, add the beta option:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/DeFerence3/embyEx/master/scripts/install.sh | sh -s -- --beta
+```
+
+```powershell
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/DeFerence3/embyEx/master/scripts/install.ps1))) -Beta
+```
 
 <details>
 <summary>Prefer a manual install?</summary>
