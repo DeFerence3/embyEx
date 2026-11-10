@@ -24,6 +24,14 @@ internal interface EmbeddedPlayer {
     /** Chapters of the open media in start order; null where the engine can't report them. */
     val chapters: StateFlow<List<PlayerChapter>>? get() = null
 
+    /**
+     * Draws text subtitles with [style] from now on, including tracks loaded later. May be called before
+     * [open]. A no-op where the engine can't style subtitles.
+     */
+    fun setSubtitleStyle(
+        style: PlayerSubtitleStyle,
+    ) = Unit
+
     /** Returns when the source is ready. Cancellation releases the in-flight source. */
     suspend fun open(
         source: PlayerSource,

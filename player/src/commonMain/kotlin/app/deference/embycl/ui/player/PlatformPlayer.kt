@@ -59,6 +59,7 @@ internal expect fun PlatformPlayerOverlay(
     dispatchAction: (() -> Unit) -> Unit,
     /** Null for films and downloads. */
     queue: PlayerQueueControls?,
+    subtitleStyle: PlayerSubtitleStyleControls,
     /** Draws the video; each layout decides where it goes and how large it is. */
     surface: @Composable (Modifier) -> Unit,
     modifier: Modifier = Modifier,

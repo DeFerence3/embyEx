@@ -1,15 +1,12 @@
-package app.deference.embycl.ui.theme
+package app.deference.embycl.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ColorScheme
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialExpressiveTheme
 import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.Shapes
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
-import app.deference.embycl.ui.player.LocalPlayerVideoColorScheme
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -23,7 +20,6 @@ val ExpressiveShapes = Shapes(
     extraLarge = RoundedCornerShape(36.dp),
 )
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun EmbympvTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
@@ -35,11 +31,6 @@ fun EmbympvTheme(
         typography = Typography,
         shapes = ExpressiveShapes,
         motionScheme = MotionScheme.expressive(),
-    ) {
-        // Player controls drawn over video use the dark scheme in both app themes.
-        CompositionLocalProvider(
-            LocalPlayerVideoColorScheme provides getColorScheme(darkTheme = true, dynamicColor = dynamicColor),
-            content = content,
-        )
-    }
+        content = content,
+    )
 }

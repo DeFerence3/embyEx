@@ -7,4 +7,10 @@ internal enum class PlayerMenu {
     Speed,
     More,
     Aspect,
+
+    /** The Subtitle style page inside the Subtitles menu. */
+    SubtitleStyle,
+
+    /** The same page inside More, for videos without a Subtitles button. */
+    SubtitleStyleFromMore,
 }

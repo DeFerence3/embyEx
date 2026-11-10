@@ -153,11 +153,22 @@ internal class JvmEmbeddedPlayer(
             )
     }
 
+    override fun setSubtitleStyle(
+        style: PlayerSubtitleStyle,
+    ) {
+        // A rejected property keeps mpv's default for it; the rest still apply.
+        style.mpvProperties().forEach { (name, value) -> engine.setProperty(name = name, value = value) }
+    }
+
     override suspend fun open(
         source: PlayerSource,
         playWhenReady: Boolean,
         startPositionMillis: Long,
     ) {
+        // libass reads the fonts directory when a subtitle track loads, so set it before the media.
+        desktopSubtitleFontsDirectory()?.let { directory ->
+            engine.setProperty(name = "sub-fonts-dir", value = directory.absolutePath)
+        }
         engine.setMediaData(
             data = UriMediaData(
                 uri = source.uri,

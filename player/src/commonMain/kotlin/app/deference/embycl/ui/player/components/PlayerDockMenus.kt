@@ -8,7 +8,11 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PictureInPictureAlt
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Subtitles
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -16,6 +20,7 @@ import app.deference.coreui.DropdownItem
 import app.deference.embycl.ui.player.EmbeddedPlayer
 import app.deference.embycl.ui.player.PlayerAspectRatio
 import app.deference.embycl.ui.player.PlayerMenu
+import app.deference.embycl.ui.player.PlayerSubtitleStyleControls
 import app.deference.embycl.ui.player.PlayerTrack
 import app.deference.embycl.ui.player.PlayerTrackGroup
 import embyex.player.generated.resources.Res
@@ -31,6 +36,7 @@ import embyex.player.generated.resources.player_speed
 import embyex.player.generated.resources.player_speed_normal
 import embyex.player.generated.resources.player_speed_value
 import embyex.player.generated.resources.player_stretch
+import embyex.player.generated.resources.player_subtitle_style
 import embyex.player.generated.resources.player_subtitles
 import embyex.player.generated.resources.player_subtitles_off
 import org.jetbrains.compose.resources.StringResource
@@ -60,19 +66,58 @@ internal fun PlayerSubtitlesMenu(
     onMenuChange: (PlayerMenu?) -> Unit,
     enabled: Boolean,
     dispatchAction: (() -> Unit) -> Unit,
+    subtitleStyle: PlayerSubtitleStyleControls?,
 ) {
     PlayerTrackMenu(
         icon = Icons.Default.Subtitles,
         title = stringResource(resource = Res.string.player_subtitles),
         shortcut = "C",
         tracks = tracks,
-        expanded = menu == PlayerMenu.Subtitles,
+        expanded = menu == PlayerMenu.Subtitles || (subtitleStyle != null && menu == PlayerMenu.SubtitleStyle),
         onExpandedChange = { onMenuChange(if (it) PlayerMenu.Subtitles else null) },
         enabled = enabled,
         dispatchAction = dispatchAction,
         label = ::subtitleLabel,
         offLabel = stringResource(resource = Res.string.player_subtitles_off),
+        page = if (subtitleStyle != null && menu == PlayerMenu.SubtitleStyle) {
+            {
+                SubtitleStyleMenuPage(
+                    controls = subtitleStyle,
+                    onBack = { onMenuChange(PlayerMenu.Subtitles) },
+                )
+            }
+        } else null,
+        footer = if (subtitleStyle != null) {
+            {
+                HorizontalDivider()
+                DropdownItem(
+                    text = stringResource(resource = Res.string.player_subtitle_style),
+                    icon = Icons.Default.Tune,
+                    onClick = { onMenuChange(PlayerMenu.SubtitleStyle) },
+                )
+            }
+        } else null,
     )
+}
+
+@Composable
+private fun ColumnScope.SubtitleStyleMenuPage(
+    controls: PlayerSubtitleStyleControls,
+    onBack: () -> Unit,
+) {
+    PlayerSubtitleStylePage(
+        style = controls.style,
+        onStyleChange = controls.onStyleChange,
+        containerColor = MenuDefaults.containerColor,
+        containerShape = MaterialTheme.shapes.large,
+    ) {
+        DropdownItem(
+            text = stringResource(resource = Res.string.player_subtitle_style),
+            icon = Icons.AutoMirrored.Filled.ArrowBack,
+            onClick = onBack,
+        )
+        HorizontalDivider()
+    }
 }
 
 @Composable
@@ -108,6 +153,10 @@ private fun PlayerTrackMenu(
     dispatchAction: (() -> Unit) -> Unit,
     label: (PlayerTrack) -> String,
     offLabel: String? = null,
+    /** Shown instead of the track list, for example the Subtitle style page. */
+    page: (@Composable ColumnScope.() -> Unit)? = null,
+    /** Rows under the track list. */
+    footer: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
     val candidates by tracks.candidates.collectAsState(initial = emptyList())
     val current by tracks.selected.collectAsState()
@@ -118,7 +167,12 @@ private fun PlayerTrackMenu(
         onExpandedChange = onExpandedChange,
         enabled = enabled,
         shortcut = shortcut,
+        selfPainted = page != null,
     ) {
+        if (page != null) {
+            page()
+            return@PlayerMenuButton
+        }
         if (offLabel != null) DropdownItem(
             text = offLabel,
             selected = current == null,
@@ -142,6 +196,7 @@ private fun PlayerTrackMenu(
                 },
             )
         }
+        footer?.invoke(this)
     }
 }
 
@@ -188,17 +243,24 @@ internal fun PlayerMoreMenu(
     enabled: Boolean,
     dispatchAction: (() -> Unit) -> Unit,
     onPictureInPicture: (() -> Unit)? = null,
+    subtitleStyle: PlayerSubtitleStyleControls? = null,
 ) {
     val aspect = player.aspectRatio
     val speed = player.playbackSpeed
     PlayerMenuButton(
         icon = Icons.Default.MoreVert,
         description = stringResource(resource = Res.string.player_more),
-        expanded = menu == PlayerMenu.More || menu == PlayerMenu.Aspect || (onPictureInPicture != null && menu == PlayerMenu.Speed),
+        expanded = menu == PlayerMenu.More || menu == PlayerMenu.Aspect || menu == PlayerMenu.SubtitleStyleFromMore ||
+            (onPictureInPicture != null && menu == PlayerMenu.Speed),
         onExpandedChange = { onMenuChange(if (it) PlayerMenu.More else null) },
-        enabled = enabled && (aspect != null || onPictureInPicture != null),
+        enabled = enabled && (aspect != null || onPictureInPicture != null || subtitleStyle != null),
+        selfPainted = subtitleStyle != null && menu == PlayerMenu.SubtitleStyleFromMore,
     ) {
         when (menu) {
+            PlayerMenu.SubtitleStyleFromMore -> if (subtitleStyle != null) SubtitleStyleMenuPage(
+                controls = subtitleStyle,
+                onBack = { onMenuChange(PlayerMenu.More) },
+            )
             PlayerMenu.Aspect -> if (aspect != null) {
                 val current by aspect.mode.collectAsState()
                 DropdownItem(
@@ -254,6 +316,14 @@ internal fun PlayerMoreMenu(
                         onClick = { onMenuChange(PlayerMenu.Aspect) },
                     )
                 }
+                if (subtitleStyle != null) DropdownItem(
+                    text = stringResource(resource = Res.string.player_subtitle_style),
+                    icon = Icons.Default.Tune,
+                    // With a Subtitles button the page opens there, where the track list is.
+                    onClick = {
+                        onMenuChange(if (player.subtitleTracks != null) PlayerMenu.SubtitleStyle else PlayerMenu.SubtitleStyleFromMore)
+                    },
+                )
                 if (onPictureInPicture != null) DropdownItem(
                     text = stringResource(resource = Res.string.player_pip),
                     icon = Icons.Default.PictureInPictureAlt,

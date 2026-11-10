@@ -47,6 +47,12 @@ internal class MpvPlayer(
         speed: Float,
     ): Boolean = (impl as MPVHandle).setPropertyDouble("speed", speed.toDouble())
 
+    /** Sets an mpv property by its string form; returns false when mpv rejected it. */
+    fun setProperty(
+        name: String,
+        value: String,
+    ): Boolean = (impl as MPVHandle).setPropertyString(name, value)
+
     override fun prepareNativeTeardown() {
         renderer?.close()
     }

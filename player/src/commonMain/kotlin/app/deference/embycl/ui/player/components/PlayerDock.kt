@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import app.deference.embycl.ui.player.EmbeddedPlayer
 import app.deference.embycl.ui.player.PlayerIconButton
 import app.deference.embycl.ui.player.PlayerMenu
+import app.deference.embycl.ui.player.PlayerSubtitleStyleControls
 import embyex.player.generated.resources.Res
 import embyex.player.generated.resources.player_back
 import embyex.player.generated.resources.player_exit_fullscreen
@@ -65,6 +66,7 @@ internal fun PlayerDock(
     onPreviousEpisode: (() -> Unit)? = null,
     onNextEpisode: (() -> Unit)? = null,
     episodes: Boolean = false,
+    subtitleStyle: PlayerSubtitleStyleControls? = null,
 ) {
     val state by player.state.collectAsState()
     Row(
@@ -82,7 +84,14 @@ internal fun PlayerDock(
                     PlayerAudioMenu(tracks = tracks, menu = menu, onMenuChange = onMenuChange, enabled = enabled, dispatchAction = dispatchAction)
                 }
                 player.subtitleTracks?.let { tracks ->
-                    PlayerSubtitlesMenu(tracks = tracks, menu = menu, onMenuChange = onMenuChange, enabled = enabled, dispatchAction = dispatchAction)
+                    PlayerSubtitlesMenu(
+                        tracks = tracks,
+                        menu = menu,
+                        onMenuChange = onMenuChange,
+                        enabled = enabled,
+                        dispatchAction = dispatchAction,
+                        subtitleStyle = subtitleStyle,
+                    )
                 }
             }
         }
@@ -137,6 +146,7 @@ internal fun PlayerDock(
                     enabled = enabled,
                     dispatchAction = dispatchAction,
                     onPictureInPicture = if (compact) onPictureInPicture else null,
+                    subtitleStyle = subtitleStyle,
                 )
                 DockDivider()
                 if (panelOpen != null) PlayerIconButton(

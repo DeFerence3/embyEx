@@ -1,4 +1,4 @@
-package app.deference.embycl.ui.theme
+package app.deference.embycl.theme
 
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme

@@ -53,6 +53,8 @@ internal fun EmbeddedPlayerContent(
     onProgress: (PlaybackPosition) -> Unit,
     onClose: (PlaybackPosition) -> Unit,
     onNavigate: ((PlaybackPosition, String) -> Unit)?,
+    subtitleStyle: PlayerSubtitleStyle,
+    onSubtitleStyleChange: (PlayerSubtitleStyle) -> Unit,
 ) {
     val progressCallback by rememberUpdatedState(newValue = onProgress)
     val closeCallback by rememberUpdatedState(newValue = onClose)
@@ -60,6 +62,10 @@ internal fun EmbeddedPlayerContent(
     // Where to go after this episode closes; null closes the player.
     var target by remember(key1 = source.key) { mutableStateOf<PlayerQueueEntry?>(value = null) }
     var autoplay by rememberSaveable(source.key) { mutableStateOf(value = source.queue?.autoplay == true) }
+    // Applied at once; the host's value catches up after it persists the change.
+    var currentSubtitleStyle by remember { mutableStateOf(value = subtitleStyle) }
+    LaunchedEffect(key1 = subtitleStyle) { currentSubtitleStyle = subtitleStyle }
+    val subtitleStyleCallback by rememberUpdatedState(newValue = onSubtitleStyleChange)
     var upNextCancelled by remember(key1 = source.key) { mutableStateOf(value = false) }
     var position by remember(key1 = source.key) { mutableStateOf(value = PlaybackPosition()) }
     var closed by remember(key1 = source.key) { mutableStateOf(value = false) }
@@ -158,6 +164,13 @@ internal fun EmbeddedPlayerContent(
                             onNavigate = { entry -> ownerScope.launch { requestClose(next = entry) } },
                         )
                     },
+                    subtitleStyle = PlayerSubtitleStyleControls(
+                        style = currentSubtitleStyle,
+                        onStyleChange = { style ->
+                            currentSubtitleStyle = style
+                            subtitleStyleCallback(style)
+                        },
+                    ),
                     surface = { surfaceModifier ->
                         Box(
                             modifier = surfaceModifier
@@ -189,6 +202,10 @@ internal fun EmbeddedPlayerContent(
                 }
             }
         }
+    }
+
+    LaunchedEffect(key1 = player, key2 = currentSubtitleStyle) {
+        player?.setSubtitleStyle(style = currentSubtitleStyle)
     }
 
     // Create on the player window's UI thread and subscribe before opening media.

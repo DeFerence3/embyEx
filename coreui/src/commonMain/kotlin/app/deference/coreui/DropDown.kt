@@ -5,10 +5,13 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
@@ -43,6 +46,9 @@ fun DropDown(
 	expanded: Boolean,
 	modifier: Modifier = Modifier,
 	onDismiss: () -> Unit,
+	/** Transparent lets the content paint its own panel, for example to leave a see-through area. */
+	containerColor: Color = MenuDefaults.containerColor,
+	shadowElevation: Dp = MenuDefaults.ShadowElevation,
 	content: @Composable ColumnScope.() -> Unit
 ) {
 	DropdownMenu(
@@ -50,6 +56,8 @@ fun DropDown(
 		expanded = expanded,
 		onDismissRequest = onDismiss,
 		shape = MaterialTheme.shapes.large,
+		containerColor = containerColor,
+		shadowElevation = shadowElevation,
 		content = content
 	)
 }

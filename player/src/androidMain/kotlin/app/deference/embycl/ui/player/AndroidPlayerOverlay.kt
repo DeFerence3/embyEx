@@ -15,7 +15,6 @@ import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -139,6 +138,7 @@ internal fun AndroidPlayerOverlay(
     onOpenExternalPlayer: () -> Unit,
     dispatchAction: (() -> Unit) -> Unit,
     queue: PlayerQueueControls?,
+    subtitleStyle: PlayerSubtitleStyleControls,
     surface: @Composable (Modifier) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -219,6 +219,9 @@ internal fun AndroidPlayerOverlay(
                     PlayerMenu.Speed -> AndroidPlayerSheet.Speed
                     PlayerMenu.Aspect -> AndroidPlayerSheet.Aspect
                     PlayerMenu.More -> AndroidPlayerSheet.More
+                    PlayerMenu.SubtitleStyle,
+                    PlayerMenu.SubtitleStyleFromMore,
+                    -> AndroidPlayerSheet.SubtitleStyle
                 }
             },
             onTogglePanel = if (hasPanel) { { panelChoice = !(panelChoice ?: panelDefault); visible = true } } else null,
@@ -355,204 +358,195 @@ internal fun AndroidPlayerOverlay(
             .onFocusChanged { controlsFocused = it.hasFocus }
             .focusGroup()
 
-        PlayerVideoTheme {
-            val pictureLayers: @Composable () -> Unit = {
-                gestures(Modifier.fillMaxSize())
-                AndroidPlayerSeekFeedback(seconds = seekSeconds, trigger = seekVersion, modifier = Modifier.fillMaxSize())
-            }
-            if (portrait) {
-                val showPanel = hasPanel && (panelChoice ?: true) && !locked
-                val panelSpring by animateFloatAsState(
-                    targetValue = if (showPanel) 1f else 0f,
-                    animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
-                )
-                val panelShown = panelSpring.coerceIn(minimumValue = 0f, maximumValue = 1f)
+        val pictureLayers: @Composable () -> Unit = {
+            gestures(Modifier.fillMaxSize())
+            AndroidPlayerSeekFeedback(seconds = seekSeconds, trigger = seekVersion, modifier = Modifier.fillMaxSize())
+        }
+        if (portrait) {
+            val showPanel = hasPanel && (panelChoice ?: true) && !locked
+            val panelSpring by animateFloatAsState(
+                targetValue = if (showPanel) 1f else 0f,
+                animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+            )
+            val panelShown = panelSpring.coerceIn(minimumValue = 0f, maximumValue = 1f)
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .windowInsetsPadding(insets = WindowInsets.safeDrawing),
+            ) {
+                if (!locked) CompositionLocalProvider(LocalContentColor provides PlayerColors.content) {
+                    PlayerHeading(
+                        title = source.title,
+                        subtitle = source.subtitle,
+                        chapter = if (showPanel) null else currentChapter,
+                        onClose = onClose,
+                        modifier = controlsModifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                        trailing = if (hasPanel && !showPanel) {
+                            {
+                                PlayerIconButton(
+                                    icon = Icons.AutoMirrored.Filled.ViewSidebar,
+                                    description = stringResource(resource = Res.string.player_show_chapters),
+                                    onClick = { panelChoice = true },
+                                    shortcut = "P",
+                                )
+                            }
+                        } else null,
+                    )
+                }
+                // The panel's share of the free space animates; the picture slides between top and centre.
                 Column(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .windowInsetsPadding(insets = WindowInsets.safeDrawing),
+                        .weight(weight = 1f)
+                        .fillMaxWidth(),
                 ) {
-                    if (!locked) CompositionLocalProvider(LocalContentColor provides PlayerColors.content) {
-                        PlayerHeading(
-                            title = source.title,
-                            subtitle = source.subtitle,
-                            chapter = if (showPanel) null else currentChapter,
-                            onClose = onClose,
-                            modifier = controlsModifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                            trailing = if (hasPanel && !showPanel) {
-                                {
-                                    PlayerIconButton(
-                                        icon = Icons.AutoMirrored.Filled.ViewSidebar,
-                                        description = stringResource(resource = Res.string.player_show_chapters),
-                                        onClick = { panelChoice = true },
-                                        shortcut = "P",
-                                    )
-                                }
-                            } else null,
+                    Spacer(modifier = Modifier.weight(weight = (1f - panelShown) / 2f + 0.0001f))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(ratio = 16f / 9f)
+                            .then(other = with(receiver = slot) { Modifier.slot() }),
+                    ) {
+                        pictureLayers()
+                    }
+                    if (!locked) upNextCard(Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp))
+                    Box(
+                        modifier = Modifier
+                            .weight(weight = panelShown + 0.0001f)
+                            .fillMaxWidth()
+                            .clipToBounds()
+                            .graphicsLayer { alpha = panelShown },
+                    ) {
+                        if (panelShown > 0.01f) panel(
+                            Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
                         )
                     }
-                    // The panel's share of the free space animates; the picture slides between top and centre.
-                    Column(
+                    Spacer(modifier = Modifier.weight(weight = (1f - panelShown) / 2f + 0.0001f))
+                }
+                if (!locked) Column(
+                    modifier = controlsModifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(space = 8.dp),
+                ) {
+                    timeline()
+                    transport(Modifier.fillMaxWidth())
+                    if (player != null) PortraitTiles(
+                        player = player,
+                        enabled = !failed,
+                        onSheet = onSheet,
+                        onLock = lockControls,
+                        onRotate = rotate,
+                        onPictureInPicture = enterPictureInPicture,
+                    )
+                }
+            }
+            FeedbackHost(feedback = feedback)
+        } else {
+            val open = hasPanel && (panelChoice ?: wide) && !locked
+            // The expressive spring overshoots; padding must not go negative.
+            val pictureEndSpring by animateDpAsState(
+                targetValue = if (open && visible) 312.dp else 0.dp,
+                animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+            )
+            val pictureEnd = pictureEndSpring.coerceAtLeast(minimumValue = 0.dp)
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(end = pictureEnd)
+                    .then(other = with(receiver = slot) { Modifier.slot() }),
+            ) {
+                pictureLayers()
+            }
+            AnimatedVisibility(
+                visible = visible && !locked && sheet == null,
+                enter = fadeIn(animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()),
+                exit = fadeOut(animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec()),
+            ) {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    Box(
                         modifier = Modifier
-                            .weight(weight = 1f)
-                            .fillMaxWidth(),
+                            .fillMaxWidth()
+                            .height(height = 120.dp)
+                            .background(brush = Brush.verticalGradient(0f to PlayerColors.controlsScrim, 1f to PlayerColors.transparent)),
+                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .windowInsetsPadding(insets = WindowInsets.safeDrawing)
+                            .then(other = controlsModifier),
                     ) {
-                        Spacer(modifier = Modifier.weight(weight = (1f - panelShown) / 2f + 0.0001f))
-                        Box(
+                        Column(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .aspectRatio(ratio = 16f / 9f)
-                                .then(other = with(receiver = slot) { Modifier.slot() }),
+                                .weight(weight = 1f)
+                                .fillMaxHeight()
+                                .padding(start = 20.dp, end = if (open) 12.dp else 20.dp, top = 8.dp, bottom = 12.dp),
+                            verticalArrangement = Arrangement.spacedBy(space = 8.dp),
                         ) {
-                            pictureLayers()
-                        }
-                        if (!locked) upNextCard(Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp))
-                        Box(
-                            modifier = Modifier
-                                .weight(weight = panelShown + 0.0001f)
-                                .fillMaxWidth()
-                                .clipToBounds()
-                                .graphicsLayer { alpha = panelShown },
-                        ) {
-                            if (panelShown > 0.01f) panel(
-                                Modifier
-                                    .fillMaxSize()
-                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                            CompositionLocalProvider(LocalContentColor provides PlayerColors.content) {
+                                PlayerHeading(
+                                    title = source.title,
+                                    subtitle = source.subtitle,
+                                    chapter = if (open) null else currentChapter,
+                                    onClose = onClose,
+                                )
+                            }
+                            Spacer(modifier = Modifier.weight(weight = 1f))
+                            timeline()
+                            if (player != null) LandscapeRow(
+                                player = player,
+                                enabled = !failed,
+                                panelOpen = if (hasPanel) open else null,
+                                onTogglePanel = { panelChoice = !open },
+                                onSheet = onSheet,
+                                onLock = lockControls,
+                                onRotate = rotate,
+                                transport = transport,
                             )
                         }
-                        Spacer(modifier = Modifier.weight(weight = (1f - panelShown) / 2f + 0.0001f))
-                    }
-                    if (!locked) Column(
-                        modifier = controlsModifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(space = 8.dp),
-                    ) {
-                        timeline()
-                        transport(Modifier.fillMaxWidth())
-                        if (player != null) PortraitTiles(
-                            player = player,
-                            enabled = !failed,
-                            onSheet = onSheet,
-                            onLock = lockControls,
-                            onRotate = rotate,
-                            onPictureInPicture = enterPictureInPicture,
-                        )
-                    }
-                }
-                FeedbackHost(feedback = feedback)
-            } else {
-                val open = hasPanel && (panelChoice ?: wide) && !locked
-                // The expressive spring overshoots; padding must not go negative.
-                val pictureEndSpring by animateDpAsState(
-                    targetValue = if (open && visible) 312.dp else 0.dp,
-                    animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
-                )
-                val pictureEnd = pictureEndSpring.coerceAtLeast(minimumValue = 0.dp)
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(end = pictureEnd)
-                        .then(other = with(receiver = slot) { Modifier.slot() }),
-                ) {
-                    pictureLayers()
-                }
-                AnimatedVisibility(
-                    visible = visible && !locked && sheet == null,
-                    enter = fadeIn(animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()),
-                    exit = fadeOut(animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec()),
-                ) {
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(height = 120.dp)
-                                .background(brush = Brush.verticalGradient(0f to PlayerColors.controlsScrim, 1f to PlayerColors.transparent)),
-                        )
-                        Row(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .windowInsetsPadding(insets = WindowInsets.safeDrawing)
-                                .then(other = controlsModifier),
+                        AnimatedVisibility(
+                            visible = open,
+                            enter = slideInHorizontally(animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec()) { it } + fadeIn(),
+                            exit = slideOutHorizontally(animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec()) { it } + fadeOut(),
                         ) {
-                            Column(
-                                modifier = Modifier
-                                    .weight(weight = 1f)
+                            panel(
+                                Modifier
+                                    .width(width = 288.dp)
                                     .fillMaxHeight()
-                                    .padding(start = 20.dp, end = if (open) 12.dp else 20.dp, top = 8.dp, bottom = 12.dp),
-                                verticalArrangement = Arrangement.spacedBy(space = 8.dp),
-                            ) {
-                                CompositionLocalProvider(LocalContentColor provides PlayerColors.content) {
-                                    PlayerHeading(
-                                        title = source.title,
-                                        subtitle = source.subtitle,
-                                        chapter = if (open) null else currentChapter,
-                                        onClose = onClose,
-                                    )
-                                }
-                                Spacer(modifier = Modifier.weight(weight = 1f))
-                                timeline()
-                                if (player != null) LandscapeRow(
-                                    player = player,
-                                    enabled = !failed,
-                                    panelOpen = if (hasPanel) open else null,
-                                    onTogglePanel = { panelChoice = !open },
-                                    onSheet = onSheet,
-                                    onLock = lockControls,
-                                    onRotate = rotate,
-                                    transport = transport,
-                                )
-                            }
-                            AnimatedVisibility(
-                                visible = open,
-                                enter = slideInHorizontally(animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec()) { it } + fadeIn(),
-                                exit = slideOutHorizontally(animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec()) { it } + fadeOut(),
-                            ) {
-                                panel(
-                                    Modifier
-                                        .width(width = 288.dp)
-                                        .fillMaxHeight()
-                                        .padding(top = 12.dp, bottom = 12.dp, end = 12.dp),
-                                )
-                            }
+                                    .padding(top = 12.dp, bottom = 12.dp, end = 12.dp),
+                            )
                         }
                     }
                 }
-                FeedbackHost(feedback = feedback)
-                upNextCard(
-                    Modifier
-                        .align(alignment = Alignment.BottomEnd)
-                        .windowInsetsPadding(insets = WindowInsets.safeDrawing)
-                        .padding(end = pictureEnd + 20.dp, bottom = 132.dp),
-                )
             }
-            if (locked && visible) AndroidPlayerUnlock(
-                onUnlock = { locked = false; visible = true },
-                onDragging = { seeking = it },
-                modifier = Modifier
-                    .align(alignment = Alignment.BottomCenter)
+            FeedbackHost(feedback = feedback)
+            upNextCard(
+                Modifier
+                    .align(alignment = Alignment.BottomEnd)
                     .windowInsetsPadding(insets = WindowInsets.safeDrawing)
-                    .padding(bottom = 24.dp),
-            )
-            val currentSheet = sheet
-            if (currentSheet != null && player != null) AndroidPlayerSheets(
-                sheet = currentSheet,
-                player = player,
-                onDismiss = { sheet = null; visible = true; interaction++ },
-                onSheet = onSheet,
-                onOpenExternalPlayer = onOpenExternalPlayer,
-                // Portrait already has an Aspect tile.
-                showAspect = !portrait,
-                dispatchAction = dispatchAction,
+                    .padding(end = pictureEnd + 20.dp, bottom = 132.dp),
             )
         }
+        if (locked && visible) AndroidPlayerUnlock(
+            onUnlock = { locked = false; visible = true },
+            onDragging = { seeking = it },
+            modifier = Modifier
+                .align(alignment = Alignment.BottomCenter)
+                .windowInsetsPadding(insets = WindowInsets.safeDrawing)
+                .padding(bottom = 24.dp),
+        )
+        val currentSheet = sheet
+        if (currentSheet != null && player != null) AndroidPlayerSheets(
+            sheet = currentSheet,
+            player = player,
+            onDismiss = { sheet = null; visible = true; interaction++ },
+            onSheet = onSheet,
+            onOpenExternalPlayer = onOpenExternalPlayer,
+            // Portrait already has an Aspect tile.
+            showAspect = !portrait,
+            subtitleStyle = subtitleStyle,
+            dispatchAction = dispatchAction,
+        )
     }
-}
-
-@Composable
-private fun BoxScope.PlayerVideoTheme(
-    content: @Composable BoxScope.() -> Unit,
-) {
-    val scope = this
-    app.deference.embycl.ui.player.PlayerVideoTheme { scope.content() }
 }
 
 @Composable

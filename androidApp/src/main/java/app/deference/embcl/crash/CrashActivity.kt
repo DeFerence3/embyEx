@@ -27,7 +27,7 @@ import app.deference.embcl.MainActivity
 import app.deference.embycl.core.utils.buildCrashIssueUri
 import app.deference.embycl.core.utils.constructEnv
 import app.deference.embycl.crash.CrashScreen
-import app.deference.embycl.ui.theme.EmbympvTheme
+import app.deference.embycl.theme.EmbympvTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext

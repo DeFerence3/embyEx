@@ -5,6 +5,7 @@ import androidx.compose.runtime.key
 import app.deference.embycl.domain.model.PlaybackPosition
 import app.deference.embycl.domain.model.download.LocalPlaybackRequest
 import app.deference.embycl.domain.model.download.LocalPlaybackResult
+import app.deference.embycl.ui.core.SettingsPreferences
 import app.deference.embycl.ui.player.EmbeddedPlayerScreen
 import app.deference.embycl.ui.player.PlayerSource
 import app.deference.embycl.ui.player.PlayerSubtitle
@@ -45,6 +46,8 @@ actual fun LocalPlaybackEffect(
             ),
             onProgress = { position -> onProgress(request.sessionId, position.localResult()) },
             onClose = { position -> onResult(request.sessionId, position.localResult()) },
+            subtitleStyle = SettingsPreferences.subtitleStyle,
+            onSubtitleStyleChange = SettingsPreferences::updateSubtitleStyle,
         )
     }
 }

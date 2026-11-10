@@ -2,11 +2,11 @@ package app.deference.embycl.ui.player
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import org.openani.mediamp.mpv.MPVHandle
-import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.ContinuationInterceptor
-import kotlinx.coroutines.CoroutineDispatcher
+import kotlin.coroutines.CoroutineContext
 
 @Composable
 internal actual fun playerContext(): Any = Unit
@@ -74,5 +74,5 @@ internal actual fun PlayerPresentation(
     window: PlayerWindowState,
     content: @Composable () -> Unit,
 ) {
-    TaoPlayerPresentation(title = title, window = window, content = content)
+    PlatformPlayerPresentation(title = title, window = window, content = content)
 }

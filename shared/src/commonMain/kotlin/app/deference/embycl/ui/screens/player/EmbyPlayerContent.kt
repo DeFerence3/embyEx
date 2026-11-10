@@ -88,6 +88,8 @@ internal fun EmbyPlayerContent(
                         onNavigate = { position, itemId ->
                             onAction(EmbyPlayerAction.Update(request = request, position = position, finished = true, nextItemId = itemId))
                         },
+                        subtitleStyle = SettingsPreferences.subtitleStyle,
+                        onSubtitleStyleChange = SettingsPreferences::updateSubtitleStyle,
                     )
                 }
             }

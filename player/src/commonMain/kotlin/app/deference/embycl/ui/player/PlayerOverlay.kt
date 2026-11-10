@@ -1,17 +1,15 @@
 package app.deference.embycl.ui.player
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -59,6 +57,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.PointerType
@@ -68,15 +68,16 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import app.deference.embycl.ui.player.components.PlayerSidePanel
-import app.deference.embycl.ui.player.components.PlayerUpNextCard
 import app.deference.embycl.ui.player.components.PlayerDock
 import app.deference.embycl.ui.player.components.PlayerFeedbackPill
 import app.deference.embycl.ui.player.components.PlayerHeading
 import app.deference.embycl.ui.player.components.PlayerPill
 import app.deference.embycl.ui.player.components.PlayerPlayButton
+import app.deference.embycl.ui.player.components.PlayerSidePanel
 import app.deference.embycl.ui.player.components.PlayerTimeline
+import app.deference.embycl.ui.player.components.PlayerUpNextCard
 import app.deference.embycl.ui.player.components.playerTime
 import app.deference.embycl.ui.theme.PlayerColors
 import embyex.player.generated.resources.Res
@@ -120,6 +121,7 @@ internal fun PlayerOverlay(
     onClose: () -> Unit,
     dispatchAction: (() -> Unit) -> Unit,
     queue: PlayerQueueControls?,
+    subtitleStyle: PlayerSubtitleStyleControls,
     surface: @Composable (Modifier) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -152,8 +154,7 @@ internal fun PlayerOverlay(
     val hasPanel = chapters.isNotEmpty() || queue != null
     // Seconds until the end, only for the last stretch of a long-enough episode; drives the Up next card.
     val secondsLeft by remember(player) {
-        val active = player
-        if (active == null) MutableStateFlow(value = null) else combine(active.currentPositionMillis, active.mediaProperties) { position, properties ->
+        if (player == null) MutableStateFlow(value = null) else combine(player.currentPositionMillis, player.mediaProperties) { position, properties ->
             val duration = properties?.durationMillis ?: 0L
             ((duration - position) / 1_000L).toInt().takeIf { duration > 60_000L && it in 0..UP_NEXT_SECONDS }
         }.distinctUntilChanged()
@@ -273,6 +274,7 @@ internal fun PlayerOverlay(
             onPreviousEpisode = queue?.queue?.previous?.let { entry -> { queue.onNavigate(entry) } },
             onNextEpisode = queue?.queue?.next?.let { entry -> { queue.onNavigate(entry) } },
             episodes = queue != null,
+            subtitleStyle = subtitleStyle,
         )
     }
     val panel: @Composable (Modifier) -> Unit = { panelModifier ->
@@ -334,43 +336,47 @@ internal fun PlayerOverlay(
                 }
             },
     ) {
-        // The one video surface for every mode; each layout below only marks where it goes (PlayerPictureSlot).
-        surface(
-            with(receiver = slot) { Modifier.follow() }
-                .clip(shape = if (hideable || systemPip) RectangleShape else MaterialTheme.shapes.extraLarge),
-        )
-        when {
-            systemPip -> Box(modifier = Modifier.fillMaxSize().then(other = with(receiver = slot) { Modifier.slot() }))
-            pip -> PipLayout(
-                player = player,
-                visible = visible,
-                failed = failed,
-                onRestore = window.togglePictureInPicture,
-                onClose = onClose,
-                dispatchAction = dispatchAction,
-                window = window,
-                picture = Modifier
-                    .fillMaxSize()
-                    .then(other = with(receiver = slot) { Modifier.slot() })
-                    .then(other = pictureGestures),
-                controlsModifier = controlsModifier,
+        // Windowed controls sit on the theme background; the other layouts sit on video.
+        CompositionLocalProvider(
+            LocalContentColor provides if (hideable) PlayerColors.content else MaterialTheme.colorScheme.onBackground,
+        ) {
+            // The one video surface for every mode; each layout below only marks where it goes (PlayerPictureSlot).
+            surface(
+                with(receiver = slot) { Modifier.follow() }
+                    .clip(shape = if (hideable || systemPip) RectangleShape else MaterialTheme.shapes.extraLarge),
             )
-            fullscreen -> {
-                val open = panelOpen(wide = true)
-                // The expressive spring overshoots; padding must not go negative.
-                val pictureEndSpring by animateDpAsState(
-                    targetValue = if (open && visible) 340.dp else 0.dp,
-                    animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
-                )
-                val pictureEnd = pictureEndSpring.coerceAtLeast(minimumValue = 0.dp)
-                Box(
+            when {
+                systemPip -> Box(modifier = Modifier.fillMaxSize().then(other = with(receiver = slot) { Modifier.slot() }))
+                pip -> PipLayout(
+                    player = player,
+                    visible = visible,
+                    failed = failed,
+                    onRestore = window.togglePictureInPicture,
+                    onClose = onClose,
+                    dispatchAction = dispatchAction,
+                    window = window,
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(end = pictureEnd)
                         .then(other = with(receiver = slot) { Modifier.slot() })
                         .then(other = pictureGestures),
+                    controlsModifier = controlsModifier,
                 )
-                PlayerVideoTheme {
+                fullscreen -> {
+                    val open = panelOpen(wide = true)
+                    // The expressive spring overshoots; padding must not go negative.
+                    val pictureEndSpring by animateDpAsState(
+                        targetValue = if (open && visible) 340.dp else 0.dp,
+                        animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+                    )
+                    val pictureEnd = pictureEndSpring.coerceAtLeast(minimumValue = 0.dp)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(end = pictureEnd)
+                            .then(other = with(receiver = slot) { Modifier.slot() })
+                            .then(other = pictureGestures),
+                    )
+
                     AnimatedVisibility(
                         visible = visible,
                         enter = fadeIn(animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()),
@@ -381,7 +387,7 @@ internal fun PlayerOverlay(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(height = 160.dp)
-                                    .background(brush = Brush.verticalGradient(0f to PlayerColors.controlsScrim, 1f to PlayerColors.transparent)),
+                                    .background(brush = Brush.verticalGradient(0f to MaterialTheme.colorScheme.scrim, 1f to Color.Transparent)),
                             )
                             Row(
                                 modifier = Modifier
@@ -396,14 +402,12 @@ internal fun PlayerOverlay(
                                         .padding(start = 24.dp, end = if (open) 16.dp else 24.dp, top = 16.dp, bottom = 24.dp),
                                     verticalArrangement = Arrangement.spacedBy(space = 12.dp),
                                 ) {
-                                    CompositionLocalProvider(LocalContentColor provides PlayerColors.content) {
-                                        PlayerHeading(
-                                            title = source.title,
-                                            subtitle = source.subtitle,
-                                            chapter = if (open) null else currentChapter,
-                                            onClose = onClose,
-                                        )
-                                    }
+                                    PlayerHeading(
+                                        title = source.title,
+                                        subtitle = source.subtitle,
+                                        chapter = if (open) null else currentChapter,
+                                        onClose = onClose,
+                                    )
                                     Spacer(modifier = Modifier.weight(weight = 1f))
                                     PipErrorLine(window = window)
                                     timeline(Modifier)
@@ -424,6 +428,7 @@ internal fun PlayerOverlay(
                             }
                         }
                     }
+
                     FeedbackHost(feedback = feedback)
                     upNextCard(
                         Modifier
@@ -431,101 +436,101 @@ internal fun PlayerOverlay(
                             .padding(end = pictureEnd + 24.dp, bottom = 184.dp),
                     )
                 }
-            }
-            else -> BoxWithConstraints(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .windowInsetsPadding(insets = WindowInsets.safeDrawing)
-                    .padding(horizontal = 20.dp, vertical = 16.dp),
-            ) {
-                val wide = maxWidth >= WIDE_WINDOW
-                SideEffect { wideWindow = wide }
-                val compact = maxWidth < COMPACT_WINDOW
-                val open = panelOpen(wide = wide)
-                val properties = player?.mediaProperties?.collectAsState()?.value
-                val width = properties?.videoWidth ?: 0
-                val height = properties?.videoHeight ?: 0
-                val ratio = if (width > 0 && height > 0) width.toFloat() / height else 16f / 9f
-                val spatial = MaterialTheme.motionScheme.defaultSpatialSpec<IntSize>()
-                Row(modifier = Modifier.fillMaxSize()) {
-                    Column(
-                        modifier = Modifier
-                            .weight(weight = 1f)
-                            .fillMaxHeight(),
-                    ) {
-                        // Click hides heading and controls; the picture grows into the space they leave.
-                        AnimatedVisibility(
-                            visible = visible,
-                            enter = expandVertically(animationSpec = spatial) + fadeIn(),
-                            exit = shrinkVertically(animationSpec = spatial) + fadeOut(),
-                        ) {
-                            PlayerHeading(
-                                title = source.title,
-                                subtitle = source.subtitle,
-                                chapter = if (open) null else currentChapter,
-                                onClose = onClose,
-                                modifier = controlsModifier.padding(bottom = 12.dp),
-                            )
-                        }
-                        Box(
+                else -> BoxWithConstraints(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .windowInsetsPadding(insets = WindowInsets.safeDrawing)
+                        .padding(horizontal = 20.dp, vertical = 16.dp),
+                ) {
+                    val wide = maxWidth >= WIDE_WINDOW
+                    SideEffect { wideWindow = wide }
+                    val compact = maxWidth < COMPACT_WINDOW
+                    val open = panelOpen(wide = wide)
+                    val properties = player?.mediaProperties?.collectAsState()?.value
+                    val width = properties?.videoWidth ?: 0
+                    val height = properties?.videoHeight ?: 0
+                    val ratio = if (width > 0 && height > 0) width.toFloat() / height else 16f / 9f
+                    val spatial = MaterialTheme.motionScheme.defaultSpatialSpec<IntSize>()
+                    Row(modifier = Modifier.fillMaxSize()) {
+                        Column(
                             modifier = Modifier
                                 .weight(weight = 1f)
-                                .fillMaxWidth(),
-                            contentAlignment = Alignment.Center,
+                                .fillMaxHeight(),
                         ) {
+                            // Click hides heading and controls; the picture grows into the space they leave.
+                            AnimatedVisibility(
+                                visible = visible,
+                                enter = expandVertically(animationSpec = spatial) + fadeIn(),
+                                exit = shrinkVertically(animationSpec = spatial) + fadeOut(),
+                            ) {
+                                PlayerHeading(
+                                    title = source.title,
+                                    subtitle = source.subtitle,
+                                    chapter = if (open) null else currentChapter,
+                                    onClose = onClose,
+                                    modifier = controlsModifier.padding(bottom = 12.dp),
+                                )
+                            }
                             Box(
                                 modifier = Modifier
-                                    .aspectRatio(ratio = ratio)
-                                    .then(other = with(receiver = slot) { Modifier.slot() })
-                                    .then(other = pictureGestures),
-                            )
-                            FeedbackHost(feedback = feedback)
-                            upNextCard(
-                                Modifier
-                                    .align(alignment = Alignment.BottomEnd)
-                                    .padding(all = 16.dp),
-                            )
+                                    .weight(weight = 1f)
+                                    .fillMaxWidth(),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .aspectRatio(ratio = ratio)
+                                        .then(other = with(receiver = slot) { Modifier.slot() })
+                                        .then(other = pictureGestures),
+                                )
+                                FeedbackHost(feedback = feedback)
+                                upNextCard(
+                                    Modifier
+                                        .align(alignment = Alignment.BottomEnd)
+                                        .padding(all = 16.dp),
+                                )
+                            }
+                            AnimatedVisibility(
+                                visible = visible,
+                                enter = expandVertically(animationSpec = spatial, expandFrom = Alignment.Top) + fadeIn(),
+                                exit = shrinkVertically(animationSpec = spatial, shrinkTowards = Alignment.Top) + fadeOut(),
+                            ) {
+                                Column(
+                                    modifier = controlsModifier.padding(top = 12.dp),
+                                    verticalArrangement = Arrangement.spacedBy(space = 12.dp),
+                                ) {
+                                    PipErrorLine(window = window)
+                                    timeline(Modifier)
+                                    dock(compact, if (hasPanel) open else null)
+                                }
+                            }
                         }
                         AnimatedVisibility(
-                            visible = visible,
-                            enter = expandVertically(animationSpec = spatial, expandFrom = Alignment.Top) + fadeIn(),
-                            exit = shrinkVertically(animationSpec = spatial, shrinkTowards = Alignment.Top) + fadeOut(),
+                            visible = open && wide && visible,
+                            enter = expandHorizontally(animationSpec = spatial) + fadeIn(),
+                            exit = shrinkHorizontally(animationSpec = spatial) + fadeOut(),
                         ) {
-                            Column(
-                                modifier = controlsModifier.padding(top = 12.dp),
-                                verticalArrangement = Arrangement.spacedBy(space = 12.dp),
-                            ) {
-                                PipErrorLine(window = window)
-                                timeline(Modifier)
-                                dock(compact, if (hasPanel) open else null)
-                            }
+                            panel(
+                                Modifier
+                                    .padding(start = 16.dp)
+                                    .width(width = 304.dp)
+                                    .fillMaxHeight(),
+                            )
                         }
                     }
                     AnimatedVisibility(
-                        visible = open && wide && visible,
-                        enter = expandHorizontally(animationSpec = spatial) + fadeIn(),
-                        exit = shrinkHorizontally(animationSpec = spatial) + fadeOut(),
+                        visible = open && !wide && visible,
+                        enter = slideInHorizontally(animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec()) { it } + fadeIn(),
+                        exit = slideOutHorizontally(animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec()) { it } + fadeOut(),
+                        modifier = Modifier.align(alignment = Alignment.TopEnd),
                     ) {
                         panel(
                             Modifier
-                                .padding(start = 16.dp)
-                                .width(width = 304.dp)
+                                .width(width = 280.dp)
+                                .padding(bottom = 148.dp)
                                 .fillMaxHeight(),
                         )
                     }
-                }
-                AnimatedVisibility(
-                    visible = open && !wide && visible,
-                    enter = slideInHorizontally(animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec()) { it } + fadeIn(),
-                    exit = slideOutHorizontally(animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec()) { it } + fadeOut(),
-                    modifier = Modifier.align(alignment = Alignment.TopEnd),
-                ) {
-                    panel(
-                        Modifier
-                            .width(width = 280.dp)
-                            .padding(bottom = 148.dp)
-                            .fillMaxHeight(),
-                    )
                 }
             }
         }
@@ -565,12 +570,12 @@ private fun BoxScope.PipLayout(
     onClose: () -> Unit,
     dispatchAction: (() -> Unit) -> Unit,
     window: PlayerWindowState,
-    picture: Modifier,
+    modifier: Modifier,
     controlsModifier: Modifier,
 ) {
     val density = LocalDensity.current.density
     Box(
-        modifier = picture
+        modifier = modifier
             .pointerInput(window, density) {
                 // Undecorated hosts move the window by dragging the picture; decorated ones ignore it.
                 detectDragGestures(
@@ -582,83 +587,82 @@ private fun BoxScope.PipLayout(
                 )
             },
     )
-    VideoThemeBox {
-        AnimatedVisibility(
-            visible = visible,
-            enter = fadeIn(animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()),
-            exit = fadeOut(animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec()),
-            modifier = Modifier.fillMaxSize(),
-        ) {
-            BoxWithConstraints(modifier = Modifier.fillMaxSize().then(other = controlsModifier)) {
-                val minimal = maxWidth < 400.dp
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()),
+        exit = fadeOut(animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec()),
+        modifier = Modifier.fillMaxSize(),
+    ) {
+        BoxWithConstraints(modifier = Modifier.fillMaxSize().then(other = controlsModifier)) {
+            val minimal = maxWidth < 400.dp
+            PlayerPill(
+                modifier = Modifier
+                    .align(alignment = Alignment.TopEnd)
+                    .padding(all = 8.dp),
+                contentPadding = PaddingValues(all = 4.dp),
+            ) {
+                PlayerIconButton(
+                    icon = Icons.Default.OpenInFull,
+                    description = stringResource(resource = Res.string.player_restore),
+                    onClick = onRestore,
+                    size = 40.dp,
+                    shortcut = "Esc",
+                    tonal = false,
+                )
+                if (!minimal) PlayerIconButton(
+                    icon = Icons.Default.Close,
+                    description = stringResource(resource = Res.string.player_close),
+                    onClick = onClose,
+                    size = 40.dp,
+                    tonal = false,
+                )
+            }
+            if (player != null) {
+                val state by player.state.collectAsState()
                 PlayerPill(
-                    modifier = Modifier
-                        .align(alignment = Alignment.TopEnd)
-                        .padding(all = 8.dp),
+                    modifier = Modifier.align(alignment = Alignment.Center),
                     contentPadding = PaddingValues(all = 4.dp),
                 ) {
-                    PlayerIconButton(
-                        icon = Icons.Default.OpenInFull,
-                        description = stringResource(resource = Res.string.player_restore),
-                        onClick = onRestore,
+                    if (!minimal) PlayerIconButton(
+                        icon = Icons.Default.Replay10,
+                        description = stringResource(resource = Res.string.player_back),
+                        onClick = { dispatchAction { player.skip(deltaMillis = -10_000L) } },
+                        enabled = !failed,
                         size = 40.dp,
-                        shortcut = "Esc",
+                        shortcut = "J",
                         tonal = false,
+                    )
+                    PlayerPlayButton(
+                        paused = !state.playWhenReady,
+                        buffering = state.isLoadingOrBuffering,
+                        enabled = !failed,
+                        onClick = { dispatchAction { player.togglePlayWhenReady() } },
+                        size = 48.dp,
                     )
                     if (!minimal) PlayerIconButton(
-                        icon = Icons.Default.Close,
-                        description = stringResource(resource = Res.string.player_close),
-                        onClick = onClose,
+                        icon = Icons.Default.Forward10,
+                        description = stringResource(resource = Res.string.player_forward),
+                        onClick = { dispatchAction { player.skip(deltaMillis = 10_000L) } },
+                        enabled = !failed,
                         size = 40.dp,
+                        shortcut = "L",
                         tonal = false,
                     )
                 }
-                if (player != null) {
-                    val state by player.state.collectAsState()
-                    PlayerPill(
-                        modifier = Modifier.align(alignment = Alignment.Center),
-                        contentPadding = PaddingValues(all = 4.dp),
-                    ) {
-                        if (!minimal) PlayerIconButton(
-                            icon = Icons.Default.Replay10,
-                            description = stringResource(resource = Res.string.player_back),
-                            onClick = { dispatchAction { player.skip(deltaMillis = -10_000L) } },
-                            enabled = !failed,
-                            size = 40.dp,
-                            shortcut = "J",
-                            tonal = false,
-                        )
-                        PlayerPlayButton(
-                            paused = !state.playWhenReady,
-                            buffering = state.isLoadingOrBuffering,
-                            enabled = !failed,
-                            onClick = { dispatchAction { player.togglePlayWhenReady() } },
-                            size = 48.dp,
-                        )
-                        if (!minimal) PlayerIconButton(
-                            icon = Icons.Default.Forward10,
-                            description = stringResource(resource = Res.string.player_forward),
-                            onClick = { dispatchAction { player.skip(deltaMillis = 10_000L) } },
-                            enabled = !failed,
-                            size = 40.dp,
-                            shortcut = "L",
-                            tonal = false,
-                        )
-                    }
-                    if (!minimal) PipTime(
-                        player = player,
-                        modifier = Modifier
-                            .align(alignment = Alignment.BottomStart)
-                            .padding(start = 8.dp, bottom = 12.dp),
-                    )
-                }
+                if (!minimal) PipTime(
+                    player = player,
+                    modifier = Modifier
+                        .align(alignment = Alignment.BottomStart)
+                        .padding(start = 8.dp, bottom = 12.dp),
+                )
             }
         }
-        if (player != null) PipProgressEdge(
-            player = player,
-            modifier = Modifier.align(alignment = Alignment.BottomCenter),
-        )
     }
+
+    if (player != null) PipProgressEdge(
+        player = player,
+        modifier = Modifier.align(alignment = Alignment.BottomCenter),
+    )
 }
 
 @Composable
@@ -695,13 +699,4 @@ private fun PipProgressEdge(
         gapSize = 0.dp,
         drawStopIndicator = {},
     )
-}
-
-/** [PlayerVideoTheme] that keeps the surrounding [BoxScope], so children can still align themselves. */
-@Composable
-private fun BoxScope.VideoThemeBox(
-    content: @Composable BoxScope.() -> Unit,
-) {
-    val scope = this
-    PlayerVideoTheme { scope.content() }
 }

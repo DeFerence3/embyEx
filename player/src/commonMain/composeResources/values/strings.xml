@@ -87,4 +87,27 @@
     <string name="player_tile_rotate">Rotate</string>
     <string name="player_tile_pip">PiP</string>
     <string name="player_tile_more">More</string>
+    <string name="player_subtitle_style">Subtitle style</string>
+    <string name="player_subtitle_style_back">Back to subtitles</string>
+    <string name="player_subtitle_preview">Is that the coast?\nKeep rowing.</string>
+    <string name="player_subtitle_size">Size</string>
+    <string name="player_subtitle_percent">%1$d%</string>
+    <string name="player_subtitle_vertical">Vertical position</string>
+    <string name="player_subtitle_vertical_bottom">Bottom</string>
+    <string name="player_subtitle_vertical_top">Top</string>
+    <string name="player_subtitle_horizontal">Horizontal position</string>
+    <string name="player_subtitle_horizontal_center">Center</string>
+    <string name="player_subtitle_horizontal_left">Left %1$d%</string>
+    <string name="player_subtitle_horizontal_right">Right %1$d%</string>
+    <string name="player_subtitle_alignment">Text alignment</string>
+    <string name="player_subtitle_alignment_start">Align start</string>
+    <string name="player_subtitle_alignment_center">Align center</string>
+    <string name="player_subtitle_alignment_end">Align end</string>
+    <string name="player_subtitle_background">Background</string>
+    <string name="player_subtitle_background_box">Box</string>
+    <string name="player_subtitle_background_outline">Outline</string>
+    <string name="player_subtitle_background_shadow">Shadow</string>
+    <string name="player_subtitle_reset">Reset to default</string>
+    <string name="player_subtitle_undo_reset">Undo reset</string>
+    <string name="player_subtitle_style_note">Styled subtitles (ASS) and picture subtitles keep their own look.</string>
 </resources>

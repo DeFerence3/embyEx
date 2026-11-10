@@ -13,6 +13,9 @@ fun EmbeddedPlayerScreen(
      * the next episode starting by itself). Receives the final position of this episode and the target id.
      */
     onNavigate: ((PlaybackPosition, String) -> Unit)? = null,
+    /** How text subtitles look; the host persists it. Changes from the Subtitle style page go to [onSubtitleStyleChange]. */
+    subtitleStyle: PlayerSubtitleStyle = PlayerSubtitleStyle.Default,
+    onSubtitleStyleChange: (PlayerSubtitleStyle) -> Unit = {},
 ) {
     PlayerWindow(
         title = source.title,
@@ -23,6 +26,8 @@ fun EmbeddedPlayerScreen(
             onProgress = onProgress,
             onClose = onClose,
             onNavigate = onNavigate,
+            subtitleStyle = subtitleStyle,
+            onSubtitleStyleChange = onSubtitleStyleChange,
         )
     }
 }

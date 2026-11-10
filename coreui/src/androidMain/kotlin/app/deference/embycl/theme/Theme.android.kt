@@ -1,4 +1,4 @@
-package app.deference.embycl.ui.theme
+package app.deference.embycl.theme
 
 import android.os.Build
 import androidx.compose.material3.ColorScheme
@@ -9,13 +9,13 @@ import androidx.compose.ui.platform.LocalContext
 
 @Composable
 actual fun getColorScheme(darkTheme: Boolean, dynamicColor: Boolean): ColorScheme {
-	return when {
-		dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-			val context = LocalContext.current
-			if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-		}
-		
-		darkTheme -> DarkColorScheme
-		else -> LightColorScheme
-	}
+    return when {
+        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+            val context = LocalContext.current
+            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+        }
+
+        darkTheme -> DarkColorScheme
+        else -> LightColorScheme
+    }
 }

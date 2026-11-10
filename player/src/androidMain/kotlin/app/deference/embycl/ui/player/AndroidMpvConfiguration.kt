@@ -3,9 +3,13 @@ package app.deference.embycl.ui.player
 import android.content.Context
 import java.io.File
 
-/** Called on the IO dispatcher before native initialization. */
+/**
+ * Called on the IO dispatcher before native initialization. [subtitleFonts] (file name to bytes) are written
+ * to a private directory that mpv's `sub-fonts-dir` points at.
+ */
 internal fun androidMpvOptions(
     context: Context,
+    subtitleFonts: Map<String, ByteArray>,
 ): Map<String, String> {
     val directory = File(context.filesDir, "mpv")
     check(value = directory.isDirectory || directory.mkdirs())
@@ -36,8 +40,15 @@ internal fun androidMpvOptions(
             </fontconfig>
         """.trimIndent(),
     )
+    val fonts = File(directory, SUBTITLE_FONTS_DIRECTORY)
+    check(value = fonts.isDirectory || fonts.mkdirs())
+    subtitleFonts.forEach { (name, bytes) ->
+        val file = File(fonts, name)
+        if (!file.isFile || file.length() != bytes.size.toLong()) file.writeBytes(array = bytes)
+    }
     return mapOf(
         "config" to "no",
+        "sub-fonts-dir" to fonts.absolutePath,
         "config-dir" to directory.absolutePath,
         "load-scripts" to "no",
         "ytdl" to "no",

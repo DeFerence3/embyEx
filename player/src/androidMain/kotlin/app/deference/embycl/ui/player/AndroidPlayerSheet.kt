@@ -6,4 +6,5 @@ internal enum class AndroidPlayerSheet {
     Speed,
     Aspect,
     More,
+    SubtitleStyle,
 }

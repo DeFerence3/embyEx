@@ -95,6 +95,7 @@ internal class AndroidMpvPlayer(
     override val audioTracks get() = metadata.audioTracks
     override val subtitleTracks get() = metadata.subtitleTracks
     override val chapters get() = metadata.chapters
+    private var subtitleStyle = PlayerSubtitleStyle.Default
     private val speed = MutableStateFlow(value = 1f)
     override val playbackSpeed = object : PlayerSpeed {
         override val valueFlow = speed.asStateFlow()
@@ -309,8 +310,9 @@ internal class AndroidMpvPlayer(
         nativeOwner.lock(owner = this)
         var created = false
         try {
+            val subtitleFonts = readSubtitleFonts()
             withContext(context = ioDispatcher) {
-                val options = androidMpvOptions(context = appContext)
+                val options = androidMpvOptions(context = appContext, subtitleFonts = subtitleFonts)
                 MPVLib.create(appctx = appContext)
                 created = true
                 options.forEach { (name, value) -> MPVLib.setOptionString(name = name, value = value) }
@@ -321,6 +323,7 @@ internal class AndroidMpvPlayer(
             observeProperties()
             nativeReady = true
             applyAspect()
+            applySubtitleStyle()
             attachAvailableSurface()
             nativeLifetime = ownerScope.launch(start = CoroutineStart.UNDISPATCHED) {
                 try {
@@ -511,6 +514,20 @@ internal class AndroidMpvPlayer(
         MPVLib.setPropertyString(property = "force-window", value = "no")
         MPVLib.detachSurface()
         attachedSurface = null
+    }
+
+    override fun setSubtitleStyle(
+        style: PlayerSubtitleStyle,
+    ) {
+        if (released) return
+        subtitleStyle = style
+        applySubtitleStyle()
+    }
+
+    private fun applySubtitleStyle() {
+        if (!nativeReady) return
+        // A rejected property keeps mpv's default for it; the rest still apply.
+        subtitleStyle.mpvProperties().forEach { (name, value) -> MPVLib.setPropertyString(property = name, value = value) }
     }
 
     private fun applyAspect() {
