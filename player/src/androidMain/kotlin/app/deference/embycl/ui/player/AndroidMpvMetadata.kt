@@ -1,5 +1,8 @@
 package app.deference.embycl.ui.player
 
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import `is`.xyz.mpv.MPVLib
 import `is`.xyz.mpv.MPVNode
 
@@ -15,6 +18,10 @@ internal class AndroidMpvMetadata(
         selectNative = { select(property = "sid", id = it) },
     )
     private var externalSubtitles = emptyMap<String, PlayerSubtitle>()
+    private val mutableChapters = MutableStateFlow(value = emptyList<PlayerChapter>())
+
+    /** From mpv's `chapter-list`; untitled chapters get an empty name and the UI numbers them. */
+    val chapters: StateFlow<List<PlayerChapter>> = mutableChapters.asStateFlow()
 
     fun setExternalSubtitles(
         subtitles: List<PlayerSubtitle>,
@@ -25,6 +32,15 @@ internal class AndroidMpvMetadata(
     fun refresh() {
         if (!isReady()) return
         val tracks = MPVLib.getPropertyNode(property = "track-list")?.asArray().orEmpty()
+        mutableChapters.value = MPVLib.getPropertyNode(property = "chapter-list")?.asArray().orEmpty()
+            .mapNotNull { chapter ->
+                val seconds = chapter["time"]?.asDouble()?.takeIf { it.isFinite() } ?: return@mapNotNull null
+                PlayerChapter(
+                    name = chapter["title"]?.asString().orEmpty(),
+                    startMillis = (seconds * 1_000).toLong().coerceAtLeast(minimumValue = 0L),
+                )
+            }
+            .sortedBy { it.startMillis }
         audioTracks.refresh(
             tracks = tracks.filter { it["type"]?.asString() == "audio" }.mapNotNull { track ->
                 val id = track["id"]?.asInt()?.toString() ?: return@mapNotNull null
@@ -50,6 +66,7 @@ internal class AndroidMpvMetadata(
     }
 
     fun clear() {
+        mutableChapters.value = emptyList()
         audioTracks.clear()
         subtitleTracks.clear()
         externalSubtitles = emptyMap()

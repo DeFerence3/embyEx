@@ -33,6 +33,8 @@ internal fun PlayerHeading(
     chapter: Pair<Int, String>?,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
+    /** Shown last, for example the portrait "Show chapters" button. */
+    trailing: (@Composable () -> Unit)? = null,
 ) {
     Row(
         modifier = modifier,
@@ -70,11 +72,12 @@ internal fun PlayerHeading(
                 modifier = Modifier.size(size = 20.dp),
             )
             Text(
-                text = stringResource(Res.string.player_chapter_now, chapter.first, chapter.second),
+                text = stringResource(Res.string.player_chapter_now, chapter.first, chapterTitle(name = chapter.second, number = chapter.first)),
                 style = MaterialTheme.typography.labelLarge,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
         }
+        trailing?.invoke()
     }
 }

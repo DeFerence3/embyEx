@@ -3,6 +3,15 @@ package app.deference.embycl.ui.player
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -37,6 +46,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -124,6 +134,8 @@ internal fun PlayerOverlay(
     var feedbackVersion by remember { mutableIntStateOf(value = 0) }
     // null follows the window width: open when wide in windowed mode, closed in fullscreen.
     var panelChoice by rememberSaveable { mutableStateOf<Boolean?>(value = null) }
+    // Last measured windowed width class, so the P shortcut toggles from what is actually shown.
+    var wideWindow by remember { mutableStateOf(value = true) }
     val accessibility = LocalAccessibilityManager.current
     val systemPip = window.isPictureInPicture && window.usesSystemPictureInPicture
     val pip = window.isPictureInPicture && !systemPip
@@ -153,7 +165,6 @@ internal fun PlayerOverlay(
     )
     val toggleFullscreen: (() -> Unit)? = if (window.supportsFullscreen && !window.isPictureInPicture) window.toggleFullscreen else null
     val enterPip: (() -> Unit)? = if (window.supportsPictureInPicture && !window.isPictureInPicture) window.togglePictureInPicture else null
-    val togglePlay: () -> Unit = { player?.let { active -> dispatchAction { active.togglePlayWhenReady() } } }
 
     fun panelOpen(wide: Boolean): Boolean = hasPanel && (panelChoice ?: (wide && !fullscreen))
 
@@ -161,7 +172,7 @@ internal fun PlayerOverlay(
         player = player.takeUnless { failed },
         enabled = menu == null && !systemPip,
         focusFree = !controlsFocused,
-        controlsHidden = hideable && !visible,
+        controlsHidden = !visible,
         actions = PlayerShortcutActions(
             onEscape = {
                 when {
@@ -173,7 +184,7 @@ internal fun PlayerOverlay(
             },
             onOpenMenu = { menu = it; visible = true },
             onTogglePanel = if (hasPanel && !pip) {
-                { panelChoice = !(panelChoice ?: (!fullscreen)); visible = true }
+                { panelChoice = !(panelChoice ?: (wideWindow && !fullscreen)); visible = true }
             } else null,
             onToggleFullscreen = toggleFullscreen,
             onPictureInPicture = if (window.supportsPictureInPicture) window.togglePictureInPicture else null,
@@ -220,13 +231,14 @@ internal fun PlayerOverlay(
         }
     }
 
-    // Click toggles playback, double click toggles fullscreen. Buttons consume their own clicks first.
-    val pictureGestures = Modifier.pointerInput(toggleFullscreen, player) {
+    // Click shows or hides the controls; double click toggles fullscreen. Buttons consume their own clicks first.
+    val pictureGestures = Modifier.pointerInput(toggleFullscreen) {
         detectTapGestures(
-            onTap = { togglePlay(); visible = true },
+            onTap = { visible = !visible },
             onDoubleTap = { toggleFullscreen?.invoke() },
         )
     }
+    val slot = remember { PlayerPictureSlot() }
     val controlsModifier = Modifier
         .onFocusChanged { controlsFocused = it.hasFocus }
         .focusGroup()
@@ -274,6 +286,7 @@ internal fun PlayerOverlay(
             autoplay = queue?.autoplay == true,
             onAutoplayChange = { queue?.onAutoplayChange(it) },
             onEntryClick = { entry -> queue?.onNavigate(entry) },
+            onClose = { panelChoice = false },
             modifier = panelModifier,
         )
     }
@@ -299,7 +312,8 @@ internal fun PlayerOverlay(
                             interaction++
                             keyboardInput = false
                         }
-                        if (event.type == PointerEventType.Move && event.changes.any {
+                        // In windowed mode the controls only hide on click, so moving the mouse doesn't undo that.
+                        if (hideable && event.type == PointerEventType.Move && event.changes.any {
                                 it.type == PointerType.Mouse && !it.pressed && it.position != it.previousPosition
                             }) {
                             visible = true
@@ -308,6 +322,7 @@ internal fun PlayerOverlay(
                     }
                 }
             }
+            .then(other = with(receiver = slot) { Modifier.root() })
             .semantics {
                 if (toggleFullscreen != null) {
                     customActions = listOf(
@@ -319,8 +334,13 @@ internal fun PlayerOverlay(
                 }
             },
     ) {
+        // The one video surface for every mode; each layout below only marks where it goes (PlayerPictureSlot).
+        surface(
+            with(receiver = slot) { Modifier.follow() }
+                .clip(shape = if (hideable || systemPip) RectangleShape else MaterialTheme.shapes.extraLarge),
+        )
         when {
-            systemPip -> surface(Modifier.fillMaxSize())
+            systemPip -> Box(modifier = Modifier.fillMaxSize().then(other = with(receiver = slot) { Modifier.slot() }))
             pip -> PipLayout(
                 player = player,
                 visible = visible,
@@ -329,16 +349,25 @@ internal fun PlayerOverlay(
                 onClose = onClose,
                 dispatchAction = dispatchAction,
                 window = window,
-                pictureGestures = pictureGestures,
-                surface = surface,
+                picture = Modifier
+                    .fillMaxSize()
+                    .then(other = with(receiver = slot) { Modifier.slot() })
+                    .then(other = pictureGestures),
                 controlsModifier = controlsModifier,
             )
             fullscreen -> {
                 val open = panelOpen(wide = true)
-                surface(
-                    Modifier
+                // The expressive spring overshoots; padding must not go negative.
+                val pictureEndSpring by animateDpAsState(
+                    targetValue = if (open && visible) 340.dp else 0.dp,
+                    animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+                )
+                val pictureEnd = pictureEndSpring.coerceAtLeast(minimumValue = 0.dp)
+                Box(
+                    modifier = Modifier
                         .fillMaxSize()
-                        .padding(end = if (open && visible) 340.dp else 0.dp)
+                        .padding(end = pictureEnd)
+                        .then(other = with(receiver = slot) { Modifier.slot() })
                         .then(other = pictureGestures),
                 )
                 PlayerVideoTheme {
@@ -380,12 +409,18 @@ internal fun PlayerOverlay(
                                     timeline(Modifier)
                                     dock(false, if (hasPanel) open else null)
                                 }
-                                if (open) panel(
-                                    Modifier
-                                        .width(width = 304.dp)
-                                        .fillMaxHeight()
-                                        .padding(top = 20.dp, bottom = 24.dp, end = 20.dp),
-                                )
+                                AnimatedVisibility(
+                                    visible = open,
+                                    enter = slideInHorizontally(animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec()) { it } + fadeIn(),
+                                    exit = slideOutHorizontally(animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec()) { it } + fadeOut(),
+                                ) {
+                                    panel(
+                                        Modifier
+                                            .width(width = 304.dp)
+                                            .fillMaxHeight()
+                                            .padding(top = 20.dp, bottom = 24.dp, end = 20.dp),
+                                    )
+                                }
                             }
                         }
                     }
@@ -393,7 +428,7 @@ internal fun PlayerOverlay(
                     upNextCard(
                         Modifier
                             .align(alignment = Alignment.BottomEnd)
-                            .padding(end = if (open && visible) 364.dp else 24.dp, bottom = 184.dp),
+                            .padding(end = pictureEnd + 24.dp, bottom = 184.dp),
                     )
                 }
             }
@@ -404,39 +439,44 @@ internal fun PlayerOverlay(
                     .padding(horizontal = 20.dp, vertical = 16.dp),
             ) {
                 val wide = maxWidth >= WIDE_WINDOW
+                SideEffect { wideWindow = wide }
                 val compact = maxWidth < COMPACT_WINDOW
                 val open = panelOpen(wide = wide)
                 val properties = player?.mediaProperties?.collectAsState()?.value
                 val width = properties?.videoWidth ?: 0
                 val height = properties?.videoHeight ?: 0
                 val ratio = if (width > 0 && height > 0) width.toFloat() / height else 16f / 9f
-                Row(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalArrangement = Arrangement.spacedBy(space = 16.dp),
-                ) {
+                val spatial = MaterialTheme.motionScheme.defaultSpatialSpec<IntSize>()
+                Row(modifier = Modifier.fillMaxSize()) {
                     Column(
                         modifier = Modifier
                             .weight(weight = 1f)
                             .fillMaxHeight(),
-                        verticalArrangement = Arrangement.spacedBy(space = 12.dp),
                     ) {
-                        PlayerHeading(
-                            title = source.title,
-                            subtitle = source.subtitle,
-                            chapter = if (open) null else currentChapter,
-                            onClose = onClose,
-                            modifier = controlsModifier,
-                        )
+                        // Click hides heading and controls; the picture grows into the space they leave.
+                        AnimatedVisibility(
+                            visible = visible,
+                            enter = expandVertically(animationSpec = spatial) + fadeIn(),
+                            exit = shrinkVertically(animationSpec = spatial) + fadeOut(),
+                        ) {
+                            PlayerHeading(
+                                title = source.title,
+                                subtitle = source.subtitle,
+                                chapter = if (open) null else currentChapter,
+                                onClose = onClose,
+                                modifier = controlsModifier.padding(bottom = 12.dp),
+                            )
+                        }
                         Box(
                             modifier = Modifier
                                 .weight(weight = 1f)
                                 .fillMaxWidth(),
                             contentAlignment = Alignment.Center,
                         ) {
-                            surface(
-                                Modifier
+                            Box(
+                                modifier = Modifier
                                     .aspectRatio(ratio = ratio)
-                                    .clip(shape = MaterialTheme.shapes.extraLarge)
+                                    .then(other = with(receiver = slot) { Modifier.slot() })
                                     .then(other = pictureGestures),
                             )
                             FeedbackHost(feedback = feedback)
@@ -446,28 +486,47 @@ internal fun PlayerOverlay(
                                     .padding(all = 16.dp),
                             )
                         }
-                        Column(
-                            modifier = controlsModifier,
-                            verticalArrangement = Arrangement.spacedBy(space = 12.dp),
+                        AnimatedVisibility(
+                            visible = visible,
+                            enter = expandVertically(animationSpec = spatial, expandFrom = Alignment.Top) + fadeIn(),
+                            exit = shrinkVertically(animationSpec = spatial, shrinkTowards = Alignment.Top) + fadeOut(),
                         ) {
-                            PipErrorLine(window = window)
-                            timeline(Modifier)
-                            dock(compact, if (hasPanel) open else null)
+                            Column(
+                                modifier = controlsModifier.padding(top = 12.dp),
+                                verticalArrangement = Arrangement.spacedBy(space = 12.dp),
+                            ) {
+                                PipErrorLine(window = window)
+                                timeline(Modifier)
+                                dock(compact, if (hasPanel) open else null)
+                            }
                         }
                     }
-                    if (open && wide) panel(
+                    AnimatedVisibility(
+                        visible = open && wide && visible,
+                        enter = expandHorizontally(animationSpec = spatial) + fadeIn(),
+                        exit = shrinkHorizontally(animationSpec = spatial) + fadeOut(),
+                    ) {
+                        panel(
+                            Modifier
+                                .padding(start = 16.dp)
+                                .width(width = 304.dp)
+                                .fillMaxHeight(),
+                        )
+                    }
+                }
+                AnimatedVisibility(
+                    visible = open && !wide && visible,
+                    enter = slideInHorizontally(animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec()) { it } + fadeIn(),
+                    exit = slideOutHorizontally(animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec()) { it } + fadeOut(),
+                    modifier = Modifier.align(alignment = Alignment.TopEnd),
+                ) {
+                    panel(
                         Modifier
-                            .width(width = 304.dp)
+                            .width(width = 280.dp)
+                            .padding(bottom = 148.dp)
                             .fillMaxHeight(),
                     )
                 }
-                if (open && !wide) panel(
-                    Modifier
-                        .align(alignment = Alignment.TopEnd)
-                        .width(width = 280.dp)
-                        .padding(bottom = 148.dp)
-                        .fillMaxHeight(),
-                )
             }
         }
     }
@@ -506,15 +565,12 @@ private fun BoxScope.PipLayout(
     onClose: () -> Unit,
     dispatchAction: (() -> Unit) -> Unit,
     window: PlayerWindowState,
-    pictureGestures: Modifier,
-    surface: @Composable (Modifier) -> Unit,
+    picture: Modifier,
     controlsModifier: Modifier,
 ) {
     val density = LocalDensity.current.density
-    surface(
-        Modifier
-            .fillMaxSize()
-            .then(other = pictureGestures)
+    Box(
+        modifier = picture
             .pointerInput(window, density) {
                 // Undecorated hosts move the window by dragging the picture; decorated ones ignore it.
                 detectDragGestures(

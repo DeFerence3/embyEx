@@ -1,6 +1,20 @@
 package app.deference.embycl.ui.player.components
 
 import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.material.icons.filled.AspectRatio
+import androidx.compose.material3.Icon
+import androidx.compose.material3.ListItem
+import androidx.compose.ui.semantics.Role
+import app.deference.embycl.ui.player.components.PlayerSpeeds
+import app.deference.embycl.ui.player.components.audioLabel
+import app.deference.embycl.ui.player.components.label
+import app.deference.embycl.ui.player.components.speedLabel
+import app.deference.embycl.ui.player.components.subtitleLabel
+import embyex.player.generated.resources.player_external
+import embyex.player.generated.resources.player_more
+import embyex.player.generated.resources.player_subtitles_off
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -22,7 +36,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -49,6 +62,9 @@ internal fun AndroidPlayerSheets(
     sheet: AndroidPlayerSheet,
     player: EmbeddedPlayer,
     onDismiss: () -> Unit,
+    onSheet: (AndroidPlayerSheet) -> Unit,
+    onOpenExternalPlayer: () -> Unit,
+    showAspect: Boolean,
     dispatchAction: (() -> Unit) -> Unit,
 ) {
     ModalBottomSheet(
@@ -67,15 +83,35 @@ internal fun AndroidPlayerSheets(
                     AndroidPlayerSheet.Subtitles -> Res.string.player_subtitles
                     AndroidPlayerSheet.Speed -> Res.string.player_speed
                     AndroidPlayerSheet.Aspect -> Res.string.player_aspect
+                    AndroidPlayerSheet.More -> Res.string.player_more
                 }),
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
             )
             when (sheet) {
+                AndroidPlayerSheet.More -> {
+                    if (showAspect && player.aspectRatio != null) ListItem(
+                        headlineContent = { Text(text = stringResource(resource = Res.string.player_aspect)) },
+                        leadingContent = { Icon(imageVector = Icons.Default.AspectRatio, contentDescription = null) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(role = Role.Button) { onSheet(AndroidPlayerSheet.Aspect) },
+                    )
+                    ListItem(
+                        headlineContent = { Text(text = stringResource(resource = Res.string.player_external)) },
+                        leadingContent = { Icon(imageVector = Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(role = Role.Button) {
+                                onDismiss()
+                                onOpenExternalPlayer()
+                            },
+                    )
+                }
                 AndroidPlayerSheet.Audio -> player.audioTracks?.let { tracks ->
                     AndroidTrackChoices(
                         tracks = tracks,
-                        label = { it.name ?: it.labels.firstOrNull()?.value ?: it.id },
+                        label = ::audioLabel,
                         onDismiss = onDismiss,
                         dispatchAction = dispatchAction,
                     )
@@ -83,24 +119,17 @@ internal fun AndroidPlayerSheets(
                 AndroidPlayerSheet.Subtitles -> player.subtitleTracks?.let { tracks ->
                     AndroidTrackChoices(
                         tracks = tracks,
-                        label = { track ->
-							val firstLabel = track.labels.firstOrNull()
-							val lan = firstLabel?.language?.let { lang -> "($lang)" }
-							val label = lan?.let {
-								"# ${firstLabel.value} $it"
-							} ?: track.id
-							label
-						},
-                        offLabel = "Off",
+                        label = ::subtitleLabel,
+                        offLabel = stringResource(resource = Res.string.player_subtitles_off),
                         onDismiss = onDismiss,
                         dispatchAction = dispatchAction,
                     )
                 }
                 AndroidPlayerSheet.Speed -> player.playbackSpeed?.let { speed ->
                     val current by speed.valueFlow.collectAsState(initial = speed.value)
-                    listOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 1.75f, 2f).forEach { value ->
+                    PlayerSpeeds.forEach { value ->
                         AndroidPlayerChoice(
-                            label = "${value}×",
+                            label = speedLabel(speed = value),
                             selected = current == value,
                             onClick = {
                                 dispatchAction { speed.set(speed = value) }
@@ -114,11 +143,7 @@ internal fun AndroidPlayerSheets(
                         val mode by aspect.mode.collectAsState()
                         PlayerAspectRatio.entries.forEach { option ->
                             AndroidPlayerChoice(
-                                label = stringResource(resource = when (option) {
-                                    PlayerAspectRatio.FIT -> Res.string.player_fit
-                                    PlayerAspectRatio.CROP -> Res.string.player_crop
-                                    PlayerAspectRatio.STRETCH -> Res.string.player_stretch
-                                }),
+                                label = stringResource(resource = option.label()),
                                 selected = mode == option,
                                 onClick = {
                                     dispatchAction { aspect.setMode(mode = option) }

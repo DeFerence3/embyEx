@@ -36,7 +36,7 @@ Library facts below were checked against the pinned jars on 2026-11-10 (MediaMP 
    - Feedback pill for every shortcut. Default YouTube-style bindings from the brief, all through `RegisterShortcuts`.
    - `EmbeddedPlayer.audioLevel` and `chapters` with the desktop implementation; Android returns null / empty for now.
 2. **Queue and Up next** (`:shared` + `:player`) — done 2026-11-10: previous / next episode from `EmbyPlaybackRequest.items`, Up next tab, countdown card in the last 10 s, autoplay switch (persisted), cross-season next via `AdjacentTo`.
-3. **Android layout**: portrait (picture, chapters, dock, tiles), landscape (timeline above the row), tablet; sheets restyled; gesture feedback through the shared pill; volume via the existing system-volume path; chapters from mpv.
+3. **Android layout** — done 2026-11-10: portrait (picture, chapters, dock, tiles), landscape (timeline above the row), tablet; sheets restyled; gesture feedback through the shared pill; volume via the existing system-volume path; chapters from mpv.
 4. **Subtitle style**: bundled fonts, typeface / size / background page in the Subtitles menu and sheet, persisted, applied through mpv options on both platforms.
 5. **Customisable shortcuts**: action ids and binding table in `:coreui`, persistence in `:shared`, Settings → Keyboard shortcuts screen, record dialog with conflict / reserved-key handling, `?` cheat sheet, tooltips that read the live binding.
 6. **Errors and closing**: T5 playback error inside the picture area (keeps heading and Back), PiP refused and mpvEx missing as snackbars, non-blocking "Saving your place" with snackbar retry on the details screen.
@@ -62,3 +62,18 @@ Library facts below were checked against the pinned jars on 2026-11-10 (MediaMP 
 - `:shared`: `EmbyPlaybackItem.episodeLabel`, `seriesName`, `durationMs`; `RemoteEmbyRepository.play` appends the next season's first episode via `GET /Shows/{SeriesId}/Episodes?AdjacentTo=…` (falls back to the season list on failure); `EmbyPlayerAction.Update.nextItemId`; the ViewModel now advances only to the entry the player names (before, it advanced on every completed episode).
 - Not yet: Up next in the PiP mini window, the no-countdown variant for screen readers (needs a platform check for an active screen reader), Android UI for the queue (checkpoint 3; autoplay itself works there because the decision is in common code).
 - Verified: `:player:compileKotlinJvm`, `:player:compileAndroidMain`, `:shared:compileKotlinJvm`, `:player:allTests`, `:shared:jvmTest`, `:androidApp:assembleDebug`, `:desktopApp:test` pass. `:shared:testAndroidHostTest` fails in 4 `GithubUpdateProviderTest` cases (`MissingFieldException: tag_name`), which is updater code this work doesn't touch.
+
+### Checkpoint 3 (done 2026-11-10)
+- `AndroidPlayerOverlay` rewritten. Portrait: heading, 16:9 picture (gestures on it only), Chapters / Up next panel, timeline pill, transport pill (previous, back 10, Play, forward 10, next), eight labelled tiles with current values (Subtitles, Audio, Speed, Aspect, Lock, Rotate, PiP, More). Controls never hide in portrait. Landscape and tablet: full-screen picture, short top scrim, heading, timeline pill above the row (lock / rotate / speed · transport · subtitles / audio / panel / more), panel beside the picture (open by default at 1100 dp and wider), controls hide after 3 s.
+- Gesture feedback (volume, brightness, drag seek) uses the shared feedback pill; `AndroidPlayerFeedback` and `AndroidPlayerLevel` removed. Double-tap seek ripple, lock and slide-to-unlock unchanged.
+- Sheets: new More sheet (Aspect ratio, Open in mpvEx) replaces the More dropdown; labels shared with desktop (`subtitleLabel`, `audioLabel`, `speedLabel`). Removed `AndroidPlayerOptionActions`, `AndroidPlayerQuickActions`, `PlayerTransportControls`, `RegisterPlaybackShortcuts`, `AndroidPlayerTitle`.
+- Chapters on Android from mpv `chapter-list` (`AndroidMpvMetadata.chapters`); untitled chapters show as "Chapter N" on every platform.
+- Hardware keyboards use `RegisterPlayerShortcuts`; Android has no player volume, so ↑ ↓ M answer "Not available here" (device volume keys still work).
+- Verified: `:player:compileAndroidMain`, `:player:compileKotlinJvm`, `:shared:compileKotlinJvm`, `:player:allTests`, `:shared:jvmTest`, `:androidApp:assembleDebug`, `:desktopApp:test` pass. Not run on a device by me.
+
+### Follow-up to checkpoint 3 (2026-11-10)
+- One video surface per player: `PlayerPictureSlot` lets layouts mark the picture's spot with a placeholder while the surface stays at a single call site and follows it in the layout phase. Fixes the cut when closing the panel and when rotating on Android (the `SurfaceView` was being recreated). Desktop uses the same mechanism.
+- Animated: Android portrait panel (picture slides between top and centre), landscape and desktop fullscreen picture resize (animated end padding) and panel slide, desktop windowed panel expand/shrink.
+- Desktop: a click on the picture shows / hides the controls instead of play / pause. In windowed mode this hides heading, timeline, dock and panel and the picture grows; click or Tab brings them back; windowed still never auto-hides. Double click toggles fullscreen.
+- Panel header has a close button; Android portrait shows "Show chapters" at the end of the heading while the panel is closed; the portrait More sheet no longer repeats Aspect ratio.
+- The desktop PiP mini window is still a separate window with its own surface; the decoder keeps running, so there is no reload, as before.

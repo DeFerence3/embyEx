@@ -74,6 +74,7 @@ internal fun PlayerTimeline(
     val displayed = seeking?.let { (it * duration).toLong() } ?: position
     val chapterIndex = chapters.indexOfLast { it.startMillis <= displayed }
     val chapter = chapters.getOrNull(index = chapterIndex)
+    val chapterName = chapter?.let { chapterTitle(name = it.name, number = chapterIndex + 1) }
     val active = MaterialTheme.colorScheme.primary
     val inactive = MaterialTheme.colorScheme.outlineVariant
     val tick = MaterialTheme.colorScheme.onSurfaceVariant
@@ -82,7 +83,7 @@ internal fun PlayerTimeline(
     val durationText = playerTime(milliseconds = duration)
     val label = stringResource(resource = Res.string.player_position)
     val valueText = if (chapter != null) {
-        stringResource(Res.string.player_position_chapter, positionText, durationText, chapterIndex + 1, chapter.name)
+        stringResource(Res.string.player_position_chapter, positionText, durationText, chapterIndex + 1, chapterName.orEmpty())
     } else {
         stringResource(Res.string.player_position_value, positionText, durationText)
     }
@@ -148,7 +149,7 @@ internal fun PlayerTimeline(
             if (seeking != null) SeekBubble(
                 fraction = fraction,
                 time = positionText,
-                chapter = chapter?.name,
+                chapter = chapterName,
             )
         }
         Text(

@@ -9,6 +9,8 @@ import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.AspectRatio
 import androidx.compose.material.icons.filled.Block
+import androidx.compose.material.icons.filled.BrightnessMedium
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.FastRewind
 import androidx.compose.material.icons.filled.MoveDown
@@ -33,6 +35,7 @@ import app.deference.embycl.ui.player.PlayerFeedback
 import embyex.player.generated.resources.Res
 import embyex.player.generated.resources.player_crop
 import embyex.player.generated.resources.player_feedback_back
+import embyex.player.generated.resources.player_feedback_brightness
 import embyex.player.generated.resources.player_feedback_chapter
 import embyex.player.generated.resources.player_feedback_forward
 import embyex.player.generated.resources.player_feedback_jump
@@ -66,8 +69,13 @@ internal fun PlayerFeedbackPill(
             text = text,
             style = MaterialTheme.typography.labelLarge,
         )
-        if (feedback is PlayerFeedback.Volume) LinearProgressIndicator(
-            progress = { feedback.percent / 100f },
+        val level = when (feedback) {
+            is PlayerFeedback.Volume -> feedback.percent
+            is PlayerFeedback.Brightness -> feedback.percent
+            else -> null
+        }
+        if (level != null) LinearProgressIndicator(
+            progress = { level / 100f },
             modifier = Modifier.width(width = 120.dp),
             drawStopIndicator = {},
         )
@@ -87,6 +95,8 @@ private fun content(
     }
     is PlayerFeedback.Volume -> Icons.AutoMirrored.Filled.VolumeUp to stringResource(Res.string.player_feedback_volume, feedback.percent)
     PlayerFeedback.Muted -> Icons.AutoMirrored.Filled.VolumeOff to stringResource(resource = Res.string.player_feedback_muted)
+    is PlayerFeedback.Brightness -> Icons.Default.BrightnessMedium to stringResource(Res.string.player_feedback_brightness, feedback.percent)
+    is PlayerFeedback.SeekingTo -> Icons.Default.Schedule to playerTime(milliseconds = feedback.positionMillis)
     is PlayerFeedback.Speed -> Icons.Default.Speed to stringResource(Res.string.player_feedback_speed, speedLabel(speed = feedback.speed))
     is PlayerFeedback.SubtitlesOn -> Icons.Default.Subtitles to stringResource(Res.string.player_feedback_subtitles_on, feedback.label)
     PlayerFeedback.SubtitlesOff -> Icons.Default.SubtitlesOff to stringResource(resource = Res.string.player_feedback_subtitles_off)
@@ -97,7 +107,7 @@ private fun content(
             PlayerAspectRatio.STRETCH -> Res.string.player_stretch
         },
     )
-    is PlayerFeedback.Chapter -> Icons.AutoMirrored.Filled.Segment to stringResource(Res.string.player_feedback_chapter, feedback.index, feedback.name)
+    is PlayerFeedback.Chapter -> Icons.AutoMirrored.Filled.Segment to stringResource(Res.string.player_feedback_chapter, feedback.index, chapterTitle(name = feedback.name, number = feedback.index))
     is PlayerFeedback.Jumped -> Icons.Default.MoveDown to stringResource(Res.string.player_feedback_jump, feedback.percent, playerTime(milliseconds = feedback.positionMillis))
     PlayerFeedback.NoNextEpisode -> Icons.Default.Block to stringResource(resource = Res.string.player_feedback_no_next)
     PlayerFeedback.NoPreviousEpisode -> Icons.Default.Block to stringResource(resource = Res.string.player_feedback_no_previous)

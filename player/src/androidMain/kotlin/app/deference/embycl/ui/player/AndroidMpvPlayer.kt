@@ -94,6 +94,7 @@ internal class AndroidMpvPlayer(
     }
     override val audioTracks get() = metadata.audioTracks
     override val subtitleTracks get() = metadata.subtitleTracks
+    override val chapters get() = metadata.chapters
     private val speed = MutableStateFlow(value = 1f)
     override val playbackSpeed = object : PlayerSpeed {
         override val valueFlow = speed.asStateFlow()

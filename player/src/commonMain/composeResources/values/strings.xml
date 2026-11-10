@@ -77,4 +77,14 @@
     <string name="player_queue_empty">This is the last episode. The player closes when it ends.</string>
     <string name="player_feedback_no_next">No next episode</string>
     <string name="player_feedback_no_previous">No previous episode</string>
+    <string name="player_feedback_brightness">Brightness %1$d %</string>
+    <string name="player_chapter_untitled">Chapter %1$d</string>
+    <string name="player_tile_subtitles">Subtitles</string>
+    <string name="player_tile_audio">Audio</string>
+    <string name="player_tile_speed">Speed</string>
+    <string name="player_tile_aspect">Aspect</string>
+    <string name="player_tile_lock">Lock</string>
+    <string name="player_tile_rotate">Rotate</string>
+    <string name="player_tile_pip">PiP</string>
+    <string name="player_tile_more">More</string>
 </resources>

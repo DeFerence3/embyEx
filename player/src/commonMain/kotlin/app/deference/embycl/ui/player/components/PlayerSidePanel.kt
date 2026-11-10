@@ -19,6 +19,7 @@ import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.automirrored.filled.Segment
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -42,6 +43,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.deference.embycl.ui.player.PlayerChapter
+import app.deference.embycl.ui.player.PlayerIconButton
 import app.deference.embycl.ui.player.PlayerPanelTab
 import app.deference.embycl.ui.player.PlayerQueueEntry
 import embyex.player.generated.resources.Res
@@ -49,6 +51,7 @@ import embyex.player.generated.resources.player_autoplay
 import embyex.player.generated.resources.player_chapter_row
 import embyex.player.generated.resources.player_chapter_row_playing
 import embyex.player.generated.resources.player_chapters
+import embyex.player.generated.resources.player_hide_chapters
 import embyex.player.generated.resources.player_minutes
 import embyex.player.generated.resources.player_next_tag
 import embyex.player.generated.resources.player_queue_empty
@@ -74,6 +77,7 @@ internal fun PlayerSidePanel(
     autoplay: Boolean,
     onAutoplayChange: (Boolean) -> Unit,
     onEntryClick: (PlayerQueueEntry) -> Unit,
+    onClose: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val showChapters = chapters.isNotEmpty()
@@ -93,8 +97,11 @@ internal fun PlayerSidePanel(
             modifier = Modifier.padding(all = 12.dp),
             verticalArrangement = Arrangement.spacedBy(space = 8.dp),
         ) {
-            if (showChapters && showQueue) {
-                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+            if (showChapters && showQueue) Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(space = 4.dp),
+            ) {
+                SingleChoiceSegmentedButtonRow(modifier = Modifier.weight(weight = 1f)) {
                     PlayerPanelTab.entries.forEachIndexed { index, entry ->
                         SegmentedButton(
                             selected = shown == entry,
@@ -112,11 +119,12 @@ internal fun PlayerSidePanel(
                         }
                     }
                 }
+                ClosePanelButton(onClick = onClose)
             } else {
                 Row(
                     modifier = Modifier
                         .heightIn(min = 48.dp)
-                        .padding(horizontal = 12.dp),
+                        .padding(start = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(space = 8.dp),
                 ) {
@@ -127,7 +135,9 @@ internal fun PlayerSidePanel(
                     Text(
                         text = stringResource(resource = if (shown == PlayerPanelTab.Chapters) Res.string.player_chapters else Res.string.player_up_next),
                         style = MaterialTheme.typography.titleSmall,
+                        modifier = Modifier.weight(weight = 1f),
                     )
+                    ClosePanelButton(onClick = onClose)
                 }
             }
             when (shown) {
@@ -200,10 +210,11 @@ private fun ChapterRow(
     onClick: () -> Unit,
 ) {
     val start = playerTime(milliseconds = chapter.startMillis)
+    val name = chapterTitle(name = chapter.name, number = number)
     val description = stringResource(
         if (current) Res.string.player_chapter_row_playing else Res.string.player_chapter_row,
         number,
-        chapter.name,
+        name,
         start,
     )
     Surface(
@@ -241,7 +252,7 @@ private fun ChapterRow(
                 }
             }
             Text(
-                text = chapter.name,
+                text = name,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = if (current) FontWeight.SemiBold else null,
                 maxLines = 1,
@@ -326,4 +337,17 @@ private fun AutoplaySwitch(
         )
         Switch(checked = checked, onCheckedChange = null)
     }
+}
+
+@Composable
+private fun ClosePanelButton(
+    onClick: () -> Unit,
+) {
+    PlayerIconButton(
+        icon = Icons.Default.Close,
+        description = stringResource(resource = Res.string.player_hide_chapters),
+        onClick = onClick,
+        shortcut = "P",
+        tonal = false,
+    )
 }

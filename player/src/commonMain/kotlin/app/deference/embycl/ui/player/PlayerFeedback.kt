@@ -11,6 +11,12 @@ internal sealed interface PlayerFeedback {
     /** [percent] is 0 to 100. */
     data class Volume(val percent: Int) : PlayerFeedback
     data object Muted : PlayerFeedback
+
+    /** Screen brightness from the Android drag gesture; [percent] is 0 to 100. */
+    data class Brightness(val percent: Int) : PlayerFeedback
+
+    /** Target of a horizontal drag before it is released. */
+    data class SeekingTo(val positionMillis: Long) : PlayerFeedback
     data class Speed(val speed: Float) : PlayerFeedback
     data class SubtitlesOn(val label: String) : PlayerFeedback
     data object SubtitlesOff : PlayerFeedback
