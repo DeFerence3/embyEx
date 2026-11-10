@@ -22,6 +22,12 @@ internal class PlayerShortcutActions(
     val onToggleFullscreen: (() -> Unit)?,
     val onPictureInPicture: (() -> Unit)?,
     val onRevealControls: () -> Unit,
+    /** Null when there is no queue (films, downloads); a queue without a neighbour reports it in feedback. */
+    val onPreviousEpisode: (() -> Unit)? = null,
+    val onNextEpisode: (() -> Unit)? = null,
+    val hasQueue: Boolean = false,
+    /** Set while the Up next card shows: Enter plays now. Esc cancels it through [onEscape]. */
+    val onPlayUpNext: (() -> Unit)? = null,
 )
 
 /**
@@ -51,8 +57,10 @@ internal fun RegisterPlayerShortcuts(
     val panelAvailable = actions.onTogglePanel != null
     val fullscreenAvailable = actions.onToggleFullscreen != null
     val pipAvailable = actions.onPictureInPicture != null
+    val hasQueue = actions.hasQueue
+    val upNextShown = actions.onPlayUpNext != null
 
-    val shortcuts = remember(player, enabled, focusFree, controlsHidden, panelAvailable, fullscreenAvailable, pipAvailable) {
+    val shortcuts = remember(player, enabled, focusFree, controlsHidden, panelAvailable, fullscreenAvailable, pipAvailable, hasQueue, upNextShown) {
         val list = mutableListOf<KeyShortcut>()
         fun add(key: Key, description: String, ctrl: Boolean = false, shift: Boolean = false, action: () -> Unit) {
             list += KeyShortcut(
@@ -72,6 +80,15 @@ internal fun RegisterPlayerShortcuts(
             if (fullscreenAvailable) add(key = Key.F, description = "Full screen") { currentActions.onToggleFullscreen?.invoke() }
             if (pipAvailable) add(key = Key.I, description = "Picture in picture") { currentActions.onPictureInPicture?.invoke() }
             if (panelAvailable) add(key = Key.P, description = "Chapters panel") { currentActions.onTogglePanel?.invoke() }
+            if (hasQueue) {
+                add(key = Key.N, description = "Next episode", shift = true) {
+                    currentActions.onNextEpisode?.invoke() ?: currentFeedback(PlayerFeedback.NoNextEpisode)
+                }
+                add(key = Key.P, description = "Previous episode", shift = true) {
+                    currentActions.onPreviousEpisode?.invoke() ?: currentFeedback(PlayerFeedback.NoPreviousEpisode)
+                }
+            }
+            if (upNextShown && focusFree) add(key = Key.Enter, description = "Play next episode now") { currentActions.onPlayUpNext?.invoke() }
         }
         val active = player
         if (enabled && active != null) {

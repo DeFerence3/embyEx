@@ -39,6 +39,14 @@ internal class MpvPlayer(
 
     fun surface(): MediampReadback.Surface = requireNotNull(value = renderer).surface()
 
+    /**
+     * MediaMP 0.5.3's mpv backend has no PlaybackSpeed feature, so speed goes straight to mpv.
+     * Returns false when mpv rejected the value.
+     */
+    fun setSpeed(
+        speed: Float,
+    ): Boolean = (impl as MPVHandle).setPropertyDouble("speed", speed.toDouble())
+
     override fun prepareNativeTeardown() {
         renderer?.close()
     }

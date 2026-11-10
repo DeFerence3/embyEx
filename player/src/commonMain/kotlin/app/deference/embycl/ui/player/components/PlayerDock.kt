@@ -15,6 +15,8 @@ import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.FullscreenExit
 import androidx.compose.material.icons.filled.PictureInPictureAlt
 import androidx.compose.material.icons.filled.Replay10
+import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
@@ -32,6 +34,8 @@ import embyex.player.generated.resources.player_exit_fullscreen
 import embyex.player.generated.resources.player_forward
 import embyex.player.generated.resources.player_fullscreen
 import embyex.player.generated.resources.player_hide_chapters
+import embyex.player.generated.resources.player_next_episode
+import embyex.player.generated.resources.player_previous_episode
 import embyex.player.generated.resources.player_pip
 import embyex.player.generated.resources.player_show_chapters
 import org.jetbrains.compose.resources.stringResource
@@ -57,6 +61,10 @@ internal fun PlayerDock(
     dispatchAction: (() -> Unit) -> Unit,
     modifier: Modifier = Modifier,
     compact: Boolean = false,
+    /** Both null hides the episode buttons (films, downloads); one null disables that button. */
+    onPreviousEpisode: (() -> Unit)? = null,
+    onNextEpisode: (() -> Unit)? = null,
+    episodes: Boolean = false,
 ) {
     val state by player.state.collectAsState()
     Row(
@@ -79,6 +87,14 @@ internal fun PlayerDock(
             }
         }
         PlayerPill(contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)) {
+            if (episodes) PlayerIconButton(
+                icon = Icons.Default.SkipPrevious,
+                description = stringResource(resource = Res.string.player_previous_episode),
+                onClick = { onPreviousEpisode?.invoke() },
+                enabled = enabled && onPreviousEpisode != null,
+                shortcut = "Shift+P",
+                tonal = false,
+            )
             PlayerIconButton(
                 icon = Icons.Default.Replay10,
                 description = stringResource(resource = Res.string.player_back),
@@ -100,6 +116,14 @@ internal fun PlayerDock(
                 onClick = { dispatchAction { player.skip(deltaMillis = 10_000L) } },
                 enabled = enabled,
                 shortcut = "L",
+                tonal = false,
+            )
+            if (episodes) PlayerIconButton(
+                icon = Icons.Default.SkipNext,
+                description = stringResource(resource = Res.string.player_next_episode),
+                onClick = { onNextEpisode?.invoke() },
+                enabled = enabled && onNextEpisode != null,
+                shortcut = "Shift+N",
                 tonal = false,
             )
         }

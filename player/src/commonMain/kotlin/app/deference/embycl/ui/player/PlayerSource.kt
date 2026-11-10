@@ -14,6 +14,8 @@ data class PlayerSource(
     val resolveExternalUri: (() -> String)? = null,
     /** Image shown behind the system media controls, fetched with [headers]. */
     val artworkUri: String? = null,
+    /** Episodes around this one; null for films and downloads, which hides previous, next and Up next. */
+    val queue: PlayerQueue? = null,
 ) {
     override fun toString(): String = "PlayerSource(uri=<redacted>, headers=<redacted>)"
 }

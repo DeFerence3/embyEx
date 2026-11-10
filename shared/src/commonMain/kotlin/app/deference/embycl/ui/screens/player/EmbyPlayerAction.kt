@@ -12,5 +12,7 @@ internal sealed interface EmbyPlayerAction {
         val request: EmbyPlaybackRequest,
         val position: PlaybackPosition,
         val finished: Boolean = false,
+        /** With [finished]: the queue entry to play next. Null closes the player. */
+        val nextItemId: String? = null,
     ) : EmbyPlayerAction
 }

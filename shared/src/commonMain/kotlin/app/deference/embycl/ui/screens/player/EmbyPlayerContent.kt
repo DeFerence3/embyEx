@@ -13,6 +13,15 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.layout.ContentScale
+import app.deference.embycl.domain.model.EmbyPlaybackItem
+import app.deference.embycl.domain.model.EmbyPlaybackRequest
+import app.deference.embycl.ui.core.SettingsPreferences
+import app.deference.embycl.ui.player.LocalPlayerArtwork
+import app.deference.embycl.ui.player.PlayerQueue
+import app.deference.embycl.ui.player.PlayerQueueEntry
+import coil3.compose.AsyncImage
 import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,18 +59,37 @@ internal fun EmbyPlayerContent(
             LocalPlaybackEffect(request = localRequest, onProgress = onLocalProgress, onResult = onLocalResult)
         } else if (request != null) {
             key(request.sessionId) {
-                EmbeddedPlayerScreen(
-                    source = PlayerSource(
-                        key = request.sessionId,
-                        title = request.item.title,
-                        uri = request.item.url,
-                        positionMs = request.item.positionMs,
-                        headers = mapOf("X-Emby-Token" to request.accessToken),
-                        artworkUri = request.item.artworkUrl,
-                    ),
-                    onProgress = { onAction(EmbyPlayerAction.Update(request = request, position = it)) },
-                    onClose = { onAction(EmbyPlayerAction.Update(request = request, position = it, finished = true)) },
-                )
+                CompositionLocalProvider(
+                    LocalPlayerArtwork provides { uri, artworkModifier ->
+                        AsyncImage(
+                            model = uri,
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = artworkModifier,
+                        )
+                    },
+                ) {
+                    EmbeddedPlayerScreen(
+                        source = PlayerSource(
+                            key = request.sessionId,
+                            title = request.item.title,
+                            subtitle = request.item.subtitle(),
+                            uri = request.item.url,
+                            positionMs = request.item.positionMs,
+                            headers = mapOf("X-Emby-Token" to request.accessToken),
+                            artworkUri = request.item.artworkUrl,
+                            queue = request.playerQueue(
+                                autoplay = SettingsPreferences.autoplayNextEnabled,
+                                onAutoplayChange = SettingsPreferences::setAutoplayNext,
+                            ),
+                        ),
+                        onProgress = { onAction(EmbyPlayerAction.Update(request = request, position = it)) },
+                        onClose = { onAction(EmbyPlayerAction.Update(request = request, position = it, finished = true)) },
+                        onNavigate = { position, itemId ->
+                            onAction(EmbyPlayerAction.Update(request = request, position = position, finished = true, nextItemId = itemId))
+                        },
+                    )
+                }
             }
         } else {
             Scaffold(
@@ -114,4 +142,31 @@ internal fun EmbyPlayerContent(
             },
         )
     }
+}
+
+/** "Northbound · S2 · E5" above the title for episodes; null for films. */
+private fun EmbyPlaybackItem.subtitle(): String? = episodeLabel?.let { label ->
+    listOfNotNull(seriesName, label).joinToString(separator = " · ")
+}
+
+private fun EmbyPlaybackItem.queueEntry(): PlayerQueueEntry = PlayerQueueEntry(
+    id = id,
+    label = episodeLabel.orEmpty(),
+    title = title,
+    durationMs = durationMs,
+    artworkUri = artworkUrl,
+)
+
+/** Episodes get a queue (possibly empty after the finale); films and other videos get none. */
+private fun EmbyPlaybackRequest.playerQueue(
+    autoplay: Boolean,
+    onAutoplayChange: (Boolean) -> Unit,
+): PlayerQueue? {
+    if (item.episodeLabel == null) return null
+    return PlayerQueue(
+        previous = items.getOrNull(index = selectedIndex - 1)?.queueEntry(),
+        upcoming = items.drop(n = selectedIndex + 1).map { it.queueEntry() },
+        autoplay = autoplay,
+        onAutoplayChange = onAutoplayChange,
+    )
 }

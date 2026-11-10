@@ -59,7 +59,8 @@ import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import app.deference.embycl.ui.player.components.PlayerChaptersPanel
+import app.deference.embycl.ui.player.components.PlayerSidePanel
+import app.deference.embycl.ui.player.components.PlayerUpNextCard
 import app.deference.embycl.ui.player.components.PlayerDock
 import app.deference.embycl.ui.player.components.PlayerFeedbackPill
 import app.deference.embycl.ui.player.components.PlayerHeading
@@ -78,12 +79,16 @@ import embyex.player.generated.resources.player_pip_error
 import embyex.player.generated.resources.player_restore
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import org.jetbrains.compose.resources.stringResource
 
 /** Below this width the panel opens over the picture instead of beside it. */
 private val WIDE_WINDOW = 1100.dp
+
+/** The Up next card shows for the last this many seconds of an episode. */
+private const val UP_NEXT_SECONDS = 10
 
 /** Below this width the dock folds the volume slider, Speed and PiP away. */
 private val COMPACT_WINDOW = 940.dp
@@ -104,6 +109,7 @@ internal fun PlayerOverlay(
     failed: Boolean,
     onClose: () -> Unit,
     dispatchAction: (() -> Unit) -> Unit,
+    queue: PlayerQueueControls?,
     surface: @Composable (Modifier) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -130,6 +136,17 @@ internal fun PlayerOverlay(
             .distinctUntilChanged()
     }.collectAsState(initial = -1)
     val playing = player?.state?.collectAsState()?.value?.playWhenReady == true
+    var panelTab by rememberSaveable { mutableStateOf(value = PlayerPanelTab.Chapters) }
+    val hasPanel = chapters.isNotEmpty() || queue != null
+    // Seconds until the end, only for the last stretch of a long-enough episode; drives the Up next card.
+    val secondsLeft by remember(player) {
+        val active = player
+        if (active == null) MutableStateFlow(value = null) else combine(active.currentPositionMillis, active.mediaProperties) { position, properties ->
+            val duration = properties?.durationMillis ?: 0L
+            ((duration - position) / 1_000L).toInt().takeIf { duration > 60_000L && it in 0..UP_NEXT_SECONDS }
+        }.distinctUntilChanged()
+    }.collectAsState(initial = null)
+    val upNext = queue?.queue?.next?.takeIf { !queue.cancelled && secondsLeft != null && !failed }
     val keepVisible = !hideable || paused || failed || player == null || pressed || seeking || menu != null || (controlsFocused && keyboardInput)
     val fullscreenDescription = stringResource(
         resource = if (window.isFullscreen) Res.string.player_exit_fullscreen else Res.string.player_fullscreen,
@@ -138,7 +155,7 @@ internal fun PlayerOverlay(
     val enterPip: (() -> Unit)? = if (window.supportsPictureInPicture && !window.isPictureInPicture) window.togglePictureInPicture else null
     val togglePlay: () -> Unit = { player?.let { active -> dispatchAction { active.togglePlayWhenReady() } } }
 
-    fun panelOpen(wide: Boolean): Boolean = chapters.isNotEmpty() && (panelChoice ?: (wide && !fullscreen))
+    fun panelOpen(wide: Boolean): Boolean = hasPanel && (panelChoice ?: (wide && !fullscreen))
 
     RegisterPlayerShortcuts(
         player = player.takeUnless { failed },
@@ -148,18 +165,23 @@ internal fun PlayerOverlay(
         actions = PlayerShortcutActions(
             onEscape = {
                 when {
+                    upNext != null -> queue.onCancelUpNext()
                     pip -> window.togglePictureInPicture()
                     window.isFullscreen && window.supportsFullscreen -> window.toggleFullscreen()
                     else -> onClose()
                 }
             },
             onOpenMenu = { menu = it; visible = true },
-            onTogglePanel = if (chapters.isNotEmpty() && !pip) {
+            onTogglePanel = if (hasPanel && !pip) {
                 { panelChoice = !(panelChoice ?: (!fullscreen)); visible = true }
             } else null,
             onToggleFullscreen = toggleFullscreen,
             onPictureInPicture = if (window.supportsPictureInPicture) window.togglePictureInPicture else null,
             onRevealControls = { visible = true },
+            onPreviousEpisode = queue?.queue?.previous?.let { entry -> { queue.onNavigate(entry) } },
+            onNextEpisode = queue?.queue?.next?.let { entry -> { queue.onNavigate(entry) } },
+            hasQueue = queue != null,
+            onPlayUpNext = upNext?.let { entry -> { queue.onNavigate(entry) } },
         ),
         onTriggered = {
             interaction++
@@ -236,14 +258,32 @@ internal fun PlayerOverlay(
             onPictureInPicture = enterPip,
             dispatchAction = dispatchAction,
             compact = compact,
+            onPreviousEpisode = queue?.queue?.previous?.let { entry -> { queue.onNavigate(entry) } },
+            onNextEpisode = queue?.queue?.next?.let { entry -> { queue.onNavigate(entry) } },
+            episodes = queue != null,
         )
     }
     val panel: @Composable (Modifier) -> Unit = { panelModifier ->
-        PlayerChaptersPanel(
+        PlayerSidePanel(
+            tab = panelTab,
+            onTabChange = { panelTab = it },
             chapters = chapters,
-            currentIndex = chapterIndex,
+            currentChapter = chapterIndex,
             onChapterClick = { chapter -> player?.let { active -> dispatchAction { active.seekTo(positionMillis = chapter.startMillis) } } },
+            upcoming = queue?.queue?.upcoming,
+            autoplay = queue?.autoplay == true,
+            onAutoplayChange = { queue?.onAutoplayChange(it) },
+            onEntryClick = { entry -> queue?.onNavigate(entry) },
             modifier = panelModifier,
+        )
+    }
+    val upNextCard: @Composable (Modifier) -> Unit = { cardModifier ->
+        if (upNext != null) PlayerUpNextCard(
+            entry = upNext,
+            secondsLeft = secondsLeft.takeIf { queue.autoplay },
+            onPlayNow = { queue.onNavigate(upNext) },
+            onCancel = queue.onCancelUpNext,
+            modifier = cardModifier,
         )
     }
     val currentChapter = chapters.getOrNull(index = chapterIndex)?.let { (chapterIndex + 1) to it.name }
@@ -338,7 +378,7 @@ internal fun PlayerOverlay(
                                     Spacer(modifier = Modifier.weight(weight = 1f))
                                     PipErrorLine(window = window)
                                     timeline(Modifier)
-                                    dock(false, if (chapters.isEmpty()) null else open)
+                                    dock(false, if (hasPanel) open else null)
                                 }
                                 if (open) panel(
                                     Modifier
@@ -350,6 +390,11 @@ internal fun PlayerOverlay(
                         }
                     }
                     FeedbackHost(feedback = feedback)
+                    upNextCard(
+                        Modifier
+                            .align(alignment = Alignment.BottomEnd)
+                            .padding(end = if (open && visible) 364.dp else 24.dp, bottom = 184.dp),
+                    )
                 }
             }
             else -> BoxWithConstraints(
@@ -395,6 +440,11 @@ internal fun PlayerOverlay(
                                     .then(other = pictureGestures),
                             )
                             FeedbackHost(feedback = feedback)
+                            upNextCard(
+                                Modifier
+                                    .align(alignment = Alignment.BottomEnd)
+                                    .padding(all = 16.dp),
+                            )
                         }
                         Column(
                             modifier = controlsModifier,
@@ -402,7 +452,7 @@ internal fun PlayerOverlay(
                         ) {
                             PipErrorLine(window = window)
                             timeline(Modifier)
-                            dock(compact, if (chapters.isEmpty()) null else open)
+                            dock(compact, if (hasPanel) open else null)
                         }
                     }
                     if (open && wide) panel(

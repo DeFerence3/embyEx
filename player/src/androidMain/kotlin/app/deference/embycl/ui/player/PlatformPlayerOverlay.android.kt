@@ -25,6 +25,7 @@ internal actual fun PlatformPlayerOverlay(
     failed: Boolean,
     onClose: () -> Unit,
     dispatchAction: (() -> Unit) -> Unit,
+    queue: PlayerQueueControls?,
     surface: @Composable (Modifier) -> Unit,
     modifier: Modifier,
 ) {
@@ -37,6 +38,7 @@ internal actual fun PlatformPlayerOverlay(
             failed = failed,
             onClose = onClose,
             dispatchAction = dispatchAction,
+            queue = queue,
             surface = surface,
             modifier = modifier,
         )

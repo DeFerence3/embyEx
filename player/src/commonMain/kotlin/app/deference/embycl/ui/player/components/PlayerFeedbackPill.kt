@@ -2,7 +2,6 @@ package app.deference.embycl.ui.player.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Segment
@@ -38,6 +37,8 @@ import embyex.player.generated.resources.player_feedback_chapter
 import embyex.player.generated.resources.player_feedback_forward
 import embyex.player.generated.resources.player_feedback_jump
 import embyex.player.generated.resources.player_feedback_muted
+import embyex.player.generated.resources.player_feedback_no_next
+import embyex.player.generated.resources.player_feedback_no_previous
 import embyex.player.generated.resources.player_feedback_pause
 import embyex.player.generated.resources.player_feedback_play
 import embyex.player.generated.resources.player_feedback_speed
@@ -58,13 +59,12 @@ internal fun PlayerFeedbackPill(
     val (icon, text) = content(feedback = feedback)
     PlayerPill(
         modifier = modifier.semantics { liveRegion = LiveRegionMode.Polite },
-        contentPadding = PaddingValues(start = 12.dp, end = 20.dp, top = 8.dp, bottom = 8.dp),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
     ) {
         Icon(imageVector = icon, contentDescription = null)
         Text(
             text = text,
             style = MaterialTheme.typography.labelLarge,
-            modifier = Modifier.heightIn(min = 24.dp),
         )
         if (feedback is PlayerFeedback.Volume) LinearProgressIndicator(
             progress = { feedback.percent / 100f },
@@ -99,6 +99,8 @@ private fun content(
     )
     is PlayerFeedback.Chapter -> Icons.AutoMirrored.Filled.Segment to stringResource(Res.string.player_feedback_chapter, feedback.index, feedback.name)
     is PlayerFeedback.Jumped -> Icons.Default.MoveDown to stringResource(Res.string.player_feedback_jump, feedback.percent, playerTime(milliseconds = feedback.positionMillis))
+    PlayerFeedback.NoNextEpisode -> Icons.Default.Block to stringResource(resource = Res.string.player_feedback_no_next)
+    PlayerFeedback.NoPreviousEpisode -> Icons.Default.Block to stringResource(resource = Res.string.player_feedback_no_previous)
     PlayerFeedback.Unavailable -> Icons.Default.Block to stringResource(resource = Res.string.player_feedback_unavailable)
 }
 

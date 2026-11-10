@@ -1,6 +1,8 @@
 package app.deference.embycl.ui.player
 
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
@@ -81,7 +83,7 @@ internal class JvmEmbeddedPlayer(
             },
         )
     }
-    override val playbackSpeed = engine.features[PlaybackSpeed]?.let { speed ->
+    override val playbackSpeed: PlayerSpeed = engine.features[PlaybackSpeed]?.let { speed ->
         object : PlayerSpeed {
             override val valueFlow = speed.valueFlow
             override val value get() = speed.value
@@ -91,6 +93,17 @@ internal class JvmEmbeddedPlayer(
             ) {
                 this@JvmEmbeddedPlayer.engine.features[PlaybackSpeed]?.set(speed = speed)
             }
+        }
+    } ?: object : PlayerSpeed {
+        // mpv keeps the speed for the lifetime of this player instance, so the last value set is current.
+        private val current = MutableStateFlow(value = 1f)
+        override val valueFlow = current.asStateFlow()
+        override val value get() = current.value
+
+        override fun set(
+            speed: Float,
+        ) {
+            if (this@JvmEmbeddedPlayer.engine.setSpeed(speed = speed)) current.value = speed
         }
     }
     override val aspectRatio = engine.features[VideoAspectRatio]?.let { aspect ->

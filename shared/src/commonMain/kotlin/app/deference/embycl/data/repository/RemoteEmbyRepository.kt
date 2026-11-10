@@ -154,7 +154,9 @@ class RemoteEmbyRepository(
         check(server == Session.serverUrl && user == Session.userId && token == Session.accessToken) {
             "Playback account changed."
         }
-        val playlist = if (siblings.any { it.id == item.id }) siblings else listOf(item)
+        val season = if (siblings.any { it.id == item.id }) siblings else listOf(item)
+        // The season list ends at its finale; Up next continues with the first episode of the next season.
+        val playlist = season + listOfNotNull(nextSeasonOpener(item = item, season = season))
         return EmbyPlaybackRequest(
             items = playlist.map { entry ->
                 EmbyPlaybackItem(
@@ -165,6 +167,9 @@ class RemoteEmbyRepository(
                     // Episodes fall back to the series backdrop inside imageUrl.
                     artworkUrl = entry.imageUrl(type = "Backdrop", maxWidth = 1280)
                         ?: entry.imageUrl(type = "Primary", maxWidth = 1280),
+                    episodeLabel = entry.episodeLabel(),
+                    seriesName = entry.seriesName.takeIf { entry.isEpisode() },
+                    durationMs = entry.runTimeTicks?.let { it / 10_000L },
                 )
             },
             selectedIndex = playlist.indexOfFirst { it.id == item.id },
@@ -174,6 +179,41 @@ class RemoteEmbyRepository(
             sessionId = Uuid.random().toString(),
         )
     }
+
+	/**
+	 * The episode after [season]'s last one when that is in a later season, from the server's adjacent-episode
+	 * query. Null when [item] isn't an episode, when the series ends there, or when the query fails: Up next then
+	 * stops at the season finale, which is what the player did before.
+	 */
+	private suspend fun nextSeasonOpener(
+		item: EmbyItem,
+		season: List<EmbyItem>,
+	): EmbyItem? {
+		val last = season.lastOrNull() ?: return null
+		val series = item.seriesId
+		if (!item.isEpisode() || series.isNullOrBlank()) return null
+		return try {
+			val adjacent = safeApiCall {
+				httpClient.get("/Shows/$series/Episodes") {
+					mapOf(
+						"UserId" to Session.userId,
+						"AdjacentTo" to last.id,
+						"Fields" to ITEM_FIELDS,
+						"EnableImages" to "true",
+						"EnableUserData" to "true",
+						"ImageTypeLimit" to "1",
+					).forEach { (name, value) -> parameter(name, value) }
+				}.body<EmbyItemsResult>()
+			}.items
+			// AdjacentTo returns [previous, current, next]; only a next one in another season is new.
+			adjacent.dropWhile { it.id != last.id }.drop(n = 1).firstOrNull()
+				?.takeIf { next -> next.isEpisode() && season.none { it.id == next.id } }
+		} catch (exception: kotlinx.coroutines.CancellationException) {
+			throw exception
+		} catch (_: Exception) {
+			null
+		}
+	}
 
 	override fun userImageUrl(): String = buildUrl(
 		Session.serverUrl,

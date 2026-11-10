@@ -22,6 +22,9 @@ internal sealed interface PlayerFeedback {
     /** [percent] is 0 to 90; [positionMillis] is where playback landed. */
     data class Jumped(val percent: Int, val positionMillis: Long) : PlayerFeedback
 
+    data object NoNextEpisode : PlayerFeedback
+    data object NoPreviousEpisode : PlayerFeedback
+
     /** The key was heard but has nothing to do here, for example no subtitles or no chapters. */
     data object Unavailable : PlayerFeedback
 }
