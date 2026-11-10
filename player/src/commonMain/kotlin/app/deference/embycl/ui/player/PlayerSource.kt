@@ -4,6 +4,8 @@ package app.deference.embycl.ui.player
 data class PlayerSource(
     val key: String,
     val title: String,
+    /** Line shown above [title], for example "Northbound · S2 · E5"; null shows the title alone. */
+    val subtitle: String? = null,
     val uri: String,
     val positionMs: Long,
     val headers: Map<String, String> = emptyMap(),

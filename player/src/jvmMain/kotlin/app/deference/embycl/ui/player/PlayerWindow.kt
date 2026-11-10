@@ -1,12 +1,17 @@
-@file:OptIn(ExperimentalComposeUiApi::class)
+@file:OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3ExpressiveApi::class)
 
 package app.deference.embycl.ui.player
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.MaterialExpressiveTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.type
+import app.deference.coreui.LocalKeyShortcutManager
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -20,7 +25,6 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.ComposeWindow
 import androidx.compose.ui.awt.LocalAwtWindow
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
@@ -37,9 +41,6 @@ import java.awt.event.WindowAdapter
 import java.awt.event.WindowEvent
 
 private val PIP_MINIMUM_SIZE = Dimension(320, 180)
-
-/** Gap around the in-window player while not fullscreen, so both states look distinct. */
-private val WINDOWED_PLAYER_INSET = 32.dp
 
 /**
  * Drives fullscreen through the hosting [ComposeWindow]'s placement, so the host's
@@ -154,6 +155,9 @@ internal fun TaoPlayerPresentation(
     val colors = MaterialTheme.colorScheme
     val typography = MaterialTheme.typography
     val shapes = MaterialTheme.shapes
+    val motion = MaterialTheme.motionScheme
+    val videoColors = LocalPlayerVideoColorScheme.current
+    val shortcuts = LocalKeyShortcutManager.current
     val ownerScope = rememberCoroutineScope()
     val requestedPip = window.isPictureInPicture
     var pipPresented by remember { mutableStateOf(value = false) }
@@ -167,15 +171,22 @@ internal fun TaoPlayerPresentation(
             title = title,
             alwaysOnTop = true,
             resizable = true,
+            // The mini window is a separate AWT window: route its keys to the same shortcuts as the main one.
+            onPreviewKeyEvent = { event -> event.type == KeyEventType.KeyDown && shortcuts.processKeyEvent(event = event) },
         ) {
             LaunchedEffect(key1 = this.window) {
                 this@Window.window.minimumSize = PIP_MINIMUM_SIZE
             }
-            MaterialTheme(
+            MaterialExpressiveTheme(
                 colorScheme = colors,
+                motionScheme = motion,
                 typography = typography,
                 shapes = shapes,
             ) {
+                CompositionLocalProvider(
+                    LocalKeyShortcutManager provides shortcuts,
+                    LocalPlayerVideoColorScheme provides videoColors,
+                ) {
                 PlayerPresentationHost(
                     onDraw = {
                         if (window.isPictureInPicture && !pipPresented) {
@@ -184,24 +195,18 @@ internal fun TaoPlayerPresentation(
                     },
                     content = content,
                 )
+                }
             }
         }
     }
     if (!requestedPip || !pipPresented) {
-        val inset = !window.isFullscreen
+        // The windowed layout draws its own margin and picture card; see PlayerOverlay.
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(color = colors.background),
         ) {
             PlayerPresentationHost(
-                modifier = if (inset) {
-                    Modifier
-                        .padding(all = WINDOWED_PLAYER_INSET)
-                        .clip(shape = shapes.large)
-                } else {
-                    Modifier
-                },
                 onDraw = {
                     if (!window.isPictureInPicture && pipPresented) {
                         ownerScope.launch { if (!window.isPictureInPicture) pipPresented = false }

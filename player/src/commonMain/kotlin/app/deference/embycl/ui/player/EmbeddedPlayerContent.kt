@@ -124,14 +124,9 @@ internal fun EmbeddedPlayerContent(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(color = PlayerColors.background)
-                .onGloballyPositioned { window.videoBounds = it.boundsInWindow() }
                 .semantics { paneTitle = source.title },
         ) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                player?.let { active ->
-                    EmbeddedPlayerSurface(player = active, modifier = Modifier.fillMaxSize())
-                }
                 PlatformPlayerOverlay(
                     source = source,
                     player = player,
@@ -140,6 +135,18 @@ internal fun EmbeddedPlayerContent(
                     failed = failed || closed || closing,
                     onClose = { ownerScope.launch { requestClose() } },
                     dispatchAction = { action -> ownerScope.launch { action() } },
+                    surface = { surfaceModifier ->
+                        Box(
+                            modifier = surfaceModifier
+                                .background(color = PlayerColors.background)
+                                // Android uses the video rectangle as the PiP source hint.
+                                .onGloballyPositioned { window.videoBounds = it.boundsInWindow() },
+                        ) {
+                            player?.let { active ->
+                                EmbeddedPlayerSurface(player = active, modifier = Modifier.fillMaxSize())
+                            }
+                        }
+                    },
                     modifier = Modifier.fillMaxSize(),
                 )
                 if (failed) {

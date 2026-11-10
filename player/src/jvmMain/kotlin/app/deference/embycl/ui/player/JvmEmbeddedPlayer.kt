@@ -8,6 +8,8 @@ import kotlinx.coroutines.flow.stateIn
 import org.openani.mediamp.MediaStatus
 import org.openani.mediamp.PlaybackEvent
 import org.openani.mediamp.features.AspectRatioMode
+import org.openani.mediamp.features.AudioLevelController
+import org.openani.mediamp.features.MediaMetadata
 import org.openani.mediamp.features.PlaybackSpeed
 import org.openani.mediamp.features.VideoAspectRatio
 import org.openani.mediamp.features.audioTracks
@@ -111,6 +113,31 @@ internal class JvmEmbeddedPlayer(
                 )
             }
         }
+    }
+
+    override val audioLevel = engine.features[AudioLevelController]?.let { level ->
+        object : PlayerAudioLevel {
+            // mpv's level is a fraction where 1 is the source level; the player caps it there.
+            override val volume = level.volume
+            override val muted = level.isMute
+
+            override fun setVolume(
+                volume: Float,
+            ) = level.setVolume(volume = volume.coerceIn(minimumValue = 0f, maximumValue = 1f))
+
+            override fun setMuted(
+                muted: Boolean,
+            ) = level.setMute(mute = muted)
+        }
+    }
+    override val chapters = engine.features[MediaMetadata]?.chapters?.let { chapters ->
+        chapters
+            .map { list -> list.map { PlayerChapter(name = it.name, startMillis = it.offsetMillis) }.sortedBy { it.startMillis } }
+            .stateIn(
+                scope = scope,
+                started = SharingStarted.Eagerly,
+                initialValue = emptyList(),
+            )
     }
 
     override suspend fun open(

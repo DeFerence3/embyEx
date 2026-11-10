@@ -8,6 +8,8 @@ import androidx.compose.material3.MaterialExpressiveTheme
 import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.Shapes
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import app.deference.embycl.ui.player.LocalPlayerVideoColorScheme
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -33,6 +35,11 @@ fun EmbympvTheme(
         typography = Typography,
         shapes = ExpressiveShapes,
         motionScheme = MotionScheme.expressive(),
-        content = content,
-    )
+    ) {
+        // Player controls drawn over video use the dark scheme in both app themes.
+        CompositionLocalProvider(
+            LocalPlayerVideoColorScheme provides getColorScheme(darkTheme = true, dynamicColor = dynamicColor),
+            content = content,
+        )
+    }
 }

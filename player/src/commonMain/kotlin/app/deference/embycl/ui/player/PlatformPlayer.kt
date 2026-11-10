@@ -57,5 +57,7 @@ internal expect fun PlatformPlayerOverlay(
     failed: Boolean,
     onClose: () -> Unit,
     dispatchAction: (() -> Unit) -> Unit,
+    /** Draws the video; each layout decides where it goes and how large it is. */
+    surface: @Composable (Modifier) -> Unit,
     modifier: Modifier = Modifier,
 )

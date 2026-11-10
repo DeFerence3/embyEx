@@ -1,7 +1,12 @@
 package app.deference.embycl.ui.player
 
 import androidx.compose.foundation.MutatePriority
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.dp
+import app.deference.embycl.ui.player.components.PlayerKeyCap
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Text
@@ -23,6 +28,7 @@ import kotlinx.coroutines.job
 internal fun PlayerTooltip(
     description: String,
     modifier: Modifier = Modifier,
+    shortcut: String? = null,
     content: @Composable (dismiss: () -> Unit) -> Unit,
 ) {
     val delegate = rememberTooltipState()
@@ -61,7 +67,17 @@ internal fun PlayerTooltip(
             positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
                 positioning = TooltipAnchorPosition.Above,
             ),
-            tooltip = { PlainTooltip { Text(text = description) } },
+            tooltip = {
+                PlainTooltip {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(space = 8.dp),
+                    ) {
+                        Text(text = description)
+                        if (shortcut != null) PlayerKeyCap(label = shortcut)
+                    }
+                }
+            },
             state = state,
         ) {
             content(state::dismiss)

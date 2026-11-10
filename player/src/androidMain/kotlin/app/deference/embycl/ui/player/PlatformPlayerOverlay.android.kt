@@ -9,6 +9,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import embyex.player.generated.resources.Res
@@ -24,20 +25,24 @@ internal actual fun PlatformPlayerOverlay(
     failed: Boolean,
     onClose: () -> Unit,
     dispatchAction: (() -> Unit) -> Unit,
+    surface: @Composable (Modifier) -> Unit,
     modifier: Modifier,
 ) {
     if (!window.isFullscreen) {
         PlayerOverlay(
-            title = source.title,
+            source = source,
             player = player,
             window = window,
             paused = paused,
             failed = failed,
             onClose = onClose,
             dispatchAction = dispatchAction,
+            surface = surface,
             modifier = modifier,
         )
     } else {
+        // Android keeps its full-screen layout until checkpoint 3; the video fills the screen behind it.
+        surface(Modifier.fillMaxSize())
         val activity = LocalContext.current.playerActivity()
         val externalError = stringResource(resource = Res.string.player_external_error)
         var externalSourceKey by rememberSaveable { mutableStateOf<String?>(value = null) }

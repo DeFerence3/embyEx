@@ -12,16 +12,18 @@ internal actual fun PlatformPlayerOverlay(
     failed: Boolean,
     onClose: () -> Unit,
     dispatchAction: (() -> Unit) -> Unit,
+    surface: @Composable (Modifier) -> Unit,
     modifier: Modifier,
 ) {
     PlayerOverlay(
-        title = source.title,
+        source = source,
         player = player,
         window = window,
         paused = paused,
         failed = failed,
         onClose = onClose,
         dispatchAction = dispatchAction,
+        surface = surface,
         modifier = modifier,
     )
 }
