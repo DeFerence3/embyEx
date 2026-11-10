@@ -112,7 +112,6 @@ import embyex.player.generated.resources.player_tile_speed
 import embyex.player.generated.resources.player_tile_subtitles
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import org.jetbrains.compose.resources.stringResource
@@ -120,7 +119,6 @@ import org.jetbrains.compose.resources.stringResource
 /** Tablets in landscape keep the panel open beside the picture by default. */
 private val WIDE_SCREEN = 1100.dp
 
-private const val UP_NEXT_SECONDS = 10
 
 /**
  * Android player. Portrait puts the picture on top, chapters / Up next in the middle and the controls within
@@ -165,13 +163,14 @@ internal fun AndroidPlayerOverlay(
             .map { position -> chapters.indexOfLast { it.startMillis <= position } }
             .distinctUntilChanged()
     }.collectAsState(initial = -1)
-    val secondsLeft by remember(player) {
-        if (player == null) MutableStateFlow(value = null) else combine(player.currentPositionMillis, player.mediaProperties) { position, properties ->
-            val duration = properties?.durationMillis ?: 0L
-            ((duration - position) / 1_000L).toInt().takeIf { duration > 60_000L && it in 0..UP_NEXT_SECONDS }
-        }.distinctUntilChanged()
-    }.collectAsState(initial = null)
-    val upNext = queue?.queue?.next?.takeIf { !queue.cancelled && secondsLeft != null && !failed }
+    val upNextCountdown by rememberUpNextCountdown(player = player, chapters = chapters)
+    val upNext = queue?.queue?.next?.takeIf { !queue.cancelled && upNextCountdown != null && !failed }
+    UpNextAutoplayEffect(
+        countdown = upNextCountdown,
+        upNext = upNext,
+        autoplay = queue?.autoplay == true,
+        onNavigate = { entry -> queue?.onNavigate(entry) },
+    )
     val hasPanel = chapters.isNotEmpty() || queue != null
     val playing = player?.state?.collectAsState()?.value?.playWhenReady == true
     val enterPictureInPicture: (() -> Unit)? = if (window.supportsPictureInPicture) window.togglePictureInPicture else null
@@ -348,7 +347,7 @@ internal fun AndroidPlayerOverlay(
         val upNextCard: @Composable (Modifier) -> Unit = { cardModifier ->
             if (upNext != null) PlayerUpNextCard(
                 entry = upNext,
-                secondsLeft = secondsLeft.takeIf { queue.autoplay },
+                secondsLeft = upNextCountdown?.secondsLeft?.takeIf { queue.autoplay },
                 onPlayNow = { queue.onNavigate(upNext) },
                 onCancel = queue.onCancelUpNext,
                 modifier = cardModifier,

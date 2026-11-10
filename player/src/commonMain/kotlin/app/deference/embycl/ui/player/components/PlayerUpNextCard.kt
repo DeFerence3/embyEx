@@ -35,10 +35,6 @@ import embyex.player.generated.resources.player_up_next_in
 import embyex.player.generated.resources.player_up_next_label
 import org.jetbrains.compose.resources.stringResource
 
-/**
- * Shown in the last seconds of an episode. With [secondsLeft] it counts down to automatic play; without it
- * (autoplay off) nothing starts by itself. Enter plays now and Esc cancels; see `RegisterPlayerShortcuts`.
- */
 @Composable
 internal fun PlayerUpNextCard(
     entry: PlayerQueueEntry,
