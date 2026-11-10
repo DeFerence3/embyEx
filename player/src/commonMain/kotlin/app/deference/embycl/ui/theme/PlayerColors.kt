@@ -12,4 +12,10 @@ internal object PlayerColors {
     val controlsScrim = Color.Black.copy(alpha = 0.8f)
     val dialogScrim = Color.Black.copy(alpha = 0.6f)
     val transparent = Color.Transparent
+
+    // Subtitles: also handed to mpv, so the preview and the video draw the same colours.
+    val subtitleText = Color.White
+    val subtitleBox = Color.Black.copy(alpha = 0.64f)
+    val subtitleOutline = Color.Black
+    val subtitleShadow = Color.Black.copy(alpha = 0.75f)
 }

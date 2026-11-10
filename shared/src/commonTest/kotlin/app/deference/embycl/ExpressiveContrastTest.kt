@@ -2,8 +2,8 @@ package app.deference.embycl
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
-import app.deference.embycl.ui.theme.DarkColorScheme
-import app.deference.embycl.ui.theme.LightColorScheme
+import app.deference.embycl.theme.DarkColorScheme
+import app.deference.embycl.theme.LightColorScheme
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.test.Test

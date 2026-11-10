@@ -52,9 +52,21 @@ internal fun EmbeddedPlayerContent(
     window: PlayerWindowState,
     onProgress: (PlaybackPosition) -> Unit,
     onClose: (PlaybackPosition) -> Unit,
+    onNavigate: ((PlaybackPosition, String) -> Unit)?,
+    subtitleStyle: PlayerSubtitleStyle,
+    onSubtitleStyleChange: (PlayerSubtitleStyle) -> Unit,
 ) {
     val progressCallback by rememberUpdatedState(newValue = onProgress)
     val closeCallback by rememberUpdatedState(newValue = onClose)
+    val navigateCallback by rememberUpdatedState(newValue = onNavigate)
+    // Where to go after this episode closes; null closes the player.
+    var target by remember(key1 = source.key) { mutableStateOf<PlayerQueueEntry?>(value = null) }
+    var autoplay by rememberSaveable(source.key) { mutableStateOf(value = source.queue?.autoplay == true) }
+    // Applied at once; the host's value catches up after it persists the change.
+    var currentSubtitleStyle by remember { mutableStateOf(value = subtitleStyle) }
+    LaunchedEffect(key1 = subtitleStyle) { currentSubtitleStyle = subtitleStyle }
+    val subtitleStyleCallback by rememberUpdatedState(newValue = onSubtitleStyleChange)
+    var upNextCancelled by remember(key1 = source.key) { mutableStateOf(value = false) }
     var position by remember(key1 = source.key) { mutableStateOf(value = PlaybackPosition()) }
     var closed by remember(key1 = source.key) { mutableStateOf(value = false) }
     var closing by remember(key1 = source.key) { mutableStateOf(value = false) }
@@ -67,8 +79,9 @@ internal fun EmbeddedPlayerContent(
     val context = playerContext()
     val lifecycle = LocalLifecycleOwner.current.lifecycle
 
-    fun requestClose() {
+    fun requestClose(next: PlayerQueueEntry? = null) {
         if (!closing && !closed) {
+            target = next.takeIf { navigateCallback != null }
             closing = true
             player?.pause()
         }
@@ -85,7 +98,10 @@ internal fun EmbeddedPlayerContent(
             }
             player?.pause()
             player?.close()
-            closeCallback(position.copy(paused = true))
+            val next = target
+            val navigate = navigateCallback
+            if (next != null && navigate != null) navigate(position.copy(paused = true), next.id)
+            else closeCallback(position.copy(paused = true))
         }
     }
 
@@ -124,14 +140,9 @@ internal fun EmbeddedPlayerContent(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(color = PlayerColors.background)
-                .onGloballyPositioned { window.videoBounds = it.boundsInWindow() }
                 .semantics { paneTitle = source.title },
         ) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                player?.let { active ->
-                    EmbeddedPlayerSurface(player = active, modifier = Modifier.fillMaxSize())
-                }
                 PlatformPlayerOverlay(
                     source = source,
                     player = player,
@@ -140,6 +151,38 @@ internal fun EmbeddedPlayerContent(
                     failed = failed || closed || closing,
                     onClose = { ownerScope.launch { requestClose() } },
                     dispatchAction = { action -> ownerScope.launch { action() } },
+                    queue = source.queue?.takeIf { onNavigate != null }?.let { queue ->
+                        PlayerQueueControls(
+                            queue = queue,
+                            autoplay = autoplay,
+                            onAutoplayChange = { enabled ->
+                                autoplay = enabled
+                                queue.onAutoplayChange(enabled)
+                            },
+                            cancelled = upNextCancelled,
+                            onCancelUpNext = { upNextCancelled = true },
+                            onNavigate = { entry -> ownerScope.launch { requestClose(next = entry) } },
+                        )
+                    },
+                    subtitleStyle = PlayerSubtitleStyleControls(
+                        style = currentSubtitleStyle,
+                        onStyleChange = { style ->
+                            currentSubtitleStyle = style
+                            subtitleStyleCallback(style)
+                        },
+                    ),
+                    surface = { surfaceModifier ->
+                        Box(
+                            modifier = surfaceModifier
+                                .background(color = PlayerColors.background)
+                                // Android uses the video rectangle as the PiP source hint.
+                                .onGloballyPositioned { window.videoBounds = it.boundsInWindow() },
+                        ) {
+                            player?.let { active ->
+                                EmbeddedPlayerSurface(player = active, modifier = Modifier.fillMaxSize())
+                            }
+                        }
+                    },
                     modifier = Modifier.fillMaxSize(),
                 )
                 if (failed) {
@@ -159,6 +202,10 @@ internal fun EmbeddedPlayerContent(
                 }
             }
         }
+    }
+
+    LaunchedEffect(key1 = player, key2 = currentSubtitleStyle) {
+        player?.setSubtitleStyle(style = currentSubtitleStyle)
     }
 
     // Create on the player window's UI thread and subscribe before opening media.
@@ -190,7 +237,7 @@ internal fun EmbeddedPlayerContent(
                                     paused = true,
                                     completed = true,
                                 )
-                                requestClose()
+                                requestClose(next = source.queue?.next?.takeIf { autoplay && !upNextCancelled })
                             }
                             is PlayerEvent.SeekCompleted -> if (opened && !closed && !closing) {
                                 position = position.copy(positionMs = event.positionMillis)

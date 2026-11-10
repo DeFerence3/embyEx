@@ -14,12 +14,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
-import app.deference.embycl.ui.player.components.playerTime
-import embyex.player.generated.resources.Res
-import embyex.player.generated.resources.player_brightness
-import embyex.player.generated.resources.player_volume
-import org.jetbrains.compose.resources.stringResource
-import java.text.NumberFormat
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -29,7 +23,7 @@ internal fun AndroidPlayerGestures(
     enabled: Boolean,
     onTap: () -> Unit,
     onSeek: (seconds: Int) -> Unit,
-    onFeedback: (AndroidPlayerFeedback) -> Unit,
+    onFeedback: (PlayerFeedback) -> Unit,
     onDragging: (Boolean) -> Unit,
     dispatchAction: (() -> Unit) -> Unit,
     modifier: Modifier = Modifier,
@@ -41,8 +35,6 @@ internal fun AndroidPlayerGestures(
     val currentFeedback by rememberUpdatedState(newValue = onFeedback)
     val currentDragging by rememberUpdatedState(newValue = onDragging)
     val currentDispatch by rememberUpdatedState(newValue = dispatchAction)
-    val volumeLabel = stringResource(resource = Res.string.player_volume)
-    val brightnessLabel = stringResource(resource = Res.string.player_brightness)
     DisposableEffect(key1 = activity) {
         val brightness = activity.window.attributes.screenBrightness
         onDispose {
@@ -80,7 +72,6 @@ internal fun AndroidPlayerGestures(
                 var seekTarget = 0L
                 var initialLevel = 0f
                 val maximumVolume = audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC).coerceAtLeast(1)
-                val percent = NumberFormat.getPercentInstance()
                 detectDragGestures(
                     onDragStart = { point ->
                         origin = point
@@ -116,7 +107,7 @@ internal fun AndroidPlayerGestures(
                             val duration = player.mediaProperties.value?.durationMillis ?: 0L
                             if (duration > 0L) {
                                 seekTarget = (position + total.x / size.width * 120_000L).toLong().coerceIn(0L, duration)
-                                currentFeedback(AndroidPlayerFeedback(message = playerTime(milliseconds = seekTarget)))
+                                currentFeedback(PlayerFeedback.SeekingTo(positionMillis = seekTarget))
                             }
                         } else {
                             val value = (initialLevel - total.y / size.height * 2f).coerceIn(0f, 1f)
@@ -127,18 +118,11 @@ internal fun AndroidPlayerGestures(
                                         audio.setStreamVolume(AudioManager.STREAM_MUSIC, index, 0)
                                     }
                                     val actual = audio.getStreamVolume(AudioManager.STREAM_MUSIC).toFloat() / maximumVolume
-                                    currentFeedback(AndroidPlayerFeedback(
-                                        message = "$volumeLabel ${percent.format(actual)}",
-                                        level = actual,
-                                        onLeft = true,
-                                    ))
+                                    currentFeedback(PlayerFeedback.Volume(percent = (actual * 100).roundToInt()))
                                 }
                             } else {
                                 activity.window.attributes = activity.window.attributes.apply { screenBrightness = value }
-                                currentFeedback(AndroidPlayerFeedback(
-                                    message = "$brightnessLabel ${percent.format(value)}",
-                                    level = value,
-                                ))
+                                currentFeedback(PlayerFeedback.Brightness(percent = (value * 100).roundToInt()))
                             }
                         }
                     },

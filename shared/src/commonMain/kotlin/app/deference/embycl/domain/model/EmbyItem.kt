@@ -89,6 +89,14 @@ data class EmbyItem(
 ) {
 	
 	fun isEpisode() = type == "Episode"
+
+	/** "S2 · E5" for episodes with known numbers; null otherwise. */
+	fun episodeLabel(): String? {
+		if (!isEpisode()) return null
+		val season = parentIndexNumber
+		val episode = indexNumber ?: return null
+		return if (season != null) "S$season · E$episode" else "E$episode"
+	}
 	
 	fun subtitle(): String? = when {
 		isEpisode() -> "S${parentIndexNumber.or { "Unknown" }} Ep $indexNumber"

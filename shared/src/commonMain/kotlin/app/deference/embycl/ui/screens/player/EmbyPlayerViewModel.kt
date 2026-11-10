@@ -109,8 +109,9 @@ internal class EmbyPlayerViewModel(
             pendingSave = null
             mutableState.update { it.copy(saveFailed = false) }
             if (update.finished) {
-                val next = update.request.selectedIndex + 1
-                if (update.position.completed && next < update.request.items.size) {
+                // The player decides: a chosen episode, or the next one when it ended with autoplay on.
+                val next = update.nextItemId?.let { id -> update.request.items.indexOfFirst { it.id == id } } ?: -1
+                if (next >= 0) {
                     mutableState.update {
                         it.copy(
                             saving = false,

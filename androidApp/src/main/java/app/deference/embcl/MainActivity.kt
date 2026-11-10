@@ -15,7 +15,7 @@ import app.deference.embycl.EmbyExApp
 import app.deference.embycl.core.session.Session
 import app.deference.embycl.core.utils.Log
 import app.deference.embycl.data.repository.AppUpdater
-import app.deference.embycl.ui.theme.EmbympvTheme
+import app.deference.embycl.theme.EmbympvTheme
 import org.koin.android.ext.android.inject
 import android.view.KeyEvent as AndroidKeyEvent
 import androidx.compose.ui.input.key.KeyEvent as ComposeKeyEvent

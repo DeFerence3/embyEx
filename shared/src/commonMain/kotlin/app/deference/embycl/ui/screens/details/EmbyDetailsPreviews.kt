@@ -23,7 +23,7 @@ import app.deference.embycl.ui.screens.details.model.SeasonEpisodeUi
 import app.deference.embycl.ui.screens.details.model.SeasonUi
 import app.deference.embycl.ui.screens.details.model.TrackTag
 import app.deference.embycl.ui.screens.details.model.TrackUi
-import app.deference.embycl.ui.theme.EmbympvTheme
+import app.deference.embycl.theme.EmbympvTheme
 import embyex.shared.generated.resources.Res
 import embyex.shared.generated.resources.details_fact_audio
 import embyex.shared.generated.resources.details_fact_file

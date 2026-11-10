@@ -1,13 +1,13 @@
-@file:OptIn(ExperimentalComposeUiApi::class)
+@file:OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3ExpressiveApi::class)
 
 package app.deference.embycl.ui.player
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -20,13 +20,16 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.ComposeWindow
 import androidx.compose.ui.awt.LocalAwtWindow
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowPlacement
 import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.rememberWindowState
+import app.deference.coreui.LocalKeyShortcutManager
+import app.deference.embycl.theme.EmbympvTheme
 import kotlinx.coroutines.launch
 import java.awt.Component
 import java.awt.Dimension
@@ -37,9 +40,6 @@ import java.awt.event.WindowAdapter
 import java.awt.event.WindowEvent
 
 private val PIP_MINIMUM_SIZE = Dimension(320, 180)
-
-/** Gap around the in-window player while not fullscreen, so both states look distinct. */
-private val WINDOWED_PLAYER_INSET = 32.dp
 
 /**
  * Drives fullscreen through the hosting [ComposeWindow]'s placement, so the host's
@@ -96,7 +96,8 @@ internal fun PlayerWindow(
             host.removeComponentListener(placementListener)
             // Queue outside Compose's disposal stack; placement changes relayout synchronously.
             EventQueue.invokeLater {
-                if (host.placement != initialPlacement) {
+                // The host may already be gone, e.g. when the app window closed after a failure.
+                if (host.isDisplayable && host.placement != initialPlacement) {
                     val focusTarget = host.composeFocusTarget()
                     host.placement = initialPlacement
                     host.restoreFocus(target = focusTarget)
@@ -141,7 +142,7 @@ private fun ComposeWindow.restoreFocus(target: Component?) {
 }
 
 @Composable
-internal fun TaoPlayerPresentation(
+internal fun PlatformPlayerPresentation(
     title: String,
     window: PlayerWindowState,
     content: @Composable () -> Unit,
@@ -151,57 +152,44 @@ internal fun TaoPlayerPresentation(
         height = 270.dp,
         position = WindowPosition(alignment = Alignment.BottomEnd),
     )
-    val colors = MaterialTheme.colorScheme
-    val typography = MaterialTheme.typography
-    val shapes = MaterialTheme.shapes
+    val shortcuts = LocalKeyShortcutManager.current
     val ownerScope = rememberCoroutineScope()
     val requestedPip = window.isPictureInPicture
     var pipPresented by remember { mutableStateOf(value = false) }
-    // Keep the outgoing host until the incoming host has actually drawn video.
-    // The decoder and producer are outside both compositions and never restart.
     if (requestedPip || pipPresented) {
-        // A decorated window: the system title bar moves it, so startMove stays a no-op.
-        Window(
-            onCloseRequest = { window.closeRequested = true },
-            state = size,
-            title = title,
-            alwaysOnTop = true,
-            resizable = true,
-        ) {
-            LaunchedEffect(key1 = this.window) {
-                this@Window.window.minimumSize = PIP_MINIMUM_SIZE
-            }
-            MaterialTheme(
-                colorScheme = colors,
-                typography = typography,
-                shapes = shapes,
+        EmbympvTheme(darkTheme = isSystemInDarkTheme()) {
+            Window(
+                onCloseRequest = { window.closeRequested = true },
+                state = size,
+                title = title,
+                alwaysOnTop = true,
+                resizable = true,
+                onPreviewKeyEvent = { event -> event.type == KeyEventType.KeyDown && shortcuts.processKeyEvent(event = event) },
             ) {
-                PlayerPresentationHost(
-                    onDraw = {
-                        if (window.isPictureInPicture && !pipPresented) {
-                            ownerScope.launch { if (window.isPictureInPicture) pipPresented = true }
-                        }
-                    },
-                    content = content,
-                )
+                LaunchedEffect(key1 = this.window) {
+                    this@Window.window.minimumSize = PIP_MINIMUM_SIZE
+                }
+                CompositionLocalProvider(
+                    LocalKeyShortcutManager provides shortcuts,
+                ) {
+                    PlayerPresentationHost(
+                        onDraw = {
+                            if (window.isPictureInPicture && !pipPresented) {
+                                ownerScope.launch { if (window.isPictureInPicture) pipPresented = true }
+                            }
+                        },
+                        content = content,
+                    )
+                }
             }
         }
     }
     if (!requestedPip || !pipPresented) {
-        val inset = !window.isFullscreen
         Box(
             modifier = Modifier
-                .fillMaxSize()
-                .background(color = colors.background),
+                .fillMaxSize(),
         ) {
             PlayerPresentationHost(
-                modifier = if (inset) {
-                    Modifier
-                        .padding(all = WINDOWED_PLAYER_INSET)
-                        .clip(shape = shapes.large)
-                } else {
-                    Modifier
-                },
                 onDraw = {
                     if (!window.isPictureInPicture && pipPresented) {
                         ownerScope.launch { if (!window.isPictureInPicture) pipPresented = false }

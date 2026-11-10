@@ -1,6 +1,8 @@
 package app.deference.embycl.ui.player
 
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
@@ -8,6 +10,8 @@ import kotlinx.coroutines.flow.stateIn
 import org.openani.mediamp.MediaStatus
 import org.openani.mediamp.PlaybackEvent
 import org.openani.mediamp.features.AspectRatioMode
+import org.openani.mediamp.features.AudioLevelController
+import org.openani.mediamp.features.MediaMetadata
 import org.openani.mediamp.features.PlaybackSpeed
 import org.openani.mediamp.features.VideoAspectRatio
 import org.openani.mediamp.features.audioTracks
@@ -79,7 +83,7 @@ internal class JvmEmbeddedPlayer(
             },
         )
     }
-    override val playbackSpeed = engine.features[PlaybackSpeed]?.let { speed ->
+    override val playbackSpeed: PlayerSpeed = engine.features[PlaybackSpeed]?.let { speed ->
         object : PlayerSpeed {
             override val valueFlow = speed.valueFlow
             override val value get() = speed.value
@@ -89,6 +93,17 @@ internal class JvmEmbeddedPlayer(
             ) {
                 this@JvmEmbeddedPlayer.engine.features[PlaybackSpeed]?.set(speed = speed)
             }
+        }
+    } ?: object : PlayerSpeed {
+        // mpv keeps the speed for the lifetime of this player instance, so the last value set is current.
+        private val current = MutableStateFlow(value = 1f)
+        override val valueFlow = current.asStateFlow()
+        override val value get() = current.value
+
+        override fun set(
+            speed: Float,
+        ) {
+            if (this@JvmEmbeddedPlayer.engine.setSpeed(speed = speed)) current.value = speed
         }
     }
     override val aspectRatio = engine.features[VideoAspectRatio]?.let { aspect ->
@@ -113,11 +128,47 @@ internal class JvmEmbeddedPlayer(
         }
     }
 
+    override val audioLevel = engine.features[AudioLevelController]?.let { level ->
+        object : PlayerAudioLevel {
+            // mpv's level is a fraction where 1 is the source level; the player caps it there.
+            override val volume = level.volume
+            override val muted = level.isMute
+
+            override fun setVolume(
+                volume: Float,
+            ) = level.setVolume(volume = volume.coerceIn(minimumValue = 0f, maximumValue = 1f))
+
+            override fun setMuted(
+                muted: Boolean,
+            ) = level.setMute(mute = muted)
+        }
+    }
+    override val chapters = engine.features[MediaMetadata]?.chapters?.let { chapters ->
+        chapters
+            .map { list -> list.map { PlayerChapter(name = it.name, startMillis = it.offsetMillis) }.sortedBy { it.startMillis } }
+            .stateIn(
+                scope = scope,
+                started = SharingStarted.Eagerly,
+                initialValue = emptyList(),
+            )
+    }
+
+    override fun setSubtitleStyle(
+        style: PlayerSubtitleStyle,
+    ) {
+        // A rejected property keeps mpv's default for it; the rest still apply.
+        style.mpvProperties().forEach { (name, value) -> engine.setProperty(name = name, value = value) }
+    }
+
     override suspend fun open(
         source: PlayerSource,
         playWhenReady: Boolean,
         startPositionMillis: Long,
     ) {
+        // libass reads the fonts directory when a subtitle track loads, so set it before the media.
+        desktopSubtitleFontsDirectory()?.let { directory ->
+            engine.setProperty(name = "sub-fonts-dir", value = directory.absolutePath)
+        }
         engine.setMediaData(
             data = UriMediaData(
                 uri = source.uri,

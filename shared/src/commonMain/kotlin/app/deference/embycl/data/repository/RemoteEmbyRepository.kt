@@ -1,5 +1,6 @@
 package app.deference.embycl.data.repository
 
+import app.deference.embycl.core.networking.DONT_INTERCEPT
 import app.deference.embycl.core.session.Session
 import app.deference.embycl.core.utils.NetworkUtils.safeApiCall
 import app.deference.embycl.core.utils.buildUrl
@@ -7,12 +8,9 @@ import app.deference.embycl.domain.model.EmbyHome
 import app.deference.embycl.domain.model.EmbyItem
 import app.deference.embycl.domain.model.EmbyItemsResult
 import app.deference.embycl.domain.model.EmbyPlaybackEvent
-import app.deference.embycl.core.networking.DONT_INTERCEPT
 import app.deference.embycl.domain.model.EmbyPlaybackItem
-import app.deference.embycl.domain.model.EmbyPlaybackRequest
-import kotlin.uuid.Uuid
-import io.ktor.client.request.header
 import app.deference.embycl.domain.model.EmbyPlaybackReport
+import app.deference.embycl.domain.model.EmbyPlaybackRequest
 import app.deference.embycl.domain.model.ServerDetails
 import app.deference.embycl.domain.model.ServerInfo
 import app.deference.embycl.domain.repository.EmbyRepository
@@ -21,17 +19,19 @@ import io.ktor.client.call.body
 import io.ktor.client.plugins.expectSuccess
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
+import io.ktor.client.request.header
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.isSuccess
+import kotlinx.coroutines.async
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.channels.BufferOverflow
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import org.koin.core.annotation.Single
+import kotlin.uuid.Uuid
 
 @Single(binds = [RemoteEmbyRepository::class])
 class RemoteEmbyRepository(
@@ -141,7 +141,7 @@ class RemoteEmbyRepository(
 		}
 	}
 	
-    override suspend fun play(item: EmbyItem): app.deference.embycl.domain.model.EmbyPlaybackRequest {
+    override suspend fun play(item: EmbyItem): EmbyPlaybackRequest {
         val token = Session.accessToken ?: error("Sign in to play this item.")
         val server = Session.serverUrl
         val user = Session.userId
@@ -154,7 +154,14 @@ class RemoteEmbyRepository(
         check(server == Session.serverUrl && user == Session.userId && token == Session.accessToken) {
             "Playback account changed."
         }
-        val playlist = if (siblings.any { it.id == item.id }) siblings else listOf(item)
+        val season = if (siblings.any { it.id == item.id }) {
+            siblings.sortedWith(
+                comparator = compareBy<EmbyItem> { it.parentIndexNumber ?: 0 }
+                    .thenBy { it.indexNumber ?: 0 }
+                    .thenBy { it.name.lowercase() },
+            )
+        } else listOf(item)
+        val playlist = season + listOfNotNull(nextSeasonOpener(item = item, season = season))
         return EmbyPlaybackRequest(
             items = playlist.map { entry ->
                 EmbyPlaybackItem(
@@ -162,9 +169,11 @@ class RemoteEmbyRepository(
                     title = entry.name,
                     url = streamUrl(item = entry),
                     positionMs = (entry.userData?.playbackPositionTicks ?: 0L).coerceAtLeast(0L) / 10_000L,
-                    // Episodes fall back to the series backdrop inside imageUrl.
                     artworkUrl = entry.imageUrl(type = "Backdrop", maxWidth = 1280)
                         ?: entry.imageUrl(type = "Primary", maxWidth = 1280),
+                    episodeLabel = entry.episodeLabel(),
+                    seriesName = entry.seriesName.takeIf { entry.isEpisode() },
+                    durationMs = entry.runTimeTicks?.let { it / 10_000L },
                 )
             },
             selectedIndex = playlist.indexOfFirst { it.id == item.id },
@@ -174,6 +183,41 @@ class RemoteEmbyRepository(
             sessionId = Uuid.random().toString(),
         )
     }
+
+	/**
+	 * The episode after [season]'s last one when that is in a later season, from the server's adjacent-episode
+	 * query. Null when [item] isn't an episode, when the series ends there, or when the query fails: Up next then
+	 * stops at the season finale, which is what the player did before.
+	 */
+	private suspend fun nextSeasonOpener(
+		item: EmbyItem,
+		season: List<EmbyItem>,
+	): EmbyItem? {
+		val last = season.lastOrNull() ?: return null
+		val series = item.seriesId
+		if (!item.isEpisode() || series.isNullOrBlank()) return null
+		return try {
+			val adjacent = safeApiCall {
+				httpClient.get("/Shows/$series/Episodes") {
+					mapOf(
+						"UserId" to Session.userId,
+						"AdjacentTo" to last.id,
+						"Fields" to ITEM_FIELDS,
+						"EnableImages" to "true",
+						"EnableUserData" to "true",
+						"ImageTypeLimit" to "1",
+					).forEach { (name, value) -> parameter(name, value) }
+				}.body<EmbyItemsResult>()
+			}.items
+			// AdjacentTo returns [previous, current, next]; only a next one in another season is new.
+			adjacent.dropWhile { it.id != last.id }.drop(n = 1).firstOrNull()
+				?.takeIf { next -> next.isEpisode() && season.none { it.id == next.id } }
+		} catch (exception: kotlinx.coroutines.CancellationException) {
+			throw exception
+		} catch (_: Exception) {
+			null
+		}
+	}
 
 	override fun userImageUrl(): String = buildUrl(
 		Session.serverUrl,

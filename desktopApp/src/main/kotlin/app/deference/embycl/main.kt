@@ -43,7 +43,7 @@ import app.deference.embycl.data.preference.createDataStore
 import app.deference.embycl.data.repository.download.DesktopDownloadRuntime
 import app.deference.embycl.ui.core.ExitConfirmationDialog
 import app.deference.embycl.ui.core.SettingsPreferences
-import app.deference.embycl.ui.theme.EmbympvTheme
+import app.deference.embycl.theme.EmbympvTheme
 import embyex.shared.generated.resources.Res
 import embyex.shared.generated.resources.app_name
 import embyex.shared.generated.resources.app_name_crashed
