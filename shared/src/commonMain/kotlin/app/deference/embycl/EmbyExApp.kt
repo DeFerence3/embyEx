@@ -11,6 +11,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.deference.embycl.core.session.Session
 import app.deference.embycl.data.repository.download.OfflineReconnection
 import app.deference.embycl.ui.EmbyExNav
+import app.deference.embycl.ui.core.network.LocalNetworkPermissionEffect
 import app.deference.embycl.ui.core.LocalKoasty
 import app.deference.embycl.ui.core.nav.Navigator
 import app.deference.embycl.ui.core.update.AppUpdateHost
@@ -59,6 +60,7 @@ fun EmbyExApp(isLoggedIn: Boolean) {
 private fun ServerReconnectionEffect(
     reconnection: OfflineReconnection = koinInject(),
 ) {
+    LocalNetworkPermissionEffect(onGranted = reconnection::reconnectNow)
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     LaunchedEffect(
         reconnection,

@@ -41,8 +41,8 @@ class OfflineReconnection(
             session.account,
             environment.connection,
             environment.network
-        ) { visible, account, connection, network ->
-            if (visible && network.available && account?.key == connection?.let { OfflineAccountKey(it.serverId, it.userId) }) connection else null
+        ) { visible, account, connection, _ ->
+            if (visible && account?.key == connection?.let { OfflineAccountKey(it.serverId, it.userId) }) connection else null
         }.collectLatest { connection ->
             if (connection == null) return@collectLatest
             val account = OfflineAccountKey(connection.serverId, connection.userId)

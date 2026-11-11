@@ -4,8 +4,7 @@ import app.deference.embycl.domain.model.download.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 
-/** Availability is a transport hint, never proof that the selected Emby server responds. */
-data class DownloadNetwork(val available: Boolean, val unmetered: Boolean? = null)
+data class DownloadNetwork(val available: Boolean, val unmetered: Boolean? = null, val handle: Long? = null)
 
 interface DownloadEnvironment {
     val connection: StateFlow<DownloadConnection?>

@@ -15,8 +15,13 @@ class AndroidDownloadEnvironment(context: Context) : SessionDownloadEnvironment(
     private val state = MutableStateFlow(readNetwork())
     override val network = state.asStateFlow()
     private fun readNetwork(): DownloadNetwork {
-        val capabilities = connectivity.getNetworkCapabilities(connectivity.activeNetwork)
-        return DownloadNetwork(capabilities != null, capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED))
+        val active = connectivity.activeNetwork
+        val capabilities = connectivity.getNetworkCapabilities(active)
+        return DownloadNetwork(
+            available = capabilities != null,
+            unmetered = capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED),
+            handle = active?.networkHandle,
+        )
     }
     init {
         // Do not require INTERNET or VALIDATED: a LAN-only Emby server is a valid destination.
