@@ -273,18 +273,34 @@ jobs:
           END_DATE=$(git log -1 --format=%cI "$CURRENT_TAG")
           DATE_FILTER="merged:${START_DATE}..${END_DATE}"
 
-          # 2. Get the PR exclusion flags matching only this timeframe
-          EXCLUDE_FLAGS=$(gh pr list --state merged --base "$BRANCH" --search "$DATE_FILTER" --limit 100 --json mergeCommit --jq '.[].mergeCommit.oid' | sed 's/^/^/')
+          # 2. Get the PRs merged in this timeframe. The date window is inclusive and second-granular,
+          #    so keep only PRs whose merge commit is actually part of the tag range.
+          RANGE_COMMITS=$(git rev-list "$PREVIOUS_TAG..$CURRENT_TAG")
+          PR_LINES=$(gh pr list --state merged --base "$BRANCH" --search "$DATE_FILTER" --limit 100 --json title,author,number,mergeCommit \
+            --jq '.[] | select(.mergeCommit != null) | "\(.mergeCommit.oid)\t* \(.title) by @\(.author.login) in #\(.number) (\(.mergeCommit.oid[0:7]))"' \
+            | RANGE_COMMITS="$RANGE_COMMITS" awk '
+                BEGIN { n = split(ENVIRON["RANGE_COMMITS"], shas, "\n"); for (i = 1; i <= n; i++) if (shas[i] != "") keep[shas[i]] = 1 }
+                NF { tab = index($0, "\t"); if (substr($0, 1, tab - 1) in keep) print }
+              ')
+          PR_COMMITS=$(cut -f1 <<< "$PR_LINES")
 
           # 3. Print the PRs
           echo "## 🚀What's Changed" > release_notes.md
 
           ### Pull Requests
-          gh pr list --state merged --base "$BRANCH" --search "$DATE_FILTER" --limit 100 --json title,author,number,mergeCommit --jq '.[] | "* \(.title) by @\(.author.login) in #\(.number) (\(.mergeCommit.oid[0:7]))"' >> release_notes.md
+          if [[ -n "$PR_LINES" ]]; then
+            cut -f2- <<< "$PR_LINES" >> release_notes.md
+          fi
 
-          # 4. Print the raw commits (excluding the PR merge commits)
+          # 4. Print the raw commits (excluding the PR merge commits, already listed above)
           ### Commits
-          git log "$PREVIOUS_TAG..$CURRENT_TAG" --pretty=format:'* %s by %an (%h)' $EXCLUDE_FLAGS >> release_notes.md
+          # Filter exact SHAs: `git log ^<sha>` would also hide every ancestor of a squash-merged PR.
+          # --first-parent keeps commits from merge-style PR branches out of the list.
+          git log "$PREVIOUS_TAG..$CURRENT_TAG" --first-parent --pretty=format:'%H%x09* %s by %an (%h)%n' \
+            | PR_COMMITS="$PR_COMMITS" awk '
+                BEGIN { n = split(ENVIRON["PR_COMMITS"], prs, "\n"); for (i = 1; i <= n; i++) if (prs[i] != "") skip[prs[i]] = 1 }
+                NF { tab = index($0, "\t"); if (!(substr($0, 1, tab - 1) in skip)) print substr($0, tab + 1) }
+              ' >> release_notes.md
 
           REPO="${{ github.repository }}"
 
@@ -329,3 +345,31 @@ jobs:
           files: release-assets/**/*
           body_path: release-assets/release_notes.md
           prerelease: ${{ needs.version.outputs.prerelease == 'true' }}
+
+      - name: Prune old beta releases
+        # Keep only the newest beta releases. Git tags are kept so changelog ranges and
+        # compare links between remaining releases stay valid.
+        if: needs.version.outputs.prerelease == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.PAT }}
+          KEEP_BETAS: 7
+        run: |
+          set -euo pipefail
+          STALE_TAGS=$(gh release list \
+            --repo "$GITHUB_REPOSITORY" \
+            --exclude-drafts \
+            --limit 1000 \
+            --json tagName,isPrerelease,createdAt \
+            --jq "[.[] | select(.isPrerelease and (.tagName | test(\"-beta\\\\.[0-9]+$\")))]
+                  | sort_by(.createdAt) | reverse | .[$KEEP_BETAS:] | .[].tagName")
+
+          if [[ -z "$STALE_TAGS" ]]; then
+            echo "No beta releases beyond the newest $KEEP_BETAS."
+            exit 0
+          fi
+
+          while IFS= read -r tag; do
+            echo "Deleting beta release $tag"
+            gh release delete "$tag" --repo "$GITHUB_REPOSITORY" --yes
+          done <<< "$STALE_TAGS"
