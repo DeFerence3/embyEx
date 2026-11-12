@@ -25,13 +25,13 @@ class GithubUpdateProviderTest {
         status: HttpStatusCode = HttpStatusCode.OK,
     ) = HttpClient(MockEngine { request ->
         if (request.url.host == "api.github.com") respond(
-            """{"body":$body,"assets":[
+            """{"tag_name":"v1.2.3","body":$body,"assets":[
               {"name":"output-metadata.json","size":100,"browser_download_url":"https://example.test/metadata"},
               {"name":"$fileName","size":1234,"digest":$digest,"browser_download_url":"https://example.test/apk","content_type":"application/octet-stream"}
             ]}""", status
         ) else respond(
-            """{"version":3,"applicationId":"$applicationId","variantName":"release","elements":[
-              {"type":"SINGLE","versionCode":$versionCode,"versionName":"1.2.3","outputFile":"app.apk"}
+            """{"version":3,"artifactType":{"type":"APK","kind":"Directory"},"applicationId":"$applicationId","variantName":"release","elementType":"File","baselineProfiles":[],"minSdkVersionForDexing":24,"elements":[
+              {"type":"SINGLE","versionCode":$versionCode,"versionName":"1.2.3","outputFile":"app.apk","attributes":[],"filters":[]}
             ]}"""
         )
     }) { install(HttpTimeout) }
