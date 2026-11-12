@@ -4,13 +4,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import app.deference.embycl.BuildConfig
 import app.deference.embycl.domain.repository.AppRepo
 import org.koin.compose.koinInject
 
 @Composable
 fun AppUpdateHost(appRepo: AppRepo = koinInject()) {
     val state by appRepo.updateState.collectAsState()
-    LaunchedEffect(Unit) { appRepo.checkForUpdates(userInitiated = false) }
+    //if you are running app directly from source code (debug build) disable startup update check
+    if (BuildConfig.VERSION_NAME != "1.0.0") LaunchedEffect(Unit) { appRepo.checkForUpdates(userInitiated = false) }
     if (state.dialogVisible) {
         UpdateAvailableDialog(
             appUpdate = state.update,
