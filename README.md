@@ -7,6 +7,11 @@ A modern, unofficial [Emby](https://emby.media/) client for **Android, Windows, 
 ![Kotlin Multiplatform](https://img.shields.io/badge/Kotlin-Multiplatform-7F52FF?logo=kotlin&logoColor=white)
 ![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue)
 
+[![Build and tests](https://img.shields.io/github/actions/workflow/status/DeFerence3/embyEx/ci.yml?branch=dev&label=build%20%26%20tests&logo=githubactions&logoColor=white)](../../actions/workflows/ci.yml)
+[![Latest release](https://img.shields.io/github/v/release/DeFerence3/embyEx?label=release&logo=github)](../../releases/latest)
+[![Latest beta](https://img.shields.io/github/v/release/DeFerence3/embyEx?include_prereleases&label=beta&color=orange)](../../releases)
+[![Downloads](https://img.shields.io/github/downloads/DeFerence3/embyEx/total?label=downloads)](../../releases)
+
 ### [⬇️ Install EmbyEx](#-get-started) · [🐛 Report an issue](../../issues)
 
 ## ✨ Highlights
