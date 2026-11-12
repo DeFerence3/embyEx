@@ -23,10 +23,11 @@
 1. Branch from `dev`, then open a PR into `dev`.
 2. The **CI** workflow must pass before you merge. Branch rulesets require its `CI passed` job, which covers:
    - workflow lint
-   - `./gradlew check` (tests and Android lint)
+   - common, JVM and Android host tests, desktop tests, and Android lint for every module
    - Android debug and unsigned release builds
    - desktop builds and tests on Linux and Windows
-   - iOS framework linking and simulator tests
+
+   iOS isn't supported for now, so CI doesn't build, test or lint it. That's why CI runs explicit tasks instead of `./gradlew check`, which also compiles the iOS targets.
 3. Squash-merge.
 
 ## Beta

@@ -61,11 +61,18 @@ jobs:
           packages: platform-tools platforms;android-37.0 build-tools;36.0.0
 
       # Common, JVM, and Android host tests, desktop tests, and Android lint for every module.
-      # iOS tests are skipped on Linux; the ios job runs them.
-      - name: Run checks
+      # Explicit tasks rather than `check`, which also compiles the iOS targets; iOS is not supported
+      # for now, so CI neither builds, tests, nor lints it.
+      - name: Run tests and lint
         run: |
           chmod +x gradlew
-          ./gradlew check --continue --stacktrace
+          ./gradlew \
+            :shared:jvmTest :shared:testAndroidHostTest :shared:lint \
+            :player:jvmTest :player:testAndroidHostTest :player:lint \
+            :coreui:jvmTest :coreui:testAndroidHostTest :coreui:lint \
+            :androidApp:testDebugUnitTest :androidApp:lint \
+            :desktopApp:test \
+            --continue --stacktrace
 
       - name: Upload test and lint reports
         if: failure()
@@ -141,41 +148,10 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-  ios:
-    name: iOS framework and simulator tests
-    runs-on: macos-latest
-    timeout-minutes: 60
-    steps:
-      - uses: actions/checkout@v7
-
-      - name: Set up JDK 21
-        uses: actions/setup-java@v5
-        with:
-          distribution: zulu
-          java-version: "21"
-
-      - uses: gradle/actions/setup-gradle@v6
-
-      - name: Link framework and run simulator tests
-        run: |
-          chmod +x gradlew
-          ./gradlew :shared:linkDebugFrameworkIosSimulatorArm64 :shared:iosSimulatorArm64Test :player:iosSimulatorArm64Test :coreui:iosSimulatorArm64Test --continue --stacktrace
-
-      - name: Upload test reports
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: reports-ios
-          path: |
-            **/build/reports/
-            **/build/test-results/
-          if-no-files-found: ignore
-          retention-days: 7
-
   ci-passed:
     name: CI passed
     if: always()
-    needs: [ workflows, checks, android, desktop, ios ]
+    needs: [ workflows, checks, android, desktop ]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
