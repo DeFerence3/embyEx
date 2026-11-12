@@ -1,0 +1,134 @@
+name: ▶️ Playback problem
+description: A video won't play, stutters, or has audio, subtitle, seeking or progress-sync problems.
+title: "[Playback] "
+labels: [ "bug", "playback", "triage" ]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Playback depends a lot on the file itself, so the media details below are the most useful part of this report.
+        In the Emby web app, open the item → **⋮** → **Media info** to see the container and codecs.
+
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Before you start
+      options:
+        - label: I searched [existing issues](https://github.com/DeFerence3/embyEx/issues?q=is%3Aissue+label%3Aplayback) and this hasn't been reported.
+          required: true
+        - label: I'm on the [latest release](https://github.com/DeFerence3/embyEx/releases/latest) or the latest beta.
+          required: true
+        - label: I removed passwords, tokens, server addresses and other private details from everything I paste here.
+          required: true
+
+  - type: dropdown
+    id: problem
+    attributes:
+      label: What goes wrong?
+      multiple: true
+      options:
+        - Won't start or shows an error
+        - Black screen, but audio plays
+        - No audio, or the wrong audio track
+        - Subtitles missing, wrong, out of sync or badly styled
+        - Stutters, buffers or drops frames
+        - Wrong colours or HDR looks washed out
+        - Seeking, chapters or skipping doesn't work
+        - Resume position or watched state doesn't sync
+        - Autoplay or next episode doesn't work
+        - Picture-in-picture, fullscreen or media controls
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the problem
+      description: What did you do, what happened, and what did you expect?
+      placeholder: Playing a 4K HDR movie, the video freezes after about 10 seconds while the audio keeps going.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: source
+    attributes:
+      label: Where does the video play from?
+      options:
+        - Streaming from a server on my local network
+        - Streaming from a remote server (internet, VPN or reverse proxy)
+        - A downloaded (offline) copy
+    validations:
+      required: true
+
+  - type: textarea
+    id: media
+    attributes:
+      label: Media details
+      description: Paste Emby's media info, or fill in what you know.
+      value: |
+        - Container (mkv, mp4, …):
+        - Video codec, resolution and HDR (e.g. HEVC 10-bit, 2160p, Dolby Vision):
+        - Audio codec and channels (e.g. TrueHD 7.1):
+        - Subtitle format (SRT, ASS, PGS, …) and whether it's embedded or external:
+        - Bitrate (if known):
+    validations:
+      required: true
+
+  - type: dropdown
+    id: reproducible
+    attributes:
+      label: Does it happen with other files?
+      options:
+        - Only this file
+        - Files with the same codec or format
+        - Every file
+        - Not sure
+
+  - type: input
+    id: version
+    attributes:
+      label: EmbyEx version
+      description: Shown at the bottom of Settings.
+      placeholder: 1.6.0-beta.2
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - Android phone or tablet
+        - Windows
+        - Linux (Arch)
+        - Linux (Debian, Ubuntu or derivative)
+        - Linux (other)
+    validations:
+      required: true
+
+  - type: input
+    id: device
+    attributes:
+      label: Device, OS version and GPU
+      description: On desktop, the GPU and driver matter for hardware decoding.
+      placeholder: Pixel 8, Android 16 / Windows 11, RTX 3070, driver 572.16
+
+  - type: input
+    id: server
+    attributes:
+      label: Emby Server version
+      placeholder: 4.9.1.80
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Player output from `adb logcat` (Android) or the terminal (desktop), and the Emby server log for this playback if it shows errors.
+      render: text
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Screenshots, recordings or anything else
+      description: Does the same file play in the Emby web app, or in mpv or VLC directly?

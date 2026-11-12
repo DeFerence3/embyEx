@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🔒 Report a security vulnerability
+    url: https://github.com/DeFerence3/embyEx/security/advisories/new
+    about: Report leaked tokens, credential or update-verification problems privately, not in a public issue.
+  - name: 📦 Install and update help
+    url: https://github.com/DeFerence3/embyEx#-get-started
+    about: One-line installers for Linux and Windows, the Android APK, and the beta channel.
+  - name: 🖥️ Emby Server problems
+    url: https://emby.media/community/
+    about: Problems with the server itself (library scans, transcoding, metadata, accounts) belong on the Emby community forum.
