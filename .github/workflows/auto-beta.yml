@@ -1,0 +1,124 @@
+name: Auto beta
+
+# Tags the next beta on dev once enough commits have landed since the previous tag, which starts
+# "Build and release Android and desktop" for it (see docs/release-workflow.md).
+#
+# Runs after CI succeeds for a push to dev, so a beta is only ever cut from a green commit.
+# The threshold is the BETA_COMMIT_THRESHOLD repository variable (Settings → Secrets and variables →
+# Actions → Variables): the number of commits since the previous tag that triggers a beta. 0
+# turns automatic betas off. Manual beta tags still work and reset the count.
+
+on:
+  workflow_run:
+    workflows: [ CI ]
+    types: [ completed ]
+    branches: [ dev ]
+
+permissions:
+  contents: read
+
+# One at a time, so a second run sees the tag the first one pushed.
+concurrency:
+  group: auto-beta
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    name: Tag next beta
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      # Pushes made with GITHUB_TOKEN do not start other workflows, so the release would never build.
+      PAT: ${{ secrets.PAT }}
+      HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+      THRESHOLD: ${{ vars.BETA_COMMIT_THRESHOLD }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: dev
+          token: ${{ secrets.PAT }}
+
+      - name: Decide whether a beta is due
+        id: decide
+        shell: bash
+        run: |
+          set -euo pipefail
+          skip() { echo "$1"; echo "### No beta: $1" >> "$GITHUB_STEP_SUMMARY"; echo "due=false" >> "$GITHUB_OUTPUT"; exit 0; }
+
+          if [[ -z "$THRESHOLD" ]]; then
+            echo "::error::Repository variable BETA_COMMIT_THRESHOLD is not set (use 0 to turn automatic betas off)"
+            exit 1
+          fi
+          if [[ ! "$THRESHOLD" =~ ^[0-9]+$ ]]; then
+            echo "::error::BETA_COMMIT_THRESHOLD must be a whole number, was '$THRESHOLD'"
+            exit 1
+          fi
+          (( THRESHOLD == 0 )) && skip "automatic betas are off (BETA_COMMIT_THRESHOLD is 0)."
+          if [[ -z "$PAT" ]]; then
+            echo "::error::Missing required GitHub secret: PAT"
+            exit 1
+          fi
+
+          # A later commit may already be tagged if CI runs finished out of order.
+          if ! git merge-base --is-ancestor "$HEAD_SHA" origin/dev; then
+            skip "$HEAD_SHA is no longer on dev."
+          fi
+          if [[ -n "$(git tag --list 'v*' --contains "$HEAD_SHA")" ]]; then
+            skip "$HEAD_SHA or a later commit is already tagged."
+          fi
+
+          # Commits since the previous tag on dev. First-parent, without merges: each squash-merged
+          # PR or direct commit counts once; master-into-dev merges after hotfixes do not count.
+          previous=$(git describe --tags --abbrev=0 --match 'v[0-9]*' "$HEAD_SHA")
+          count=$(git rev-list --count --first-parent --no-merges "$previous..$HEAD_SHA")
+          echo "$count commit(s) on dev since $previous; threshold $THRESHOLD."
+          (( count < THRESHOLD )) && skip "$count of $THRESHOLD commits since $previous."
+
+          # Next version, from the highest tag overall (each -beta.N sorts before its release):
+          # after vX.Y.Z-beta.N comes vX.Y.Z-beta.(N+1); after a stable vX.Y.Z comes vX.(Y+1).0-beta.1.
+          # A different bump (major, or a patch beta) is a manual tag; numbering continues from it.
+          latest=$(git -c versionsort.suffix=-beta tag --list 'v[0-9]*' --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+(-beta\.[0-9]+)?$' | head -n 1)
+          if [[ ! "$latest" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)(-beta\.([0-9]+))?$ ]]; then
+            echo "::error::No vMAJOR.MINOR.PATCH[-beta.N] tag found to number the next beta from"
+            exit 1
+          fi
+          major=${BASH_REMATCH[1]} minor=${BASH_REMATCH[2]} patch=${BASH_REMATCH[3]} beta=${BASH_REMATCH[5]}
+          if [[ -n "$beta" ]]; then
+            if (( beta >= 99 )); then
+              echo "::error::$latest is the last beta number allowed; promote it or tag the next version manually"
+              exit 1
+            fi
+            next="v$major.$minor.$patch-beta.$((beta + 1))"
+          else
+            next="v$major.$((minor + 1)).0-beta.1"
+          fi
+          if git rev-parse --verify --quiet "refs/tags/$next" > /dev/null; then
+            echo "::error::Tag $next already exists"
+            exit 1
+          fi
+
+          echo "Tagging $next on $HEAD_SHA ($count commits since $previous)"
+          {
+            echo "due=true"
+            echo "tag=$next"
+            echo "previous=$previous"
+            echo "count=$count"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Push the beta tag
+        if: steps.decide.outputs.due == 'true'
+        shell: bash
+        env:
+          TAG: ${{ steps.decide.outputs.tag }}
+          PREVIOUS: ${{ steps.decide.outputs.previous }}
+          COUNT: ${{ steps.decide.outputs.count }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" "$HEAD_SHA" -m "$TAG (automatic: $COUNT commits since $PREVIOUS)"
+          git push origin "refs/tags/$TAG"
+          echo "### Tagged \`$TAG\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "$COUNT commits since \`$PREVIOUS\`; the beta release build has started." >> "$GITHUB_STEP_SUMMARY"

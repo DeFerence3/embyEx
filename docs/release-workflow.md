@@ -32,13 +32,27 @@
 
 ## Beta
 
+Betas are tagged automatically. After **CI** passes for a push to `dev`, the **Auto beta** workflow counts the commits on `dev` since the previous tag.
+
+- Squash-merged PRs and direct commits count once each.
+- Merges of `master` into `dev` after a hotfix don't count.
+
+Once the count reaches the `BETA_COMMIT_THRESHOLD` repository variable (**Settings → Secrets and variables → Actions → Variables**), the workflow tags that commit with the next beta. Set the variable to `0` to turn automatic betas off. If it's missing or not a whole number, the workflow fails.
+
+| Highest existing tag | Next automatic beta |
+| --- | --- |
+| `v1.6.0-beta.2` | `v1.6.0-beta.3` |
+| `v1.6.0` (stable) | `v1.7.0-beta.1` |
+
+For any other bump, such as a major version or a patch beta, tag it by hand. Automatic numbering continues from there, and a manual tag also resets the commit count:
+
 ```sh
 git switch dev && git pull
-git tag v1.6.0-beta.3
-git push origin v1.6.0-beta.3
+git tag v2.0.0-beta.1
+git push origin v2.0.0-beta.1
 ```
 
-The release workflow builds every platform and publishes a pre-release. Users who opted into beta updates are offered it. Only the newest 7 beta releases are kept; their tags stay.
+Either way, the release workflow builds every platform and publishes a pre-release. Users who opted into beta updates are offered it. Only the newest 7 beta releases are kept; their tags stay.
 
 ## Stable
 
@@ -64,7 +78,8 @@ If you skip the back-merge, the next promotion fails and tells you to do it.
 
 ## Secrets and settings
 
-- `PAT` needs repository `contents: write` and a branch-ruleset bypass on `master`. Promote and the release use it because pushes made with `GITHUB_TOKEN` don't start other workflows.
+- `BETA_COMMIT_THRESHOLD` (repository variable) is how many commits on `dev` since the previous tag trigger an automatic beta; `0` turns automatic betas off.
+- `PAT` needs repository `contents: write` and a branch-ruleset bypass on `master`. Promote, Auto beta and the release use it because pushes made with `GITHUB_TOKEN` don't start other workflows.
 - Rulesets:
   - `master`: no force push or deletion, linear history, owner bypass.
   - `dev`: no force push or deletion, `CI passed` required on PRs, owner bypass.
