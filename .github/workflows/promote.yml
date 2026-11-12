@@ -1,0 +1,89 @@
+name: Promote beta to stable
+
+# Fast-forwards master to the commit of a published beta and tags it vMAJOR.MINOR.PATCH, which
+# starts "Build and release Android and desktop" for the stable release (see docs/release-workflow.md).
+
+on:
+  workflow_dispatch:
+    inputs:
+      beta_tag:
+        description: Beta tag to promote, for example v1.6.0-beta.3
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: promote
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    name: Promote ${{ inputs.beta_tag }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      # Pushes made with GITHUB_TOKEN do not start other workflows, so the release would never build.
+      GH_TOKEN: ${{ secrets.PAT }}
+      BETA_TAG: ${{ inputs.beta_tag }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.PAT }}
+
+      - name: Check the beta can be promoted
+        id: check
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "$GH_TOKEN" ]]; then
+            echo "::error::Missing required GitHub secret: PAT"
+            exit 1
+          fi
+          if [[ ! "$BETA_TAG" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)-beta\.[1-9][0-9]?$ ]]; then
+            echo "::error::'$BETA_TAG' is not a beta tag in the form vMAJOR.MINOR.PATCH-beta.N"
+            exit 1
+          fi
+          stable_tag="v${BASH_REMATCH[1]}"
+          if ! sha=$(git rev-parse --verify --quiet "refs/tags/$BETA_TAG^{commit}"); then
+            echo "::error::Tag '$BETA_TAG' does not exist"
+            exit 1
+          fi
+          if git rev-parse --verify --quiet "refs/tags/$stable_tag" > /dev/null; then
+            echo "::error::Tag '$stable_tag' already exists"
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor "$sha" origin/dev; then
+            echo "::error::'$BETA_TAG' ($sha) is not on dev"
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor origin/master "$sha"; then
+            echo "::error::master has commits that '$BETA_TAG' lacks, so it cannot fast-forward. Merge master into dev, cut a new beta, and promote that."
+            exit 1
+          fi
+          # Only a beta that was actually built and shipped to testers can become stable.
+          if ! gh release view "$BETA_TAG" --repo "$GITHUB_REPOSITORY" --json isPrerelease --jq '.isPrerelease' | grep -qx true; then
+            echo "::error::'$BETA_TAG' has no published pre-release"
+            exit 1
+          fi
+          echo "Promoting $BETA_TAG ($sha) to $stable_tag"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "stable-tag=$stable_tag" >> "$GITHUB_OUTPUT"
+
+      # master first: the release workflow checks that a stable tag is on master.
+      - name: Fast-forward master and tag the release
+        shell: bash
+        env:
+          SHA: ${{ steps.check.outputs.sha }}
+          STABLE_TAG: ${{ steps.check.outputs.stable-tag }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git push origin "$SHA:refs/heads/master"
+          git tag -a "$STABLE_TAG" "$SHA" -m "$STABLE_TAG (promoted from $BETA_TAG)"
+          git push origin "refs/tags/$STABLE_TAG"
+          echo "### Promoted \`$BETA_TAG\` to \`$STABLE_TAG\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "master is now at \`$SHA\`; the stable release build has started." >> "$GITHUB_STEP_SUMMARY"
