@@ -10,7 +10,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
+import app.deference.embycl.ui.core.LocalDeviceConfiguration
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -21,7 +21,6 @@ import app.deference.embycl.core.utils.Log
 import app.deference.embycl.domain.model.EmbyItem
 import app.deference.embycl.ui.Screen
 import app.deference.embycl.ui.core.LocalNavigator
-import app.deference.embycl.ui.core.adaptive.DeviceConfiguration
 import app.deference.embycl.ui.core.adaptive.DeviceConfiguration.DESKTOP
 import app.deference.embycl.ui.core.adaptive.DeviceConfiguration.MOBILE_LANDSCAPE
 import app.deference.embycl.ui.core.adaptive.DeviceConfiguration.MOBILE_PORTRAIT
@@ -75,8 +74,7 @@ fun LibraryContent(
 			if (result.items.isEmpty()) {
 				EmptyState("Nothing here", "This library does not contain any visible media.")
 			} else {
-				val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
-				val configuration = DeviceConfiguration.fromWindowSizeClass(windowSizeClass)
+				val configuration = LocalDeviceConfiguration.current
 				val isEpisodes = result.items.any { it.type == "Episode" }
 				val sectionHeading = if (isEpisodes) "Episodes" else "Browse collection"
 				val columns = if (isEpisodes) {

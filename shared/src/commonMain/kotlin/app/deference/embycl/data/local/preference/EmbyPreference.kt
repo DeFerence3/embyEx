@@ -14,8 +14,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
 
 class EmbyPreference(private val dataStore: DataStore<Preferences>) {
-
-    /** Commit account credentials/identity together, including removal, across process death. */
     fun saveStrings(values: Map<String, String?>) = runBlocking {
         dataStore.edit { preferences ->
             values.forEach { (name, value) ->
@@ -28,6 +26,13 @@ class EmbyPreference(private val dataStore: DataStore<Preferences>) {
 
     fun observeBoolean(key: String) = dataStore.data.map { it[booleanPreferencesKey(key)] ?: false }.distinctUntilChanged()
     suspend fun setBoolean(key: String, value: Boolean) { dataStore.edit { it[booleanPreferencesKey(key)] = value } }
+    fun observeString(key: String) = dataStore.data.map { it[stringPreferencesKey(key)] }.distinctUntilChanged()
+    suspend fun setString(key: String, value: String?) {
+        dataStore.edit { preferences ->
+            val preference = stringPreferencesKey(key)
+            if (value == null) preferences.remove(preference) else preferences[preference] = value
+        }
+    }
 	
 	fun <T> save(key: String, value: T) {
 		runBlocking {

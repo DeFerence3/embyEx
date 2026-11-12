@@ -3,12 +3,35 @@ package app.deference.embycl.data.repository
 import app.deference.embycl.core.session.Session
 import app.deference.embycl.data.local.database.OfflineStorage
 import app.deference.embycl.data.repository.download.OfflinePlaybackCoordinator
-import app.deference.embycl.domain.model.*
-import app.deference.embycl.domain.model.download.*
-import app.deference.embycl.domain.repository.*
+import app.deference.embycl.domain.model.EmbyHome
+import app.deference.embycl.domain.model.EmbyItem
+import app.deference.embycl.domain.model.EmbyItemsResult
+import app.deference.embycl.domain.model.EmbyPlaybackRequest
+import app.deference.embycl.domain.model.EmbyUserData
+import app.deference.embycl.domain.model.ServerDetails
+import app.deference.embycl.domain.model.download.LocalPlaybackOutcome
+import app.deference.embycl.domain.model.download.StoredDownload
+import app.deference.embycl.domain.model.download.mediaKey
+import app.deference.embycl.domain.model.home.HomeLayoutPrefs
+import app.deference.embycl.domain.model.home.HomeSectionId
+import app.deference.embycl.domain.model.home.HomeSectionResult
+import app.deference.embycl.domain.repository.EmbyRepository
+import app.deference.embycl.domain.repository.OfflineRepository
+import app.deference.embycl.domain.repository.OfflineStorageException
+import app.deference.embycl.domain.repository.OfflineStorageFailure
 import io.ktor.http.encodeURLPath
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
 import org.koin.core.annotation.Single
 
 /** The catalogue boundary: screens consume the same models regardless of their source. */
@@ -126,12 +149,56 @@ class EmbyRepositoryImpl(
         }
     }
 
-    override suspend fun home(): EmbyHome = read(local = {
+    override suspend fun home(layout: HomeLayoutPrefs): EmbyHome = read(local = {
         val items = catalogue()
-        EmbyHome(libraries(items), items.filter { (it.userData?.playbackPositionTicks ?: 0) > 0 && it.userData?.played != true }, items)
+        EmbyHome(
+            libraries = libraries(items),
+            sections = mapOf(
+                HomeSectionId.ContinueWatching to localSection(items = items.inProgress()),
+                HomeSectionId.Downloaded to localSection(items = items),
+            ),
+        )
     }) {
-        val home = remote.home()
-        home.copy(resume = mark(home.resume), latest = mark(home.latest))
+        val home = remote.home(layout = layout)
+        val sections = home.sections.mapValues { (_, result) -> result.marked() }
+        val downloaded = if (HomeSectionId.Downloaded in layout.resolvedFor(libraries = home.libraries).visibleSections) {
+            mapOf(HomeSectionId.Downloaded to localSection(items = catalogue()))
+        } else {
+            emptyMap()
+        }
+        home.copy(sections = sections + downloaded)
+    }
+
+    override suspend fun homeSection(id: HomeSectionId, startIndex: Int): HomeSectionResult {
+        suspend fun local(): HomeSectionResult {
+            val items = catalogue()
+            return when (id) {
+                HomeSectionId.ContinueWatching -> localSection(items = items.inProgress())
+                HomeSectionId.Downloaded -> localSection(items = items)
+                is HomeSectionId.LatestIn,
+                HomeSectionId.Favorites,
+                -> HomeSectionResult.Failed
+            }
+        }
+        if (id == HomeSectionId.Downloaded) return local()
+        return read({ local() }) { remote.homeSection(id = id, startIndex = startIndex).marked() }
+    }
+
+    override suspend fun hideFromResume(itemId: String, hide: Boolean) {
+        check(!Session.browseLocalFiles.value && Session.downloadConnection.value != null && Session.isConnected.value) { "Connect to your server to change Continue watching." }
+        remote.hideFromResume(itemId = itemId, hide = hide)
+    }
+
+    private fun List<EmbyItem>.inProgress(): List<EmbyItem> = filter { (it.userData?.playbackPositionTicks ?: 0) > 0 && it.userData?.played != true }
+
+    private fun localSection(items: List<EmbyItem>): HomeSectionResult = HomeSectionResult.Loaded(
+        items = items,
+        total = items.size,
+    )
+
+    private suspend fun HomeSectionResult.marked(): HomeSectionResult = when (this) {
+        is HomeSectionResult.Loaded -> copy(items = mark(items))
+        HomeSectionResult.Failed -> this
     }
     override suspend fun libraries(): List<EmbyItem> = read({ libraries(catalogue()) }) { remote.libraries() }
     override suspend fun items(parentId: String, startIndex: Int): EmbyItemsResult {
@@ -163,7 +230,7 @@ class EmbyRepositoryImpl(
         }
         return null
     }
-    override suspend fun playFromServer(item: EmbyItem): EmbyPlaybackRequest? {
+    override suspend fun playFromServer(item: EmbyItem): EmbyPlaybackRequest {
         check(!Session.browseLocalFiles.value && Session.downloadConnection.value != null && Session.isConnected.value) { "Connect to your server to play from it." }
         return remote.play(item)
     }

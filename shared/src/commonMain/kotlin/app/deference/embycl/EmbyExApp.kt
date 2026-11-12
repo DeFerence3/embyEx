@@ -11,9 +11,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.deference.embycl.core.session.Session
 import app.deference.embycl.data.repository.download.OfflineReconnection
 import app.deference.embycl.ui.EmbyExNav
-import app.deference.embycl.ui.core.network.LocalNetworkPermissionEffect
 import app.deference.embycl.ui.core.LocalKoasty
+import app.deference.embycl.ui.core.adaptive.ProvideDeviceConfiguration
 import app.deference.embycl.ui.core.nav.Navigator
+import app.deference.embycl.ui.core.network.LocalNetworkPermissionEffect
 import app.deference.embycl.ui.core.update.AppUpdateHost
 import app.deference.embycl.ui.player.PlayerInlayHost
 import app.deference.embycl.ui.screens.downloads.OfflinePlaybackHost
@@ -28,6 +29,13 @@ import org.koin.compose.koinInject
 
 @Composable
 fun EmbyExApp(isLoggedIn: Boolean) {
+    ProvideDeviceConfiguration {
+        EmbyExAppContent(isLoggedIn = isLoggedIn)
+    }
+}
+
+@Composable
+private fun EmbyExAppContent(isLoggedIn: Boolean) {
     val account by Session.offlineAccount.collectAsStateWithLifecycle()
     val localFiles by Session.browseLocalFiles.collectAsStateWithLifecycle()
 	val navigator = retain(account?.key, localFiles, isLoggedIn) {
@@ -37,7 +45,7 @@ fun EmbyExApp(isLoggedIn: Boolean) {
     LaunchedEffect(isLoggedIn) {
         if (isLoggedIn && navigator.backStack.lastOrNull() == EmbySignInScreen) {
             navigator.backStack.clear()
-			navigator.backStack.add(EmbyShellScreen)
+            navigator.backStack.add(EmbyShellScreen)
         }
     }
     ServerReconnectionEffect()

@@ -13,6 +13,9 @@ import app.deference.embycl.domain.model.EmbyPlaybackReport
 import app.deference.embycl.domain.model.EmbyPlaybackRequest
 import app.deference.embycl.domain.model.ServerDetails
 import app.deference.embycl.domain.model.ServerInfo
+import app.deference.embycl.domain.model.home.HomeLayoutPrefs
+import app.deference.embycl.domain.model.home.HomeSectionId
+import app.deference.embycl.domain.model.home.HomeSectionResult
 import app.deference.embycl.domain.repository.EmbyRepository
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -25,9 +28,11 @@ import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.isSuccess
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.channels.BufferOverflow
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import org.koin.core.annotation.Single
@@ -56,39 +61,149 @@ class RemoteEmbyRepository(
 		return ServerDetails(response.body<ServerInfo>(), isLimited)
 	}
 	
-	override suspend fun home(): EmbyHome = coroutineScope {
-		val views = async { libraries() }
-		val resume = async {
-			safeApiCall {
-				httpClient.get("/Users/${Session.userId}/Items/Resume") {
-					mapOf(
-						"Limit" to "20",
-						"MediaTypes" to "Video",
-						"Fields" to ITEM_FIELDS,
-						"EnableImages" to "true",
-						"EnableUserData" to "true",
-						"ImageTypeLimit" to "1",
-					).forEach { (key, value) -> parameter(key, value) }
-				}.body<EmbyItemsResult>()
-			}.items
+	override suspend fun home(layout: HomeLayoutPrefs): EmbyHome = supervisorScope {
+		val views = libraries()
+		// Downloaded comes from this device (EmbyRepositoryImpl); everything else is asked for in parallel.
+		val requested = layout.resolvedFor(libraries = views).visibleSections.filter { it != HomeSectionId.Downloaded }
+		val sections = requested
+			.map { id -> async { id to section(id = id, startIndex = 0) } }
+			.awaitAll()
+			.toMap()
+		if (sections.isNotEmpty() && sections.values.all { it == HomeSectionResult.Failed }) {
+			throw kotlinx.io.IOException("Couldn't load any Home section.")
 		}
-		val latest = async {
-			safeApiCall {
-				httpClient.get("/Users/${Session.userId}/Items/Latest") {
-					mapOf(
-						"Limit" to "24",
-						"IncludeItemTypes" to "Movie,Episode",
-						"Fields" to ITEM_FIELDS,
-						"EnableImages" to "true",
-						"EnableUserData" to "true",
-						"ImageTypeLimit" to "1",
-					).forEach { (key, value) -> parameter(key, value) }
-				}.body<List<EmbyItem>>()
+		EmbyHome(
+			libraries = views,
+			sections = sections,
+		)
+	}
+
+	override suspend fun homeSection(id: HomeSectionId, startIndex: Int): HomeSectionResult = section(
+		id = id,
+		startIndex = startIndex,
+	)
+
+	/** One section; any failure other than cancellation becomes [HomeSectionResult.Failed] so the rest of Home still shows. */
+	private suspend fun section(id: HomeSectionId, startIndex: Int): HomeSectionResult = try {
+		when (id) {
+			HomeSectionId.ContinueWatching -> continueWatching(startIndex = startIndex)
+			is HomeSectionId.LatestIn -> latest(libraryId = id.libraryId)
+			HomeSectionId.Favorites -> favorites(startIndex = startIndex)
+			HomeSectionId.Downloaded -> HomeSectionResult.Loaded(items = emptyList(), total = 0)
+		}
+	} catch (exception: CancellationException) {
+		throw exception
+	} catch (exception: Exception) {
+		HomeSectionResult.Failed
+	}
+
+	/**
+	 * Resume first (server order, most recently played first), then Next up in server order; a Next up episode is
+	 * dropped when its series already has a resumable episode. Next up only on the first page, and its failure doesn't
+	 * fail the section (Resume still shows).
+	 */
+	private suspend fun continueWatching(startIndex: Int): HomeSectionResult = supervisorScope {
+		val nextUp = async { if (startIndex == 0) nextUp() else emptyList() }
+		val resume = resume(startIndex = startIndex)
+		val following = try {
+			nextUp.await()
+		} catch (exception: CancellationException) {
+			throw exception
+		} catch (exception: Exception) {
+			emptyList()
+		}
+		val resumeIds = resume.items.map { it.id }.toSet()
+		val resumeSeries = resume.items.mapNotNull { it.seriesId }.toSet()
+		val added = following.filter { it.id !in resumeIds && it.seriesId !in resumeSeries }
+		HomeSectionResult.Loaded(
+			items = resume.items + added,
+			total = resume.totalRecordCount + added.size,
+		)
+	}
+
+	private suspend fun nextUp(): List<EmbyItem> = safeApiCall {
+		httpClient.get("/Shows/NextUp") {
+			mapOf(
+				"UserId" to Session.userId,
+				"Limit" to "20",
+				"Fields" to ITEM_FIELDS,
+				"EnableImages" to "true",
+				"EnableUserData" to "true",
+				"ImageTypeLimit" to "1",
+			).forEach { (key, value) -> parameter(key, value) }
+		}.body<EmbyItemsResult>()
+	}.items
+
+	private suspend fun resume(startIndex: Int): EmbyItemsResult {
+		val result = safeApiCall {
+			httpClient.get("/Users/${Session.userId}/Items/Resume") {
+				mapOf(
+					"StartIndex" to startIndex.toString(),
+					"Limit" to "20",
+					"MediaTypes" to "Video",
+					"Fields" to ITEM_FIELDS,
+					"EnableImages" to "true",
+					"EnableUserData" to "true",
+					"ImageTypeLimit" to "1",
+				).forEach { (key, value) -> parameter(key, value) }
+			}.body<EmbyItemsResult>()
+		}
+		return result
+	}
+
+	/** Newest titles in one library; GroupItems puts a show's new episodes under one series card. Emby returns no total. */
+	private suspend fun latest(libraryId: String): HomeSectionResult {
+		val items = safeApiCall {
+			httpClient.get("/Users/${Session.userId}/Items/Latest") {
+				mapOf(
+					"ParentId" to libraryId,
+					"GroupItems" to "true",
+					"Limit" to "24",
+					"Fields" to ITEM_FIELDS,
+					"EnableImages" to "true",
+					"EnableUserData" to "true",
+					"ImageTypeLimit" to "1",
+				).forEach { (key, value) -> parameter(key, value) }
+			}.body<List<EmbyItem>>()
+		}
+		return HomeSectionResult.Loaded(
+			items = items,
+			total = null,
+		)
+	}
+
+	private suspend fun favorites(startIndex: Int): HomeSectionResult {
+		val result = safeApiCall {
+			httpClient.get("/Users/${Session.userId}/Items") {
+				mapOf(
+					"Filters" to "IsFavorite",
+					"Recursive" to "true",
+					"IncludeItemTypes" to "Movie,Series,Episode",
+					"SortBy" to "SortName",
+					"SortOrder" to "Ascending",
+					"StartIndex" to startIndex.toString(),
+					"Limit" to "24",
+					"Fields" to ITEM_FIELDS,
+					"EnableImages" to "true",
+					"EnableUserData" to "true",
+					"ImageTypeLimit" to "1",
+				).forEach { (key, value) -> parameter(key, value) }
+			}.body<EmbyItemsResult>()
+		}
+		return HomeSectionResult.Loaded(
+			items = result.items,
+			total = result.totalRecordCount,
+		)
+	}
+
+	override suspend fun hideFromResume(itemId: String, hide: Boolean) {
+		safeApiCall {
+			httpClient.post("/Users/${Session.userId}/Items/${itemId}/HideFromResume") {
+				parameter("Hide", hide.toString())
 			}
 		}
-		EmbyHome(views.await(), resume.await(), latest.await())
 	}
-	
+
 	override suspend fun libraries(): List<EmbyItem> = safeApiCall {
 		httpClient.get("/Users/${Session.userId}/Views") {
 			parameter("IncludeExternalContent", false)

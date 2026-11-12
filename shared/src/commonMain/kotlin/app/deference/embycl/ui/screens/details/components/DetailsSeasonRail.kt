@@ -1,5 +1,6 @@
 package app.deference.embycl.ui.screens.details.components
 
+import app.deference.embycl.ui.core.components.ShelfHeader
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -117,7 +118,7 @@ internal fun DetailsSeasonRail(
                 modifier = modifier,
                 verticalArrangement = Arrangement.spacedBy(space = 12.dp),
             ) {
-                DetailsRailHeader(
+                ShelfHeader(
                     title = stringResource(
                         resource = Res.string.details_more_in_season,
                         season.seasonNumber,

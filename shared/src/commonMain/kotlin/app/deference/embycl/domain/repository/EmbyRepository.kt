@@ -6,6 +6,9 @@ import app.deference.embycl.domain.model.EmbyItemsResult
 import app.deference.embycl.domain.model.EmbyPlaybackEvent
 import app.deference.embycl.domain.model.EmbyPlaybackRequest
 import app.deference.embycl.domain.model.ServerDetails
+import app.deference.embycl.domain.model.home.HomeLayoutPrefs
+import app.deference.embycl.domain.model.home.HomeSectionId
+import app.deference.embycl.domain.model.home.HomeSectionResult
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 
@@ -16,7 +19,9 @@ interface EmbyRepository {
     /** Streams from the server even when a saved copy exists. */
     suspend fun playFromServer(item: EmbyItem): EmbyPlaybackRequest? = play(item)
 	suspend fun serverInfo(): ServerDetails
-	suspend fun home(): EmbyHome
+	suspend fun home(layout: HomeLayoutPrefs): EmbyHome
+	suspend fun homeSection(id: HomeSectionId, startIndex: Int = 0): HomeSectionResult
+	suspend fun hideFromResume(itemId: String, hide: Boolean)
 	suspend fun libraries(): List<EmbyItem>
 	suspend fun items(parentId: String, startIndex: Int = 0): EmbyItemsResult
 	suspend fun search(term: String): List<EmbyItem>
