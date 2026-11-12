@@ -27,7 +27,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
+import app.deference.embycl.ui.core.LocalDeviceConfiguration
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -43,7 +43,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import app.deference.embycl.domain.model.EmbyItem
-import app.deference.embycl.ui.core.adaptive.DeviceConfiguration
 import app.deference.embycl.ui.core.adaptive.DeviceConfiguration.DESKTOP
 import app.deference.embycl.ui.core.adaptive.DeviceConfiguration.MOBILE_LANDSCAPE
 import app.deference.embycl.ui.core.adaptive.DeviceConfiguration.MOBILE_PORTRAIT
@@ -166,8 +165,7 @@ fun SearchResultItem(
 	results: List<EmbyItem>,
 	onItemClick: (EmbyItem) -> Unit
 ) {
-	val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
-	val configuration = DeviceConfiguration.fromWindowSizeClass(windowSizeClass)
+	val configuration = LocalDeviceConfiguration.current
 	when(type){
 		"Episode" -> {
 			val columns = when(configuration){

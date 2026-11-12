@@ -1,7 +1,8 @@
 package app.deference.embycl.domain.model
 
+import app.deference.embycl.domain.model.home.HomeSectionId
+import app.deference.embycl.domain.model.home.HomeSectionResult
 data class EmbyHome(
-	val views: List<EmbyItem> = emptyList(),
-	val resume: List<EmbyItem> = emptyList(),
-	val latest: List<EmbyItem> = emptyList(),
+	val libraries: List<EmbyItem> = emptyList(),
+	val sections: Map<HomeSectionId, HomeSectionResult> = emptyMap(),
 )

@@ -1,5 +1,6 @@
 package app.deference.embycl.ui.screens.details.components
 
+import app.deference.embycl.ui.core.components.ShelfHeader
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -46,7 +47,7 @@ internal fun DetailsPeopleRail(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(space = 12.dp),
     ) {
-        DetailsRailHeader(
+        ShelfHeader(
             title = stringResource(resource = Res.string.details_cast_and_crew),
             listState = listState,
             showScrollButtons = showScrollButtons,

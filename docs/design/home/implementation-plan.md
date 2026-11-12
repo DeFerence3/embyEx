@@ -89,3 +89,44 @@ Status: **approved 2026-11-12** — every conclusion below was approved by the u
 - Desktop (`:desktopApp:run`): resize the window through 390×844 (phone), 873×393 (short), 768×830 (tablet), 1280×800 and maximised (wide). Each must match its design frame; hover lift, right-click menu, arrow keys, Ctrl+R, Esc.
 - Android phone (adb): portrait, landscape, 200 % font, TalkBack labels on cards, the filmstrip ("slide 1 of 8"), the source chip. Desktop-sized display on the phone: `adb shell wm size 1920x1080` + `wm density 160`, checked for the Wide layout, then reset with `wm size reset` / `wm density reset`. I'll ask before changing the phone's display settings.
 - States to walk on both platforms: loaded, refreshing, section failed, offline with downloads, server not responding, browsing this device (the state seen on the phone), Edit Home save and offline.
+
+## Progress
+
+### Checkpoint 1 — done 2026-11-12 (uncommitted)
+- `LocalDeviceConfiguration` (`ui/core/adaptive/LocalDeviceConfiguration.kt`) provided at the top of `EmbyExApp`; `HomeLayout` mapping in `ui/screens/home/components/HomeLayout.kt`.
+- `ShelfHeader` promoted to `ui/core/components` (Details' People and Season rails use it; their scroll buttons are now tonal and name the shelf). `DetailsRailHeader.kt` and the `details_scroll_*` strings removed.
+- `animateWithHover` now 1.04 / 0.97; new `artworkZoom` (1.06). Applies to Library and Search cards too.
+- Home: new state/actions/ViewModel (no `HomeEvent`; notices live in state), UI models in `home/model/`, components in `home/components/`, previews in `HomePreviews.kt`. Spotlight + filmstrip, Recently added shelf (one mixed row until checkpoint 3 adds per-library rows), card menu (sheet or anchored menu by layout) with Mark watched / unwatched (+ Undo), Favorites, Go to series; source chip + status sheet/dialog; T4 offline / this-device callout; full-screen states; skeleton; pull to refresh; snackbar notices.
+- Shell: Home top bar with source chip and busy Refresh; bottom bar shows an icon on every tab, stacked on phone windows, labels capped at 1.5×, Tab semantics, account button labelled "Account and settings, ‹user›".
+- Removed dead code: `MediaRow`, `LibraryRow`, `WideMediaCard` (Home-only).
+- Not in checkpoint 1 (needs checkpoint 2–3 data): Next up, Remove from Continue watching, Download from the card menu, per-library "New in" rows, Favorites and Downloaded rows, See all screens, Edit Home. No scrim colour roles were needed (Home never puts text on artwork).
+
+Verification: `:shared:compileKotlinJvm`, `:shared:jvmTest`, `:player:compileKotlinJvm`, `:androidApp:assembleDebug` pass. Pre-existing failures, also on unmodified HEAD: `:shared:testAndroidHostTest` (4 × `GithubUpdateProviderTest`) and `:shared:compileKotlinIosSimulatorArm64` (`MainViewController.kt` calls a missing `App()`).
+
+Device checks (2026-11-12):
+- Phone M2101K6P (portrait, dark, dynamic colour, real library): spotlight, filmstrip selection, card menu sheet, status sheet.
+- Desktop window resized to 390×844 → phone layout; 873×393 → Short; 768×830 → Medium (shelf scroll buttons appear when a row overflows); 1280×800 and maximised 1536×864 → Wide.
+- Test phone (Redmi Note 5 Pro, Android 11): portrait ↔ landscape switches Phone ↔ Short; `wm density 160` (≈2160×1080 dp, DeX-like) → the desktop layout.
+
+Fixes found on device:
+- `ProvideDeviceConfiguration` now measures the app's root area (`BoxWithConstraints` + `WindowSizeClass.BREAKPOINTS_V1.computeWindowSizeClass`). With `currentWindowAdaptiveInfo()`, `LocalWindowInfo.containerSize` lagged one rotation behind on Android (the activity handles `configChanges`), so landscape rendered the portrait layout and vice versa. Library and Search still call `currentWindowAdaptiveInfo()` themselves and have the same lag.
+- The source chip showed "· Connecting…" without a server name during the first load; the name is now seeded at start.
+
+### Checkpoint 2 — done 2026-11-12 (uncommitted)
+- Domain (`domain/model/home/`): `HomeSectionId` (stable keys `continue`, `latest:{id}`, `favorites`, `downloaded`), `HomeSectionResult` (`Loaded(items, total)` | `Failed`), `HomeTop`, `HomeCardSize`, `HomeSectionPref`, `HomeLayoutPrefs` (+ `resolvedFor(libraries)`: first-run defaults, saved order kept, removed libraries dropped, new libraries appended — shown for movies/TV), `HomeLayoutSync`. `EmbyHome` is now `libraries` + `sections: Map<HomeSectionId, HomeSectionResult>`.
+- Contracts: `EmbyRepository.home(layout)`, `homeSection(id, startIndex)`, `hideFromResume(itemId, hide)`; new `HomeLayoutRepository` (implementation in checkpoint 3).
+- Minimal data adapters so it runs: sections load independently (`supervisorScope`); Continue watching = Resume (Next up merge in checkpoint 3); "New in" = Latest per library with `GroupItems=true`; Favorites = `Filters=IsFavorite`; HideFromResume POST; Downloaded and offline sections from this device.
+- UI: "New in ‹library›", Favorites, Downloaded rows (16:9 cards for Continue watching / Downloaded), per-section Retry, counts only with a real total, Next up derived for episodes only, shared `focusRing` on Home/shell controls, Library and Search read `LocalDeviceConfiguration`.
+- Design: Edit Home's separate library checkboxes removed (one control per "New in" row).
+- Found: Tab order goes top bar → bottom bar → page content, because `Scaffold` composes the bottom bar before the body (pre-existing; fix needs a shell change — pending approval).
+
+### Checkpoint 3 — done 2026-11-12 (uncommitted)
+- Continue watching = Resume, then `/Shows/NextUp` (Next up dropped when its series has a resumable episode; Next up failure doesn't fail the row).
+- `HomeLayoutRepositoryImpl` (`data/repository/home/`): local copy per account (`home_layout:{serverId}:{userId}` in DataStore via new `EmbyPreference.observeString/setString`), synced with `/DisplayPreferences/embyex-home` (Client `EmbyEx`, CustomPrefs `top`, `cardSize`, `sections` = `key=1|key=0`); changes apply locally, are marked pending, pushed on start/reconnect; `HomeLayoutCodec` drops unknown keys. Browsing this device keeps a local-only layout.
+- Edit Home (sheet on Phone, dialog otherwise): top of Home, card size, section switches + Move up/down (Continue watching pinned while it's the top), Reset with Undo, sync status line (shows "Saved on this device" whenever Home isn't connected). Opened from the end of Home and from the account menu. Edits made offline keep the server libraries' rows (`resolvedFor(keepMissingLibraries = true)`).
+- See all: `HomeSectionScreen(key, title)` + `HomeSectionViewModel`, grid like Library, pages via `homeSection(startIndex)` near the end of the grid.
+- Card menu: Remove from Continue watching (HideFromResume, Undo), Download (Details' source picker + permission flow). Large cards scale card widths 1.35×.
+- "Sign in again": when the saved sign-in expired (`isLoggedInState` false, offline account kept) the chip, status, banner and full state say so and link to sign-in, instead of "offline".
+- Shell: bottom bar drawn after the tab content (Tab order: top bar → page → bottom bar); account menu has Edit Home.
+
+Device checks (test phone, offline): Tab order top bar → content → bottom bar; account menu → Edit Home; Large saved locally and kept across restart; offline status line. Not yet checked with a live server: Next up merge, server sync of the layout, See all, Remove from Continue watching, Download from the menu, Sign in again.

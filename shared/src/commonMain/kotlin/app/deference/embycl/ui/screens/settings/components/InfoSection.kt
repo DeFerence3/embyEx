@@ -179,7 +179,7 @@ fun InfoCard(details: List<Pair<String, String>>) {
     }
 }
 
-private fun calculateShape(index: Int,lastIndex: Int) = RoundedCornerShape(
+internal fun calculateShape(index: Int,lastIndex: Int) = RoundedCornerShape(
 	topStart = if (index == 0) 24.dp else 4.dp,
 	topEnd = if (index == 0) 24.dp else 4.dp,
 	bottomStart = if (index == lastIndex) 24.dp else 4.dp,

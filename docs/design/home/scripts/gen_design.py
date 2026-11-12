@@ -445,13 +445,10 @@ def edit_content(status="saved", top="carousel", size="comfortable", callout="")
                  f'<button class="icon-btn" aria-label="Move {name} up"{" disabled" if first or not on else ""}>{ic("arrow_upward")}</button>'
                  f'<button class="icon-btn" aria-label="Move {name} down"{" disabled" if last else ""}>{ic("arrow_downward")}</button>'
                  f'<label class="switch"><input type="checkbox" role="switch"{" checked" if on else ""} aria-label="Show {name}"></label></div>')
-    libs = "".join(f'<label class="check-row"><input type="checkbox"{" checked" if on else ""}>{n}</label>'
-                   for n, on in [("Movies", True), ("TV Shows", True), ("Kids", False), ("Concerts", False)])
     return f'''<div class="ed">{callout}{status_html}
 <div class="ed-group"><h3 id="g-top">Top of Home</h3>{seg([("carousel", "Continue watching", "check"), ("off", "Off", "check")], top, "Top of Home")}</div>
 <div class="ed-group"><h3>Card size</h3>{seg([("comfortable", "Comfortable", "check"), ("large", "Large", "check")], size, "Card size")}</div>
 <div class="ed-group"><h3>Sections</h3><div>{rows}</div></div>
-<div class="ed-group"><h3>“New in” rows for these libraries</h3>{libs}</div>
 <div class="ed-foot"><button class="btn text" data-state-to="reset">{ic("restart_alt")}Reset to default</button><button class="btn" data-goto="home/home/loaded">Done</button></div></div>'''
 
 

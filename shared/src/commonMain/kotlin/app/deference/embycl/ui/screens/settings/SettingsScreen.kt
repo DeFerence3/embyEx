@@ -3,6 +3,7 @@ package app.deference.embycl.ui.screens.settings
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,11 +12,13 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.material.icons.filled.Update
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -53,10 +56,16 @@ import app.deference.embycl.ui.screens.settings.components.CurrentBuildChangelog
 import app.deference.embycl.ui.screens.settings.components.InfoSection
 import app.deference.embycl.ui.screens.settings.components.SettingsAccount
 import app.deference.embycl.ui.screens.settings.components.SettingsAction
+import app.deference.embycl.ui.screens.settings.components.SettingsLinkCard
 import app.deference.embycl.ui.screens.settings.components.SettingsSection
 import app.deference.embycl.ui.screens.settings.components.UserCard
+import app.deference.embycl.ui.screens.settings.components.InfoHeader
+import app.deference.embycl.ui.screens.settings.home.HomeLayoutSettingsScreen
 import embyex.shared.generated.resources.Res
 import embyex.shared.generated.resources.app_name
+import embyex.shared.generated.resources.home_edit
+import embyex.shared.generated.resources.home_edit_hint
+import embyex.shared.generated.resources.settings_home
 import embyex.shared.generated.resources.settings_beta_updates
 import embyex.shared.generated.resources.settings_beta_updates_description
 import embyex.shared.generated.resources.settings_updates
@@ -85,6 +94,7 @@ data object EmbySettingsScreen : Screen {
 			onSignOut = Session::logout,
 			update = updateState.update,
 			onLoadChangelog = viewModel::loadCurrentBuildChangelog,
+			onEditHome = { navigator.goTo(HomeLayoutSettingsScreen) },
 		)
 	}
 }
@@ -99,6 +109,7 @@ fun SettingsContent(
 	onBack: () -> Unit,
 	onSignOut: () -> Unit,
 	onLoadChangelog: () -> Unit = {},
+	onEditHome: () -> Unit = {},
 ){
 	var showChangelog by rememberSaveable { mutableStateOf(false) }
 	val uriHandler = LocalUriHandler.current
@@ -232,6 +243,22 @@ fun SettingsContent(
 				}
 				item {
 					Text("${stringResource(Res.string.app_name)} · ${BuildConfig.VERSION_NAME}", modifier = Modifier.fillMaxWidth(), style = MaterialTheme.typography.bodySmall, textAlign = androidx.compose.ui.text.style.TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant)
+				}
+
+				item {
+					Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+						InfoHeader(
+							title = stringResource(resource = Res.string.settings_home),
+							onRefresh = null,
+						)
+						SettingsLinkCard(
+							title = stringResource(resource = Res.string.home_edit),
+							description = stringResource(resource = Res.string.home_edit_hint),
+							icon = Icons.Outlined.Tune,
+							shape = RoundedCornerShape(size = 24.dp),
+							onClick = onEditHome,
+						)
+					}
 				}
 
 				if (hasPlayerSettings) {
