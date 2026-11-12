@@ -44,6 +44,11 @@ Once the count reaches the `BETA_COMMIT_THRESHOLD` repository variable (**Settin
 | `v1.6.0-beta.2` | `v1.6.0-beta.3` |
 | `v1.6.0` (stable) | `v1.7.0-beta.1` |
 
+To ship a beta now without waiting for the threshold, run **Actions → Auto beta → Run workflow**. It tags the tip of `dev` with the next beta number.
+
+- It still requires CI to have passed on that commit. Tick **skip_ci_check** to tag anyway.
+- It fails if the tip of `dev` is already tagged.
+
 For any other bump, such as a major version or a patch beta, tag it by hand. Automatic numbering continues from there, and a manual tag also resets the commit count:
 
 ```sh

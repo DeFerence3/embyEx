@@ -7,15 +7,27 @@ name: Auto beta
 # The threshold is the BETA_COMMIT_THRESHOLD repository variable (Settings → Secrets and variables →
 # Actions → Variables): the number of commits since the previous tag that triggers a beta. 0
 # turns automatic betas off. Manual beta tags still work and reset the count.
+#
+# Run it by hand (Actions → Auto beta → Run workflow) to force a beta from the tip of dev now,
+# whatever the commit count or threshold. It still requires CI to have passed on that commit unless
+# "skip_ci_check" is ticked.
 
 on:
   workflow_run:
     workflows: [ CI ]
     types: [ completed ]
     branches: [ dev ]
+  workflow_dispatch:
+    inputs:
+      skip_ci_check:
+        description: Tag even if CI has not passed on the tip of dev
+        type: boolean
+        default: false
 
 permissions:
   contents: read
+  # Reads CI's check runs on dev for a forced beta.
+  checks: read
 
 # One at a time, so a second run sees the tag the first one pushed.
 concurrency:
@@ -25,14 +37,20 @@ concurrency:
 jobs:
   tag:
     name: Tag next beta
-    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
       # Pushes made with GITHUB_TOKEN do not start other workflows, so the release would never build.
       PAT: ${{ secrets.PAT }}
+      # Empty for a forced run, which tags the tip of dev.
       HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
       THRESHOLD: ${{ vars.BETA_COMMIT_THRESHOLD }}
+      FORCE: ${{ github.event_name == 'workflow_dispatch' }}
+      SKIP_CI_CHECK: ${{ inputs.skip_ci_check || false }}
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -46,35 +64,45 @@ jobs:
         run: |
           set -euo pipefail
           skip() { echo "$1"; echo "### No beta: $1" >> "$GITHUB_STEP_SUMMARY"; echo "due=false" >> "$GITHUB_OUTPUT"; exit 0; }
+          fail() { echo "::error::$1"; exit 1; }
 
-          if [[ -z "$THRESHOLD" ]]; then
-            echo "::error::Repository variable BETA_COMMIT_THRESHOLD is not set (use 0 to turn automatic betas off)"
-            exit 1
-          fi
-          if [[ ! "$THRESHOLD" =~ ^[0-9]+$ ]]; then
-            echo "::error::BETA_COMMIT_THRESHOLD must be a whole number, was '$THRESHOLD'"
-            exit 1
-          fi
-          (( THRESHOLD == 0 )) && skip "automatic betas are off (BETA_COMMIT_THRESHOLD is 0)."
-          if [[ -z "$PAT" ]]; then
-            echo "::error::Missing required GitHub secret: PAT"
-            exit 1
-          fi
+          [[ -n "$PAT" ]] || fail "Missing required GitHub secret: PAT"
 
-          # A later commit may already be tagged if CI runs finished out of order.
-          if ! git merge-base --is-ancestor "$HEAD_SHA" origin/dev; then
-            skip "$HEAD_SHA is no longer on dev."
-          fi
-          if [[ -n "$(git tag --list 'v*' --contains "$HEAD_SHA")" ]]; then
-            skip "$HEAD_SHA or a later commit is already tagged."
+          if [[ "$FORCE" == "true" ]]; then
+            HEAD_SHA=$(git rev-parse origin/dev)
+            echo "Forced beta requested for the tip of dev ($HEAD_SHA)."
+            if [[ -n "$(git tag --list 'v*' --points-at "$HEAD_SHA")" ]]; then
+              fail "The tip of dev ($HEAD_SHA) is already tagged: $(git tag --list 'v*' --points-at "$HEAD_SHA" | xargs)"
+            fi
+            if [[ "$SKIP_CI_CHECK" != "true" ]]; then
+              ci=$(gh api "repos/$GITHUB_REPOSITORY/commits/$HEAD_SHA/check-runs?check_name=CI%20passed" \
+                --jq '[.check_runs[]] | sort_by(.started_at) | last | .conclusion // "pending"')
+              [[ "$ci" == "success" ]] || fail "CI has not passed on the tip of dev ($HEAD_SHA): ${ci:-not run}. Wait for it, or re-run with skip_ci_check."
+            fi
+          else
+            [[ -n "$THRESHOLD" ]] || fail "Repository variable BETA_COMMIT_THRESHOLD is not set (use 0 to turn automatic betas off)"
+            [[ "$THRESHOLD" =~ ^[0-9]+$ ]] || fail "BETA_COMMIT_THRESHOLD must be a whole number, was '$THRESHOLD'"
+            (( THRESHOLD == 0 )) && skip "automatic betas are off (BETA_COMMIT_THRESHOLD is 0)."
+
+            # A later commit may already be tagged if CI runs finished out of order.
+            if ! git merge-base --is-ancestor "$HEAD_SHA" origin/dev; then
+              skip "$HEAD_SHA is no longer on dev."
+            fi
+            if [[ -n "$(git tag --list 'v*' --contains "$HEAD_SHA")" ]]; then
+              skip "$HEAD_SHA or a later commit is already tagged."
+            fi
           fi
 
           # Commits since the previous tag on dev. First-parent, without merges: each squash-merged
           # PR or direct commit counts once; master-into-dev merges after hotfixes do not count.
           previous=$(git describe --tags --abbrev=0 --match 'v[0-9]*' "$HEAD_SHA")
           count=$(git rev-list --count --first-parent --no-merges "$previous..$HEAD_SHA")
-          echo "$count commit(s) on dev since $previous; threshold $THRESHOLD."
-          (( count < THRESHOLD )) && skip "$count of $THRESHOLD commits since $previous."
+          if [[ "$FORCE" == "true" ]]; then
+            echo "$count commit(s) on dev since $previous; threshold ignored for a forced beta."
+          else
+            echo "$count commit(s) on dev since $previous; threshold $THRESHOLD."
+            (( count < THRESHOLD )) && skip "$count of $THRESHOLD commits since $previous."
+          fi
 
           # Next version, from the highest tag overall (each -beta.N sorts before its release):
           # after vX.Y.Z-beta.N comes vX.Y.Z-beta.(N+1); after a stable vX.Y.Z comes vX.(Y+1).0-beta.1.
@@ -105,6 +133,7 @@ jobs:
             echo "tag=$next"
             echo "previous=$previous"
             echo "count=$count"
+            echo "sha=$HEAD_SHA"
           } >> "$GITHUB_OUTPUT"
 
       - name: Push the beta tag
@@ -114,11 +143,13 @@ jobs:
           TAG: ${{ steps.decide.outputs.tag }}
           PREVIOUS: ${{ steps.decide.outputs.previous }}
           COUNT: ${{ steps.decide.outputs.count }}
+          SHA: ${{ steps.decide.outputs.sha }}
+          REASON: ${{ github.event_name == 'workflow_dispatch' && 'forced' || 'automatic' }}
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -a "$TAG" "$HEAD_SHA" -m "$TAG (automatic: $COUNT commits since $PREVIOUS)"
+          git tag -a "$TAG" "$SHA" -m "$TAG ($REASON: $COUNT commits since $PREVIOUS)"
           git push origin "refs/tags/$TAG"
-          echo "### Tagged \`$TAG\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Tagged \`$TAG\` ($REASON)" >> "$GITHUB_STEP_SUMMARY"
           echo "$COUNT commits since \`$PREVIOUS\`; the beta release build has started." >> "$GITHUB_STEP_SUMMARY"
