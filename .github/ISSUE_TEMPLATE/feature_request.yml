@@ -1,0 +1,77 @@
+name: ✨ Feature request
+description: Suggest a new feature or an improvement to an existing one.
+title: "[Feature] "
+labels: [ "enhancement", "triage" ]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the idea! Describing the problem you want solved helps more than describing a specific design.
+
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Before you start
+      options:
+        - label: I searched [existing issues](https://github.com/DeFerence3/embyEx/issues?q=is%3Aissue+label%3Aenhancement), including closed ones, and this hasn't been requested.
+          required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: What are you trying to do, and what gets in the way today?
+      placeholder: I watch on the train and want whole seasons downloaded in one go, not episode by episode.
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: How you imagine it working. Mock-ups and screenshots of other apps are welcome.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you've considered
+      description: Workarounds you use now, or other ways this could work.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      multiple: true
+      options:
+        - Sign-in or server discovery
+        - Home
+        - Library browsing or search
+        - Details page
+        - Player (video, audio or subtitles)
+        - Downloads or offline mode
+        - App updates
+        - Settings
+        - Keyboard navigation or shortcuts
+        - Layout or appearance
+        - Accessibility
+        - Other
+
+  - type: dropdown
+    id: platforms
+    attributes:
+      label: Platforms
+      description: Where would you use it?
+      multiple: true
+      options:
+        - Android phone or tablet
+        - Windows
+        - Linux
+
+  - type: checkboxes
+    id: contribute
+    attributes:
+      label: Contributing
+      options:
+        - label: I'd like to help build this (a pull request, testing a beta, or design input).

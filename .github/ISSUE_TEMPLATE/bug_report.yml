@@ -1,0 +1,130 @@
+name: 🐛 Bug report
+description: Something in EmbyEx doesn't work as it should (not a crash or a playback problem).
+title: "[Bug] "
+labels: [ "bug", "triage" ]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug.
+        - **The app crashed?** Use **Report** on EmbyEx's crash screen, or the 💥 Crash report template.
+        - **A video, audio track or subtitle doesn't play right?** Use the ▶️ Playback problem template.
+
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Before you start
+      options:
+        - label: I searched [existing issues](https://github.com/DeFerence3/embyEx/issues?q=is%3Aissue) and this hasn't been reported.
+          required: true
+        - label: I'm on the [latest release](https://github.com/DeFerence3/embyEx/releases/latest) or the latest beta.
+          required: true
+        - label: I removed passwords, tokens, server addresses and other private details from everything I paste here.
+          required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: A clear description of the problem. Include what you expected to happen instead.
+      placeholder: When I open a series from Home, the season list stays empty, though it loads in the Emby web app.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Sign in to a server
+        2. Open Home and tap a series
+        3. Scroll to the seasons
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: Where in the app does this happen? Pick all that apply.
+      multiple: true
+      options:
+        - Sign-in or server discovery
+        - Home
+        - Library browsing or search
+        - Details page
+        - Downloads or offline mode
+        - App updates
+        - Settings
+        - Keyboard navigation or shortcuts
+        - Layout or appearance
+        - Other
+
+  - type: input
+    id: version
+    attributes:
+      label: EmbyEx version
+      description: Shown at the bottom of Settings.
+      placeholder: 1.6.0-beta.2
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - Android phone or tablet
+        - Windows
+        - Linux (Arch)
+        - Linux (Debian, Ubuntu or derivative)
+        - Linux (other)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install
+    attributes:
+      label: How did you install EmbyEx?
+      options:
+        - APK from GitHub Releases
+        - In-app update
+        - Windows installer (MSI) or install.ps1
+        - Linux .deb or install.sh
+        - Arch package
+        - Built from source
+        - Other
+
+  - type: input
+    id: device
+    attributes:
+      label: Device and OS version
+      placeholder: Pixel 8, Android 16 / Windows 11 24H2 / Arch Linux, KDE Plasma 6 on Wayland
+
+  - type: input
+    id: server
+    attributes:
+      label: Emby Server version
+      description: Shown on the Emby dashboard.
+      placeholder: 4.9.1.80
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: |
+        Any relevant log output. On Android, `adb logcat` output helps; on desktop, the output of running EmbyEx from a terminal.
+        It's shown as code, so you don't need backticks.
+      render: text
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots or recordings
+      description: Drag and drop images or videos here.
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: For example, a custom ROM, a VPN or reverse proxy in front of your server, or whether it worked in an earlier version.
