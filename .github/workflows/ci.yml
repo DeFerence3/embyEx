@@ -86,7 +86,7 @@ jobs:
           retention-days: 7
 
   android:
-    name: Android build (debug + unsigned release)
+    name: Android release build (unsigned)
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -105,11 +105,10 @@ jobs:
         with:
           packages: platform-tools platforms;android-37.0 build-tools;36.0.0
 
-      # The release build runs R8 and resource shrinking, which the debug build does not.
-      - name: Build APKs
+      - name: Build release APK
         run: |
           chmod +x gradlew
-          ./gradlew :androidApp:assembleDebug :androidApp:assembleRelease --stacktrace
+          ./gradlew :androidApp:assembleRelease --stacktrace
 
   desktop:
     name: Desktop build (${{ matrix.os }})

@@ -2,7 +2,7 @@
 
 A modern, unofficial [Emby](https://emby.media/) client for **Android, Windows, and Linux**, built with Kotlin Multiplatform and Compose Multiplatform.
 
-![Android](https://img.shields.io/badge/Android-3DDC84?logo=android&logoColor=white)
+![Android](https://img.shields.io/badge/Android-7.0+(sdk.24)-3DDC84?logo=android&logoColor=white)
 ![Desktop](https://img.shields.io/badge/Desktop-Windows%20%7C%20Linux-475569)
 ![Kotlin Multiplatform](https://img.shields.io/badge/Kotlin-Multiplatform-7F52FF?logo=kotlin&logoColor=white)
 ![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue)
@@ -12,7 +12,14 @@ A modern, unofficial [Emby](https://emby.media/) client for **Android, Windows, 
 [![Latest beta](https://img.shields.io/github/v/release/DeFerence3/embyEx?include_prereleases&label=beta&color=orange)](../../releases)
 [![Downloads](https://img.shields.io/github/downloads/DeFerence3/embyEx/total?label=downloads)](../../releases)
 
-### [⬇️ Install EmbyEx](#-get-started) · [🐛 Report an issue](../../issues)
+#### [⬇️ Install EmbyEx](#-get-started) · [🐛 Report an issue](../../issues)
+
+> [!WARNING]
+> #### *This is a vibe coded project!!*
+>
+> I tried my best to inspect and verify the code my self, but there can be slop included.
+> De-sloping is going on, even though caution referencing the repository
+>
 
 ## ✨ Highlights
 
@@ -43,6 +50,9 @@ irm https://raw.githubusercontent.com/DeFerence3/embyEx/master/scripts/install.p
 
 Run the same command again to update.
 
+<details>
+<summary>Want beta?</summary>
+
 **Beta builds:** to install the newest pre-release instead, add the beta option:
 
 ```sh
@@ -52,6 +62,7 @@ curl -fsSL https://raw.githubusercontent.com/DeFerence3/embyEx/master/scripts/in
 ```powershell
 & ([scriptblock]::Create((irm https://raw.githubusercontent.com/DeFerence3/embyEx/master/scripts/install.ps1))) -Beta
 ```
+</details>
 
 <details>
 <summary>Prefer a manual install?</summary>

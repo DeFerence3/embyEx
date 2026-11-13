@@ -24,7 +24,7 @@
 2. The **CI** workflow must pass before you merge. Branch rulesets require its `CI passed` job, which covers:
    - workflow lint
    - common, JVM and Android host tests, desktop tests, and Android lint for every module
-   - Android debug and unsigned release builds
+   - an unsigned Android release build, to catch R8 and resource-shrinking failures before a tag exists
    - desktop builds and tests on Linux and Windows
 
    iOS isn't supported for now, so CI doesn't build, test or lint it. That's why CI runs explicit tasks instead of `./gradlew check`, which also compiles the iOS targets.
