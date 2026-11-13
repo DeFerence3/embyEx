@@ -1,18 +1,29 @@
-# 🎬 EmbyEx
+<h1 align="center">EmbyEx</h1>
 
-A modern, unofficial [Emby](https://emby.media/) client for **Android, Windows, and Linux**, built with Kotlin Multiplatform and Compose Multiplatform.
+<p align="center"> A modern, unofficial <a href="https://emby.media/">Emby</a> client for <b>Android, Windows, and Linux</b>, built with Kotlin Multiplatform and Compose Multiplatform.</p>
 
-![Android](https://img.shields.io/badge/Android-7.0+(sdk.24)-3DDC84?logo=android&logoColor=white)
-![Desktop](https://img.shields.io/badge/Desktop-Windows%20%7C%20Linux-475569)
-![Kotlin Multiplatform](https://img.shields.io/badge/Kotlin-Multiplatform-7F52FF?logo=kotlin&logoColor=white)
-![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue)
+<p align="center">
+  <a><img alt="Android" src="https://img.shields.io/badge/Android-7.0+(sdk.24)-3DDC84?logo=android&logoColor=white" /></a>
+  <a><img alt="Desktop" src="https://img.shields.io/badge/Desktop-Windows%20%7C%20Linux-475569" /></a>
+  <a><img alt="KMP" src="https://img.shields.io/badge/Kotlin-Multiplatform-7F52FF?logo=kotlin&logoColor=white" /></a>
+</p>
 
-[![Build and tests](https://img.shields.io/github/actions/workflow/status/DeFerence3/embyEx/ci.yml?branch=dev&label=build%20%26%20tests&logo=githubactions&logoColor=white)](../../actions/workflows/ci.yml)
-[![Latest release](https://img.shields.io/github/v/release/DeFerence3/embyEx?label=release&logo=github)](../../releases/latest)
-[![Latest beta](https://img.shields.io/github/v/release/DeFerence3/embyEx?include_prereleases&label=beta&color=orange)](../../releases)
-[![Downloads](https://img.shields.io/github/downloads/DeFerence3/embyEx/total?label=downloads)](../../releases)
+<p align="center">
+  <a href="../../releases/latest"><img alt="Latest Stable" src="https://img.shields.io/github/v/release/DeFerence3/embyEx?label=release&logo=github"/></a>
+  <a href="../../releases"><img alt="Latest Beta" src="https://img.shields.io/github/v/release/DeFerence3/embyEx?include_prereleases&label=beta&color=orange"/></a>
+  <a href="../../releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/DeFerence3/embyEx/total?label=downloads"/></a>
+  <a href="../../actions/workflows/ci.yml" ><img alt="Build and tests" src="https://img.shields.io/github/actions/workflow/status/DeFerence3/embyEx/ci.yml?branch=dev&label=build%20%26%20tests&logo=githubactions&logoColor=white"/></a>
+</p>
 
-#### [⬇️ Install EmbyEx](#-get-started) · [🐛 Report an issue](../../issues)
+<p align="center">
+  <img alt="Licence" src="https://img.shields.io/badge/License-GPL--3.0-blue"/>
+</p>
+
+<p align="center">
+  <a href="#-get-started">⬇️ Install EmbyEx</a> | <a href="../../issues">🐛Report an issue</a>
+</p>
+
+
 
 > [!WARNING]
 > #### *This is a vibe coded project!!*
