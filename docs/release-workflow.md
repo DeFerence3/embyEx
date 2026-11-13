@@ -84,7 +84,7 @@ If you skip the back-merge, the next promotion fails and tells you to do it.
 ## Secrets and settings
 
 - `BETA_COMMIT_THRESHOLD` (repository variable) is how many commits on `dev` since the previous tag trigger an automatic beta; `0` turns automatic betas off.
-- `PAT` needs repository `contents: write` and a branch-ruleset bypass on `master`. Promote, Auto beta and the release use it because pushes made with `GITHUB_TOKEN` don't start other workflows.
+- `PROMOTER_PAT` needs permission to push code and workflow files: the `repo` and `workflow` scopes for a classic token, or Contents and Workflows read/write for a fine-grained one. It also needs a branch-ruleset bypass on `master`. Without the workflow permission, GitHub rejects Promote's push whenever the promoted commits change `.github/workflows/`. Promote, Auto beta and the release use it because pushes made with `GITHUB_TOKEN` don't start other workflows.
 - Rulesets:
   - `master`: no force push or deletion, linear history, owner bypass.
   - `dev`: no force push or deletion, `CI passed` required on PRs, owner bypass.

@@ -25,13 +25,13 @@ jobs:
     timeout-minutes: 10
     env:
       # Pushes made with GITHUB_TOKEN do not start other workflows, so the release would never build.
-      GH_TOKEN: ${{ secrets.PAT }}
+      GH_TOKEN: ${{ secrets.PROMOTER_PAT }}
       BETA_TAG: ${{ inputs.beta_tag }}
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-          token: ${{ secrets.PAT }}
+          token: ${{ secrets.PROMOTER_PAT }}
 
       - name: Check the beta can be promoted
         id: check
@@ -39,7 +39,7 @@ jobs:
         run: |
           set -euo pipefail
           if [[ -z "$GH_TOKEN" ]]; then
-            echo "::error::Missing required GitHub secret: PAT"
+            echo "::error::Missing required GitHub secret: PROMOTER_PAT"
             exit 1
           fi
           if [[ ! "$BETA_TAG" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)-beta\.[1-9][0-9]?$ ]]; then
