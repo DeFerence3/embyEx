@@ -2,24 +2,31 @@ package app.deference.embycl.ui.core.update
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.LifecycleResumeEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.deference.embycl.BuildConfig
-import app.deference.embycl.domain.repository.AppRepo
 import org.koin.compose.koinInject
 
 @Composable
-fun AppUpdateHost(appRepo: AppRepo = koinInject()) {
-    val state by appRepo.updateState.collectAsState()
+fun AppUpdateHost() {
+    val vm = koinInject<AppUpdateVM>()
+    val onAction = vm::onAction
+    val state by vm.state.collectAsStateWithLifecycle()
     //if you are running app directly from source code (debug build) disable startup update check
-    if (BuildConfig.VERSION_NAME != "1.0.0") LaunchedEffect(Unit) { appRepo.checkForUpdates(userInitiated = false) }
+    if (BuildConfig.VERSION_NAME != "1.0.0") LaunchedEffect(Unit) { onAction(AppUpdateAction.CheckForUpdates(isUserInitiated = false)) }
+    // Returning from the system installer or its permission screen resumes the app.
+    LifecycleResumeEffect(key1 = Unit) {
+        onAction(AppUpdateAction.AppResumed)
+        onPauseOrDispose { }
+    }
     if (state.dialogVisible) {
         UpdateAvailableDialog(
             appUpdate = state.update,
-            onCheck = { appRepo.checkForUpdates() },
-            onDownload = appRepo::downloadUpdate,
-            onInstall = appRepo::installUpdate,
-            onDismiss = appRepo::dismissUpdate,
+            onCheck = { onAction(AppUpdateAction.CheckForUpdates()) },
+            onDownload = { onAction(AppUpdateAction.Download) },
+            onInstall = { onAction(AppUpdateAction.Install) },
+            onDismiss = { onAction(AppUpdateAction.DismissDialog) },
         )
     }
 }

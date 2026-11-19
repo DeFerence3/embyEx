@@ -1,5 +1,6 @@
 package app.deference.embycl
 
+import app.deference.embycl.data.repository.GithubRepoImpl
 import app.deference.embycl.domain.model.update.AppUpdate
 import app.deference.embycl.domain.model.update.UpdateRelease
 import app.deference.embycl.platform.GithubUpdateProvider
@@ -16,63 +17,73 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class GithubUpdateProviderTest {
+    // v1.2.3 has version code 1_020_300.
     private fun client(
-        versionCode: Int = 2,
-        applicationId: String = "app.test",
+        tag: String = "v1.2.3",
         fileName: String = "app.apk",
         body: String = "\"notes\"",
         digest: String = "null",
         status: HttpStatusCode = HttpStatusCode.OK,
-    ) = HttpClient(MockEngine { request ->
-        if (request.url.host == "api.github.com") respond(
-            """{"tag_name":"v1.2.3","body":$body,"assets":[
-              {"name":"output-metadata.json","size":100,"browser_download_url":"https://example.test/metadata"},
+    ) = HttpClient(MockEngine {
+        respond(
+            """{"tag_name":"$tag","body":$body,"assets":[
               {"name":"$fileName","size":1234,"digest":$digest,"browser_download_url":"https://example.test/apk","content_type":"application/octet-stream"}
             ]}""", status
-        ) else respond(
-            """{"version":3,"artifactType":{"type":"APK","kind":"Directory"},"applicationId":"$applicationId","variantName":"release","elementType":"File","baselineProfiles":[],"minSdkVersionForDexing":24,"elements":[
-              {"type":"SINGLE","versionCode":$versionCode,"versionName":"1.2.3","outputFile":"app.apk","attributes":[],"filters":[]}
-            ]}"""
         )
     }) { install(HttpTimeout) }
 
-    @Test fun newerCodeIsAvailableEvenWithSameDisplayVersionAndGenericMimeType() = runBlocking<Unit> {
+    private suspend fun findUpdate(
+        http: HttpClient,
+        installedVersionCode: Long,
+    ) = GithubUpdateProvider.findUpdate(
+        release = GithubRepoImpl(client = http).getLatestRelease(),
+        installedVersionCode = installedVersionCode,
+    )
+
+    @Test fun newerTagIsAvailableWithItsVersionCodeAndGenericMimeType() = runBlocking<Unit> {
         client().use { http ->
-            val update = GithubUpdateProvider(http).findUpdate("app.test", 1)!!
-            assertEquals(2L, update.release.versionCode)
+            val update = findUpdate(http, 1_020_299)!!
+            assertEquals(1_020_300L, update.release.versionCode)
+            assertEquals("1.2.3", update.release.version)
             assertEquals("notes", update.release.changeLogMarkDown)
             assertNull(update.digest)
         }
     }
 
-    @Test fun sameAndOlderCodesAreNotUpdates() = runBlocking<Unit> {
-        for (remote in listOf(1, 2)) client(versionCode = remote).use {
-            assertNull(GithubUpdateProvider(it).findUpdate("app.test", 2))
+    @Test fun betaTagSitsBetweenReleases() = runBlocking<Unit> {
+        client(tag = "v1.2.4-beta.2").use {
+            assertEquals(1_020_302L, findUpdate(it, 1_020_300)!!.release.versionCode)
+        }
+    }
+
+    @Test fun sameAndOlderTagsAreNotUpdates() = runBlocking<Unit> {
+        for (installed in listOf(1_020_300L, 1_020_301L)) client().use {
+            assertNull(findUpdate(it, installed))
         }
     }
 
     @Test fun nullableNotesAndDigestAreAccepted() = runBlocking<Unit> {
         client(body = "null").use {
-            assertEquals("", GithubUpdateProvider(it).findUpdate("app.test", 1)!!.release.changeLogMarkDown)
+            assertEquals("", findUpdate(it, 1)!!.release.changeLogMarkDown)
         }
     }
 
-    @Test fun rejectsDifferentApplication() = runBlocking<Unit> {
-        client(applicationId = "another.app").use {
-            assertFailsWith<IllegalArgumentException> { GithubUpdateProvider(it).findUpdate("app.test", 1) }
+    @Test fun rejectsTagThatIsNotAVersion() = runBlocking<Unit> {
+        client(tag = "nightly").use {
+            assertFailsWith<IllegalStateException> { findUpdate(it, 1) }
         }
     }
 
-    @Test fun requiresExactMetadataFilename() = runBlocking<Unit> {
-        client(fileName = "different.apk").use {
-            assertFailsWith<IllegalStateException> { GithubUpdateProvider(it).findUpdate("app.test", 1) }
+    @Test fun requiresAnApkAsset() = runBlocking<Unit> {
+        client(fileName = "app.msi").use {
+            assertFailsWith<IllegalStateException> { findUpdate(it, 1) }
         }
     }
 
     @Test fun checksHttpStatusBeforeDeserializing() = runBlocking<Unit> {
         val http = HttpClient(MockEngine { respond("not JSON", HttpStatusCode.Forbidden) }) { install(HttpTimeout) }
         http.use {
-            val failure = assertFailsWith<IllegalStateException> { GithubUpdateProvider(it).findUpdate("app.test", 1) }
+            val failure = assertFailsWith<IllegalStateException> { findUpdate(it, 1) }
             assertTrue(failure.message!!.contains("GitHub"))
         }
     }

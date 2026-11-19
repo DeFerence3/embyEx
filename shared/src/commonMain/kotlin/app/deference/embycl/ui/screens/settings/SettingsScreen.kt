@@ -52,27 +52,30 @@ import app.deference.embycl.ui.core.SettingsPreferences
 import app.deference.embycl.ui.core.components.DetailTopBar
 import app.deference.embycl.ui.core.components.PageIntro
 import app.deference.embycl.ui.core.components.SignOutConfirmationDialog
+import app.deference.embycl.ui.core.update.AppUpdateAction
+import app.deference.embycl.ui.core.update.AppUpdateVM
 import app.deference.embycl.ui.screens.settings.components.CurrentBuildChangelogDialog
+import app.deference.embycl.ui.screens.settings.components.InfoHeader
 import app.deference.embycl.ui.screens.settings.components.InfoSection
 import app.deference.embycl.ui.screens.settings.components.SettingsAccount
 import app.deference.embycl.ui.screens.settings.components.SettingsAction
 import app.deference.embycl.ui.screens.settings.components.SettingsLinkCard
 import app.deference.embycl.ui.screens.settings.components.SettingsSection
 import app.deference.embycl.ui.screens.settings.components.UserCard
-import app.deference.embycl.ui.screens.settings.components.InfoHeader
 import app.deference.embycl.ui.screens.settings.home.HomeLayoutSettingsScreen
 import embyex.shared.generated.resources.Res
 import embyex.shared.generated.resources.app_name
 import embyex.shared.generated.resources.home_edit
 import embyex.shared.generated.resources.home_edit_hint
-import embyex.shared.generated.resources.settings_home
 import embyex.shared.generated.resources.settings_beta_updates
 import embyex.shared.generated.resources.settings_beta_updates_description
-import embyex.shared.generated.resources.settings_updates
+import embyex.shared.generated.resources.settings_home
 import embyex.shared.generated.resources.settings_title_bar
 import embyex.shared.generated.resources.settings_title_bar_description
+import embyex.shared.generated.resources.settings_updates
 import kotlinx.serialization.Serializable
 import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
 @Serializable
@@ -83,13 +86,15 @@ data object EmbySettingsScreen : Screen {
 		val navigator = LocalNavigator.current
 		val viewModel = koinViewModel<SettingsViewModel>()
 		val state by viewModel.state.collectAsState()
-		val updateState by viewModel.updateState.collectAsState()
+		val updateVm = koinInject<AppUpdateVM>()
+		val updateState by updateVm.state.collectAsState()
+		val onUpdaterAction = updateVm::onAction
 		val account = remember { SettingsAccount.getFromSession() }
 		SettingsContent(
 			state = state,
 			account = account,
 			onRefresh = viewModel::refreshServerInfo,
-			onCheckUpdates = viewModel::checkForUpdates,
+			onUpdaterAction = onUpdaterAction,
 			onBack = navigator::goBack,
 			onSignOut = Session::logout,
 			update = updateState.update,
@@ -105,7 +110,7 @@ fun SettingsContent(
 	update: AppUpdate,
 	account: SettingsAccount,
 	onRefresh: () -> Unit,
-	onCheckUpdates: () -> Unit,
+	onUpdaterAction: (AppUpdateAction) -> Unit,
 	onBack: () -> Unit,
 	onSignOut: () -> Unit,
 	onLoadChangelog: () -> Unit = {},
@@ -179,7 +184,9 @@ fun SettingsContent(
 							modifier = Modifier
 								.weight(1f)
 								.heightIn(min = 56.dp),
-							onClick = onCheckUpdates,
+							onClick = {
+								onUpdaterAction(AppUpdateAction.CheckForUpdates())
+							},
 							enabled = update != AppUpdate.Checking
 						) {
 							Icon(
@@ -307,7 +314,7 @@ fun SettingsContent(
 									onAction = {
 										SettingsPreferences.setBetaUpdates(it)
 										if (it){
-											onCheckUpdates()
+											onUpdaterAction(AppUpdateAction.CheckForUpdates())
 										}
 									},
 								),

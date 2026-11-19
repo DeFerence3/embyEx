@@ -1,12 +1,11 @@
 package app.deference.embycl.domain.repository
 
-import app.deference.embycl.domain.model.update.UpdateState
-import kotlinx.coroutines.flow.StateFlow
+import app.deference.embycl.domain.model.update.AppUpdate
+import kotlinx.coroutines.flow.Flow
 
 interface AppRepo {
-    val updateState: StateFlow<UpdateState>
-    fun checkForUpdates(userInitiated: Boolean = true)
-    fun downloadUpdate()
-    fun installUpdate()
-    fun dismissUpdate()
+    suspend fun checkForUpdates(userInitiated: Boolean = true): Result<AppUpdate>
+    fun downloadUpdate(): Flow<AppUpdate>
+    suspend fun installUpdate(): AppUpdate
+    fun onAppResumed(current: AppUpdate): AppUpdate
 }

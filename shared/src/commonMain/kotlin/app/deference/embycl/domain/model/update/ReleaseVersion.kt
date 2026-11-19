@@ -12,6 +12,12 @@ data class ReleaseVersion(
 ) : Comparable<ReleaseVersion> {
     val isPrerelease: Boolean get() = beta != null
 
+    // android specific
+    val versionCode: Long get() {
+            val release = major * 1_000_000L + minor * 10_000L + patch * 100L
+            return if (beta == null) release else release - 100 + beta
+        }
+
     override fun compareTo(other: ReleaseVersion): Int = compareValuesBy(
         this,
         other,

@@ -25,9 +25,3 @@ sealed interface AppUpdate {
 }
 
 enum class UpdateStage { Check, Download, Install }
-
-/** Visibility is independent of progress, so dismissing does not cancel or reopen a download. */
-data class UpdateState(
-	val update: AppUpdate = AppUpdate.Idle,
-	val dialogVisible: Boolean = false
-)

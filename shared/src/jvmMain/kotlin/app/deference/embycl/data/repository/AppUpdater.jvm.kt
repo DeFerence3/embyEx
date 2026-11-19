@@ -1,33 +1,24 @@
 package app.deference.embycl.data.repository
 
 import app.deference.embycl.BuildConfig
-import app.deference.embycl.core.networking.ResponseHandler.isSuccess
-import app.deference.embycl.core.networking.UpdaterHttpClient
+import app.deference.embycl.core.utils.normalizeReleaseBody
 import app.deference.embycl.core.utils.resolveLinks
-import app.deference.embycl.data.repository.download.EmbyExUpdateProvider
+import app.deference.embycl.data.repository.download.PacmanUpdateInstaller
+import app.deference.embycl.data.repository.download.UpdateAssetDownloader
+import app.deference.embycl.domain.ghrelease.Asset
 import app.deference.embycl.domain.ghrelease.GithubRelease
 import app.deference.embycl.domain.model.update.AppUpdate
+import app.deference.embycl.domain.model.update.ReleaseVersion
 import app.deference.embycl.domain.model.update.UpdateRelease
 import app.deference.embycl.domain.model.update.UpdateStage
-import app.deference.embycl.domain.model.update.UpdateState
-import app.deference.embycl.ui.core.SettingsPreferences
 import dev.nucleusframework.updater.NucleusUpdater
-import dev.nucleusframework.updater.UpdateResult
+import dev.nucleusframework.updater.provider.GitHubProvider
 import io.ktor.client.HttpClient
-import io.ktor.client.plugins.timeout
-import io.ktor.client.request.get
-import io.ktor.client.request.header
-import io.ktor.client.statement.bodyAsText
-import kotlinx.coroutines.CoroutineExceptionHandler
-import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
-import kotlinx.serialization.json.Json
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.withContext
 import org.koin.core.annotation.Named
 import org.koin.core.annotation.Single
 import java.io.File
@@ -35,125 +26,125 @@ import java.io.File
 @Single
 actual class AppUpdater(
 	@Named("download")
-	private val client: HttpClient
+	client: HttpClient
 ) {
-	private val owner = "DeFerence3"
-	private val repo = "embyEx"
-	
-	internal val updateJson = Json { ignoreUnknownKeys = true }
-	
-	private var result: UpdateResult.Available? = null
+	private val downloader = UpdateAssetDownloader(client = client)
+	private val isWindows = System.getProperty("os.name").startsWith("Windows", ignoreCase = true)
+	private val pacmanInstaller by lazy { if (isWindows) null else PacmanUpdateInstaller.forCurrentProcess() }
+
+	@Volatile
+	private var asset: Asset? = null
+	@Volatile
 	private var updateRelease: UpdateRelease? = null
-	private val _state = MutableStateFlow(UpdateState())
-	private val updateProvider = EmbyExUpdateProvider(
-		owner = owner,
-		repo = repo,
-		includePrerelease = { SettingsPreferences.betaUpdatesEnabled },
-	)
+	@Volatile
 	private var installer: File? = null
-	private val updateHttpClient = UpdaterHttpClient()
 	private val updater = NucleusUpdater {
-		provider = updateProvider
+		provider = GitHubProvider(owner = "DeFerence3", repo = "embyEx")
 		currentVersion = BuildConfig.VERSION_NAME
-		// The provider only offers a pre-release to users who opted in; let Nucleus accept it.
-		allowPrerelease = true
-		// The Nucleus Gradle plugin is not applied, so the package type is not detected at runtime.
-		// It selects the artifact in latest-<platform>.yml: the MSI on Windows, the .deb on Linux.
-		executableType = if (System.getProperty("os.name").startsWith("Windows", ignoreCase = true)) "msi" else "deb"
-		httpClient = updateHttpClient
+		executableType = if (isWindows) "msi" else "deb"
 	}
-	
-	val errorHandler = CoroutineExceptionHandler { _, exception ->
-		val appUpdate = AppUpdate.Failed(exception.message ?: "Could not check for updates. Check your connection and try again.", UpdateStage.Check)
-		publish(appUpdate)
+
+	actual suspend fun checkForUpdates(
+		release: GithubRelease,
+		userInitiated: Boolean,
+	): AppUpdate = withContext(Dispatchers.IO) {
+		try {
+			selectUpdate(release = release)
+		} catch (e: CancellationException) {
+			throw e
+		} catch (e: Exception) {
+			AppUpdate.Failed(
+				message = e.message ?: "Could not check for updates. Check your connection and try again.",
+				stage = UpdateStage.Check,
+			)
+		}
 	}
-	
-	private val scope = CoroutineScope(Dispatchers.IO + errorHandler)
-	
-	actual val state: StateFlow<UpdateState> = _state.asStateFlow()
-	
-	actual fun checkForUpdates(userInitiated: Boolean) {
-		if (userInitiated) _state.update { it.copy(dialogVisible = true) }
-		scope.launch {
-			val reveal = !userInitiated
-			if(_state.value.update !is AppUpdate.Downloading){
-				publish(AppUpdate.Checking,userInitiated)
+
+	actual fun download(): Flow<AppUpdate> = channelFlow {
+		val selected = asset
+		val release = updateRelease
+		if (selected == null || release == null) {
+			send(AppUpdate.Failed(message = "Check for updates again before downloading.", stage = UpdateStage.Check))
+			return@channelFlow
+		}
+		send(AppUpdate.Downloading(release = release, downloaded = 0, total = selected.size))
+		try {
+			installer = downloader.download(asset = selected) { downloaded ->
+				trySend(AppUpdate.Downloading(release = release, downloaded = downloaded, total = selected.size))
 			}
-			when (val result = updater.checkForUpdates()) {
-				is UpdateResult.Available -> {
-					val update = AppUpdate.Available(
-						UpdateRelease(
-							result.info.version,
-							versionCode = 0,
-							tag = "v${result.info.version}",
-							changeLogMarkDown = getChangeLog("v${result.info.version}")
-								.resolveLinks(),
-						).also {
-							updateRelease = it
-							this@AppUpdater.result = result
-						}
-					)
-					if(_state.value.update is AppUpdate.Downloading){
-						publish(_state.value.update,reveal)
-					}else{
-						publish(update,reveal)
-					}
+			send(AppUpdate.ReadyToInstall(release = release))
+		} catch (e: CancellationException) {
+			throw e
+		} catch (e: Exception) {
+			send(
+				AppUpdate.Failed(
+					message = e.message ?: "Could not download update. Check your connection and try again.",
+					stage = UpdateStage.Download,
+					release = release,
+				),
+			)
+		}
+	}
+
+	actual suspend fun install(): AppUpdate {
+		val release = updateRelease
+			?: return AppUpdate.Failed(message = "Check for updates again before installing.", stage = UpdateStage.Check)
+		val file = installer?.takeIf { it.isFile }
+			?: return AppUpdate.Failed(
+				message = "The download is missing. Download the update again.",
+				stage = UpdateStage.Download,
+				release = release,
+			)
+		return withContext(Dispatchers.IO) {
+			try {
+				val pacman = pacmanInstaller
+				if (pacman == null) {
+					updater.installAndRestart(file)
+				} else {
+					// Blocks while polkit asks for the password; a failure leaves the app running.
+					pacman.install(packageFile = file)
+					pacman.restart()
 				}
-				UpdateResult.NotAvailable -> publish(AppUpdate.NotAvailable)
-				is UpdateResult.Error -> {
-					publish(AppUpdate.Failed(result.exception.message ?: "Could not check for updates. Check your connection and try again.", UpdateStage.Check))
-					result.exception.cause?.printStackTrace()
-				}
+				AppUpdate.InstallerLaunched(release = release)
+			} catch (e: CancellationException) {
+				throw e
+			} catch (e: Exception) {
+				AppUpdate.Failed(
+					message = e.message ?: "Could not install the update.",
+					stage = UpdateStage.Install,
+					release = release,
+				)
 			}
 		}
 	}
-	
-	actual fun download() {
-		scope.launch {
-			result?.let { res ->
-				updateRelease?.let { release ->
-					publish(AppUpdate.Downloading(release, 0, 0))
-					runCatching {
-						val currentFile = res.info.currentFile.copy(url = "https://gh-proxy.com/${res.info.currentFile.url}")
-						updater.downloadUpdate(res.info.copy(currentFile = currentFile))
-							.collectLatest{ progress ->
-								progress.file?.let { installer = it }
-								publish(AppUpdate.Downloading(release, progress.bytesDownloaded, progress.totalBytes))
-							}
-					}.onSuccess {
-						publish(AppUpdate.ReadyToInstall(release))
-					}.onFailure {
-						publish(AppUpdate.Failed(it.message ?: "Could not download update. Check your connection and try again.", UpdateStage.Download))
-						it.printStackTrace()
-					}
-				}
-			}
-		}
+
+	actual fun onAppResumed(current: AppUpdate): AppUpdate = current
+
+	private fun selectUpdate(release: GithubRelease): AppUpdate {
+		val remote = ReleaseVersion.parse(text = release.tag) ?: error("The release ${release.tag} is not tagged with an app version.")
+		val current = ReleaseVersion.parse(text = BuildConfig.VERSION_NAME) ?: error("This build has no release version, so it cannot be updated.")
+		// A download of an earlier check is never installed for a different release.
+		installer?.parentFile?.deleteRecursively()
+		installer = null
+		asset = null
+		updateRelease = null
+		if (remote <= current) return AppUpdate.NotAvailable
+		val suffix = installerSuffix()
+		val selected = release.assets.singleOrNull { it.name.endsWith(suffix, ignoreCase = true) } ?: error("This release has no $suffix installer. Download it from GitHub instead.")
+		val update = UpdateRelease(
+			version = release.tag.removePrefix("v"),
+			tag = release.tag,
+			versionCode = remote.versionCode,
+			changeLogMarkDown = release.body.orEmpty().normalizeReleaseBody().resolveLinks(),
+		)
+		asset = selected
+		updateRelease = update
+		return AppUpdate.Available(release = update)
 	}
-	
-	actual fun install() {
-		installer?.let(updater::installAndRestart)
-	}
-	
-	actual fun dismiss() {
-		_state.update { it.copy(dialogVisible = false) }
-	}
-	
-	private suspend fun getChangeLog(tag: String): String{
-		val url = "https://api.github.com/repos/$owner/$repo/releases/tags/$tag"
-		val response = client.get(url) {
-			header("Accept", "application/vnd.github+json")
-			timeout { requestTimeoutMillis = 20_000 }
-		}
-		check(response.isSuccess) {
-			if (response.status.value in listOf(403, 429)) "GitHub temporarily refused the update check. Try again later."
-			else "Could not check for updates (HTTP ${response.status.value})."
-		}
-		val responseBody = response.bodyAsText()
-		return updateJson.decodeFromString<GithubRelease>(responseBody).body ?: ""
-	}
-	
-	private fun publish(update: AppUpdate, reveal: Boolean = false) {
-		_state.update { it.copy(update = update, dialogVisible = it.dialogVisible || reveal) }
+
+	private fun installerSuffix(): String = when {
+		isWindows -> ".msi"
+		pacmanInstaller != null -> PacmanUpdateInstaller.PACKAGE_SUFFIX
+		else -> ".deb"
 	}
 }
