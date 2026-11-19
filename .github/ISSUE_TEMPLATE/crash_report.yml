@@ -1,0 +1,66 @@
+name: 💥 Crash report
+description: EmbyEx closed unexpectedly. Best sent from the app's crash screen ("Report"), which fills this in for you.
+title: "[Crash] "
+labels: [ "bug", "crash", "triage" ]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a crash.
+        - **Sending from EmbyEx's crash screen?** The environment and crash log below are already filled in, and the full log is in your clipboard. If the log ends with "stack trace truncated", replace it with the full log from your clipboard.
+        - **The app didn't crash, but something doesn't work?** Use the 🐛 Bug report or ▶️ Playback problem template.
+
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Before you submit
+      options:
+        - label: I removed tokens, passwords, server addresses, user names, personal file paths and anything else private from the log.
+          required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Filled in by the crash screen. If you're reporting by hand, fill in what you know.
+      value: |
+        - App version:
+        - Platform: Android / Windows / Linux
+        - OS version:
+        - Device model / architecture:
+        - Java runtime (desktop, if available):
+    validations:
+      required: true
+
+  - type: textarea
+    id: crash_log
+    attributes:
+      label: Crash log
+      description: |
+        Filled in by the crash screen. If you're reporting by hand, paste the log from "Copy logs" on the crash screen.
+        It's shown as code, so you don't need backticks.
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What were you doing, and what did you expect to happen?
+      placeholder: I was scrolling the Home screen and expected the next row to load.
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Leave empty if you don't know how to make it happen again.
+      placeholder: |
+        1. Open a series from Home
+        2. Switch to the second season
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: For example, a custom ROM, a rooted device, or a modified system.
