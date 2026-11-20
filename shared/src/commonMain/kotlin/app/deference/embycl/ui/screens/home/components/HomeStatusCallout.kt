@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -28,6 +30,8 @@ import embyex.shared.generated.resources.home_device_body
 import embyex.shared.generated.resources.home_device_title
 import embyex.shared.generated.resources.home_offline_body
 import embyex.shared.generated.resources.home_offline_title
+import embyex.shared.generated.resources.home_reconnect
+import embyex.shared.generated.resources.home_reconnecting
 import embyex.shared.generated.resources.home_try_again
 import org.jetbrains.compose.resources.stringResource
 
@@ -35,7 +39,9 @@ import org.jetbrains.compose.resources.stringResource
 internal fun HomeStatusCallout(
     source: HomeSourceUi,
     serverName: String,
+    isReconnecting: Boolean,
     onTryAgain: () -> Unit,
+    onReconnect: () -> Unit,
     onSignIn: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -100,11 +106,32 @@ internal fun HomeStatusCallout(
                     }
                 }
                 if (offline) {
-                    TextButton(
-                        onClick = onTryAgain,
-                        modifier = Modifier.focusRing(shape = CircleShape),
-                    ) {
-                        Text(text = stringResource(resource = Res.string.home_try_again))
+                    Row {
+                        TextButton(
+                            onClick = onTryAgain,
+                            modifier = Modifier.focusRing(shape = CircleShape),
+                        ) {
+                            Text(text = stringResource(resource = Res.string.home_try_again))
+                        }
+                        TextButton(
+                            onClick = onReconnect,
+                            enabled = !isReconnecting,
+                            modifier = Modifier.focusRing(shape = CircleShape),
+                        ) {
+                            if (isReconnecting) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier
+                                        .padding(end = 8.dp)
+                                        .size(size = 16.dp),
+                                    strokeWidth = 2.dp,
+                                )
+                            }
+                            Text(
+                                text = stringResource(
+                                    resource = if (isReconnecting) Res.string.home_reconnecting else Res.string.home_reconnect,
+                                ),
+                            )
+                        }
                     }
                 }
             }

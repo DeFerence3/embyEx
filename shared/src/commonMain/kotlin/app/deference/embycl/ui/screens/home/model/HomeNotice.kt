@@ -27,4 +27,7 @@ sealed interface HomeNotice {
     data class ActionFailed(val title: String) : HomeNotice
 
     data object RefreshFailed : HomeNotice
+    data object NoServersFound : HomeNotice
+    data class ServerUnreachable(val serverName: String) : HomeNotice
+    data class ServerMismatch(val serverName: String) : HomeNotice
 }

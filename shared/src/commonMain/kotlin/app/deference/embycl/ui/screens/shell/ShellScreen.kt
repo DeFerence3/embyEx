@@ -39,7 +39,6 @@ import app.deference.embycl.ui.core.components.ObserveEvent
 import app.deference.embycl.ui.screens.downloads.EmbyDownloadsScreen
 import app.deference.embycl.ui.screens.downloads.rememberDownloadPermissionRequest
 import app.deference.embycl.ui.screens.home.HomeAction
-import app.deference.embycl.ui.screens.settings.home.HomeLayoutSettingsScreen
 import app.deference.embycl.ui.screens.home.HomeContent
 import app.deference.embycl.ui.screens.home.HomeState
 import app.deference.embycl.ui.screens.home.HomeViewModel
@@ -55,6 +54,7 @@ import app.deference.embycl.ui.screens.search.SearchAction
 import app.deference.embycl.ui.screens.search.SearchContent
 import app.deference.embycl.ui.screens.search.SearchState
 import app.deference.embycl.ui.screens.search.SearchViewModel
+import app.deference.embycl.ui.screens.settings.home.HomeLayoutSettingsScreen
 import app.deference.embycl.ui.screens.shell.components.EmbyExBottomBar
 import app.deference.embycl.ui.screens.shell.components.TopAppBar
 import app.deference.embycl.ui.screens.signin.EmbySignInScreen
@@ -177,7 +177,6 @@ fun EmbyShellContent(
 					EmbyTab.Home -> HomeContent(
 						state = homeState,
 						onAction = onHomeAction,
-						onEditHome = { backStack.goTo(HomeLayoutSettingsScreen) },
 						bottomSpacing = bottomSpacing,
 						onConfirmDownload = { source ->
 							downloadPermission { _ ->

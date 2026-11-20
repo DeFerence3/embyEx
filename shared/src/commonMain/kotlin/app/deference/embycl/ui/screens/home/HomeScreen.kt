@@ -28,6 +28,7 @@ import app.deference.embycl.ui.screens.home.components.HomeCardMenuSheet
 import app.deference.embycl.ui.screens.home.components.HomeFilmstrip
 import app.deference.embycl.ui.screens.home.components.HomeFullStateView
 import app.deference.embycl.ui.screens.home.components.HomeLayout
+import app.deference.embycl.ui.screens.home.components.HomeServerPickerDialog
 import app.deference.embycl.ui.screens.home.components.HomeShelf
 import app.deference.embycl.ui.screens.home.components.HomeSkeleton
 import app.deference.embycl.ui.screens.home.components.HomeSpotlight
@@ -49,9 +50,12 @@ import embyex.shared.generated.resources.home_notice_favorite_added
 import embyex.shared.generated.resources.home_notice_favorite_removed
 import embyex.shared.generated.resources.home_notice_marked_unwatched
 import embyex.shared.generated.resources.home_notice_marked_watched
+import embyex.shared.generated.resources.home_notice_no_servers
 import embyex.shared.generated.resources.home_notice_refresh_failed
 import embyex.shared.generated.resources.home_notice_removed
 import embyex.shared.generated.resources.home_notice_retry
+import embyex.shared.generated.resources.home_notice_server_mismatch
+import embyex.shared.generated.resources.home_notice_server_unreachable
 import embyex.shared.generated.resources.home_notice_undo
 import org.jetbrains.compose.resources.getString
 
@@ -62,7 +66,6 @@ fun HomeContent(
 	state: HomeState,
 	onAction: (HomeAction) -> Unit,
 	onConfirmDownload: (DownloadSource) -> Unit,
-	onEditHome: () -> Unit,
 	modifier: Modifier = Modifier,
 	bottomSpacing: Dp = 0.dp,
 ) {
@@ -115,10 +118,15 @@ fun HomeContent(
 				}
 				is HomeNotice.FavoriteChanged,
 				is HomeNotice.ActionFailed,
+				HomeNotice.NoServersFound,
+				is HomeNotice.ServerUnreachable,
+				is HomeNotice.ServerMismatch,
 				HomeNotice.DownloadQueued,
 				is HomeNotice.Message -> null
 			}
 		)
+		// Shown before signing out: the koast host outlives the sign-out navigation, Home does not.
+		if (notice is HomeNotice.ServerMismatch) currentOnAction(HomeAction.AcknowledgeServerMismatch)
 	}
 
 	val menuCard = menuCardId?.let { id -> content?.findCard(itemId = id) }
@@ -157,7 +165,9 @@ fun HomeContent(
 					HomeFullStateView(
 						state = state.fullState,
 						serverName = state.serverName,
+						isReconnecting = state.isReconnecting,
 						onTryAgain = { onAction(HomeAction.Refresh) },
+						onReconnect = { onAction(HomeAction.Reconnect) },
 						onSignIn = onSignIn,
 					)
 				}
@@ -166,7 +176,9 @@ fun HomeContent(
 						HomeStatusCallout(
 							source = state.source,
 							serverName = state.serverName,
+							isReconnecting = state.isReconnecting,
 							onTryAgain = { onAction(HomeAction.Refresh) },
+							onReconnect = { onAction(HomeAction.Reconnect) },
 							onSignIn = onSignIn,
 							modifier = Modifier.padding(
 								start = layout.gutter,
@@ -226,6 +238,13 @@ fun HomeContent(
 			onDismiss = { menuCardId = null },
 		)
 	}
+	if (state.availableServers.isNotEmpty()) {
+		HomeServerPickerDialog(
+			servers = state.availableServers,
+			onSelect = { server -> onAction(HomeAction.SelectServer(server = server)) },
+			onDismiss = { onAction(HomeAction.DismissServerChoices) },
+		)
+	}
 	state.downloadChoice?.let { choice ->
 		DownloadSourceDialog(
 			title = choice.title,
@@ -260,4 +279,7 @@ private suspend fun HomeNotice.text(): Pair<String, String?> = when (this) {
 	HomeNotice.DownloadQueued -> getString(resource = Res.string.home_notice_download_queued) to null
 	is HomeNotice.Message -> text to null
 	HomeNotice.RefreshFailed -> getString(resource = Res.string.home_notice_refresh_failed) to getString(resource = Res.string.home_notice_retry)
+	HomeNotice.NoServersFound -> getString(Res.string.home_notice_no_servers) to null
+	is HomeNotice.ServerUnreachable -> getString(Res.string.home_notice_server_unreachable, serverName) to null
+	is HomeNotice.ServerMismatch -> getString(Res.string.home_notice_server_mismatch, serverName) to null
 }

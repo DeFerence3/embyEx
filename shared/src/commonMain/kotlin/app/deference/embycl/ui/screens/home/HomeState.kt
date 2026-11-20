@@ -1,5 +1,6 @@
 package app.deference.embycl.ui.screens.home
 
+import app.deference.embycl.domain.model.EmbyServer
 import app.deference.embycl.domain.model.home.HomeCardSize
 import app.deference.embycl.ui.screens.downloads.DownloadChoice
 import app.deference.embycl.ui.screens.home.model.HomeContentUi
@@ -14,6 +15,8 @@ data class HomeState(
     val serverName: String = "",
     val serverAddress: String = "",
     val isRefreshing: Boolean = false,
+    val isReconnecting: Boolean = false,
+    val availableServers: List<EmbyServer> = emptyList(),
     val cardSize: HomeCardSize = HomeCardSize.Comfortable,
     val downloadChoice: DownloadChoice? = null,
     val notice: HomeNotice? = null,

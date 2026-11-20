@@ -1,18 +1,23 @@
 package app.deference.embycl.ui.screens.home
 
+import app.deference.embycl.domain.model.EmbyServer
 import app.deference.embycl.domain.model.download.DownloadKey
 
 sealed interface HomeAction {
     data object Refresh : HomeAction
+    data object Reconnect : HomeAction
+    data object DismissServerChoices : HomeAction
+    data object AcknowledgeServerMismatch : HomeAction
+    data object Undo : HomeAction
+    data object DismissNotice : HomeAction
+    data object DismissDownload : HomeAction
+    data object ConfirmDownload : HomeAction
     data class SelectSlide(val index: Int) : HomeAction
     data class RetrySection(val key: String) : HomeAction
     data class ToggleWatched(val itemId: String) : HomeAction
     data class ToggleFavorite(val itemId: String) : HomeAction
     data class RemoveFromContinue(val itemId: String) : HomeAction
-    data object Undo : HomeAction
-    data object DismissNotice : HomeAction
     data class RequestDownload(val itemId: String) : HomeAction
     data class SelectSource(val key: DownloadKey) : HomeAction
-    data object ConfirmDownload : HomeAction
-    data object DismissDownload : HomeAction
+    data class SelectServer(val server: EmbyServer) : HomeAction
 }

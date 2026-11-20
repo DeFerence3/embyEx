@@ -152,8 +152,7 @@ private fun HomeContentPreview(
         HomeContent(
             state = state,
             onAction = {},
-            onConfirmDownload = {},
-            onEditHome = {},
+            onConfirmDownload = {}
         )
     }
 }
@@ -291,7 +290,9 @@ private fun FullStatePreview(
         HomeFullStateView(
             state = state,
             serverName = "Harbour",
+            isReconnecting = false,
             onTryAgain = {},
+            onReconnect = {},
             onSignIn = {},
         )
     }
@@ -389,19 +390,25 @@ private fun CalloutsDarkPreview() {
             HomeStatusCallout(
                 source = HomeSourceUi.Offline,
                 serverName = "Harbour",
+                isReconnecting = false,
                 onTryAgain = {},
+                onReconnect = {},
                 onSignIn = {},
             )
             HomeStatusCallout(
                 source = HomeSourceUi.ThisDevice,
                 serverName = "Harbour",
+                isReconnecting = false,
                 onTryAgain = {},
+                onReconnect = {},
                 onSignIn = {},
             )
             HomeStatusCallout(
                 source = HomeSourceUi.SignedOut,
                 serverName = "Harbour",
+                isReconnecting = false,
                 onTryAgain = {},
+                onReconnect = {},
                 onSignIn = {},
             )
         }

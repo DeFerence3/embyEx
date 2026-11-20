@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import app.deference.embycl.core.session.Session
 import app.deference.embycl.domain.model.EmbyHome
 import app.deference.embycl.domain.model.EmbyItem
+import app.deference.embycl.domain.model.EmbyServer
 import app.deference.embycl.domain.model.download.DownloadRequest
 import app.deference.embycl.domain.model.home.HomeLayoutPrefs
 import app.deference.embycl.domain.model.home.HomeSectionId
@@ -13,6 +14,7 @@ import app.deference.embycl.domain.repository.DownloadsRepo
 import app.deference.embycl.domain.repository.EmbyRepository
 import app.deference.embycl.domain.repository.HomeLayoutRepository
 import app.deference.embycl.domain.repository.OfflineUiSession
+import app.deference.embycl.domain.repository.ServerFinderRepo
 import app.deference.embycl.domain.repository.ServerReconnector
 import app.deference.embycl.ui.screens.downloads.DownloadChoice
 import app.deference.embycl.ui.screens.home.model.HomeFullState
@@ -36,6 +38,7 @@ class HomeViewModel(
 	private val session: OfflineUiSession,
 	private val layoutRepository: HomeLayoutRepository,
 	private val downloads: DownloadsRepo,
+	private val serverFinder: ServerFinderRepo,
 ) : ViewModel() {
 
 	private val _state = MutableStateFlow(
@@ -70,6 +73,10 @@ class HomeViewModel(
 				reconnector.reconnectNow()
 				load(refresh = true)
 			}
+			HomeAction.Reconnect -> findServers()
+			is HomeAction.SelectServer -> selectServer(server = action.server)
+			HomeAction.DismissServerChoices -> _state.update { it.copy(availableServers = emptyList()) }
+			HomeAction.AcknowledgeServerMismatch -> acknowledgeServerMismatch()
 			is HomeAction.SelectSlide -> _state.update { current ->
 				val content = current.content ?: return@update current
 				val spotlight = content.spotlight ?: return@update current
@@ -214,6 +221,74 @@ class HomeViewModel(
 		}
 	}
 
+	private fun findServers() {
+		if (_state.value.isReconnecting) return
+		_state.update { it.copy(isReconnecting = true) }
+		viewModelScope.launch {
+			try {
+				val servers = try {
+					serverFinder.searchForLocallyRunningServers()
+				} catch (exception: CancellationException) {
+					throw exception
+				} catch (_: Exception) {
+					emptyList()
+				}
+				when {
+					servers.isEmpty() -> _state.update { it.copy(notice = HomeNotice.NoServersFound) }
+					servers.size == 1 -> checkServer(server = servers.single())
+					else -> _state.update { it.copy(availableServers = servers) }
+				}
+			} finally {
+				_state.update { it.copy(isReconnecting = false) }
+			}
+		}
+	}
+
+	private fun selectServer(server: EmbyServer) {
+		if (_state.value.isReconnecting) return
+		_state.update {
+			it.copy(
+				isReconnecting = true,
+				availableServers = emptyList(),
+			)
+		}
+		viewModelScope.launch {
+			try {
+				checkServer(server = server)
+			} finally {
+				_state.update { it.copy(isReconnecting = false) }
+			}
+		}
+	}
+
+	// checks if discovered server id is same as that stored in session.
+	// if its the same we connected to same server.
+	// if not different server and logged out
+	private suspend fun checkServer(server: EmbyServer) {
+		val savedServerId = session.account.value?.key?.serverId ?: return
+		val discovery = try {
+			serverFinder.discoverServer(rawIp = server.address)
+		} catch (exception: CancellationException) {
+			throw exception
+		} catch (_: Exception) {
+			_state.update { it.copy(notice = HomeNotice.ServerUnreachable(serverName = server.name)) }
+			return
+		}
+		if (discovery.serverInfo.id == savedServerId) {
+			session.acceptAddress(address = discovery.server.toUrl())
+			reconnector.reconnectNow()
+			load(refresh = true)
+		} else {
+			_state.update { it.copy(notice = HomeNotice.ServerMismatch(serverName = discovery.serverInfo.serverName)) }
+		}
+	}
+
+	private fun acknowledgeServerMismatch() {
+		if (_state.value.notice !is HomeNotice.ServerMismatch) return
+		_state.update { it.copy(notice = null) }
+		session.signOut()
+	}
+
 	private fun retrySection(key: String) {
 		val id = HomeSectionId.fromKey(key = key) ?: return
 		val current = layout ?: return
@@ -272,10 +347,12 @@ class HomeViewModel(
 			is HomeNotice.FavoriteChanged,
 			is HomeNotice.ActionFailed,
 			HomeNotice.RefreshFailed,
+			HomeNotice.NoServersFound,
+			is HomeNotice.ServerUnreachable,
+			is HomeNotice.ServerMismatch,
 			HomeNotice.DownloadQueued,
 			is HomeNotice.Message,
-			null,
-			-> Unit
+			null -> Unit
 		}
 	}
 

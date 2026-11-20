@@ -167,6 +167,13 @@
     <string name="home_server_empty_title">%1$s has no movies or shows yet</string>
     <string name="home_server_empty_body">Add media folders in the Emby dashboard on your server, then refresh Home.</string>
     <string name="home_try_again">Try again</string>
+    <string name="home_reconnect">Reconnect</string>
+    <string name="home_reconnecting">Searching…</string>
+    <string name="home_notice_no_servers">No Emby servers found on this network.</string>
+    <string name="home_notice_server_unreachable">Couldn’t connect to %1$s.</string>
+    <string name="home_notice_server_mismatch">%1$s isn’t the server you signed in to. Sign in again.</string>
+    <string name="home_server_picker_title">Choose your server</string>
+    <string name="home_server_picker_cancel">Cancel</string>
     <string name="home_menu_mark_watched">Mark as watched</string>
     <string name="home_menu_mark_unwatched">Mark as unwatched</string>
     <string name="home_menu_add_favorite">Add to favorites</string>

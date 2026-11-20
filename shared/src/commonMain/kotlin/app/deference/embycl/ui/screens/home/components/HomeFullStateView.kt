@@ -3,6 +3,7 @@ package app.deference.embycl.ui.screens.home.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -16,10 +17,13 @@ import androidx.compose.material.icons.automirrored.outlined.Login
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material.icons.outlined.Dns
+import androidx.compose.material.icons.outlined.TravelExplore
 import androidx.compose.material.icons.outlined.VideoLibrary
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,6 +40,8 @@ import embyex.shared.generated.resources.home_device_empty_body
 import embyex.shared.generated.resources.home_device_empty_title
 import embyex.shared.generated.resources.home_offline_empty_body
 import embyex.shared.generated.resources.home_offline_empty_title
+import embyex.shared.generated.resources.home_reconnect
+import embyex.shared.generated.resources.home_reconnecting
 import embyex.shared.generated.resources.home_server_empty_body
 import embyex.shared.generated.resources.home_server_empty_title
 import embyex.shared.generated.resources.home_signed_out_body
@@ -50,7 +56,9 @@ import org.jetbrains.compose.resources.stringResource
 internal fun HomeFullStateView(
     state: HomeFullState,
     serverName: String,
+    isReconnecting: Boolean,
     onTryAgain: () -> Unit,
+    onReconnect: () -> Unit,
     onSignIn: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -60,30 +68,17 @@ internal fun HomeFullStateView(
         HomeFullState.Unreachable -> Icons.Outlined.Dns
         HomeFullState.SignedOut -> Icons.AutoMirrored.Outlined.Login
         HomeFullState.DeviceEmpty,
-        HomeFullState.ServerEmpty,
-        -> Icons.Outlined.VideoLibrary
+        HomeFullState.ServerEmpty, -> Icons.Outlined.VideoLibrary
     }
     val title = when (state) {
         HomeFullState.OfflineEmpty -> stringResource(resource = Res.string.home_offline_empty_title)
-        HomeFullState.Unreachable -> stringResource(
-            resource = Res.string.home_unreachable_title,
-            serverName,
-        )
-        HomeFullState.SignedOut -> stringResource(
-            resource = Res.string.home_signed_out_title,
-            serverName,
-        )
+        HomeFullState.Unreachable -> stringResource(resource = Res.string.home_unreachable_title, serverName,)
+        HomeFullState.SignedOut -> stringResource(resource = Res.string.home_signed_out_title, serverName,)
         HomeFullState.DeviceEmpty -> stringResource(resource = Res.string.home_device_empty_title)
-        HomeFullState.ServerEmpty -> stringResource(
-            resource = Res.string.home_server_empty_title,
-            serverName,
-        )
+        HomeFullState.ServerEmpty -> stringResource(resource = Res.string.home_server_empty_title, serverName,)
     }
     val body = when (state) {
-        HomeFullState.OfflineEmpty -> stringResource(
-            resource = Res.string.home_offline_empty_body,
-            serverName,
-        )
+        HomeFullState.OfflineEmpty -> stringResource(resource = Res.string.home_offline_empty_body, serverName,)
         HomeFullState.Unreachable -> stringResource(resource = Res.string.home_unreachable_body)
         HomeFullState.SignedOut -> stringResource(resource = Res.string.home_signed_out_body)
         HomeFullState.DeviceEmpty -> stringResource(resource = Res.string.home_device_empty_body)
@@ -142,18 +137,51 @@ internal fun HomeFullStateView(
                     Text(text = stringResource(resource = Res.string.home_status_sign_in))
                 }
             } else if (state != HomeFullState.DeviceEmpty) {
-                Button(
-                    onClick = onTryAgain,
-                    modifier = Modifier.focusRing(shape = CircleShape),
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(
+                        space = 12.dp,
+                        alignment = Alignment.CenterHorizontally,
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(space = 8.dp),
                 ) {
-                    Icon(
-                        imageVector = Icons.Filled.Refresh,
-                        contentDescription = null,
-                    )
-                    Text(
-                        text = stringResource(resource = Res.string.home_try_again),
-                        modifier = Modifier.padding(start = 8.dp),
-                    )
+                    Button(
+                        onClick = onTryAgain,
+                        modifier = Modifier.focusRing(shape = CircleShape),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Refresh,
+                            contentDescription = null,
+                        )
+                        Text(
+                            text = stringResource(resource = Res.string.home_try_again),
+                            modifier = Modifier.padding(start = 8.dp),
+                        )
+                    }
+                    if (error) {
+                        OutlinedButton(
+                            onClick = onReconnect,
+                            enabled = !isReconnecting,
+                            modifier = Modifier.focusRing(shape = CircleShape),
+                        ) {
+                            if (isReconnecting) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(size = 18.dp),
+                                    strokeWidth = 2.dp,
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Outlined.TravelExplore,
+                                    contentDescription = null,
+                                )
+                            }
+                            Text(
+                                text = stringResource(
+                                    resource = if (isReconnecting) Res.string.home_reconnecting else Res.string.home_reconnect,
+                                ),
+                                modifier = Modifier.padding(start = 8.dp),
+                            )
+                        }
+                    }
                 }
             }
         }
